@@ -139,7 +139,7 @@ export default function SymptomMonitorScreen() {
                 <OverdueBanner
                   daysOverdue={overdueState.daysOverdue}
                   variant="monitor"
-                  onPressCta={() => navigation.navigate('Appointments' as never)}
+                  onPressCta={() => navigation.navigate('AddAppointment')}
                 />
               )}
               <View style={isDesktop ? styles.topRowDesktop : undefined}>

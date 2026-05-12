@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TextInput, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types/navigation';
@@ -23,7 +23,7 @@ import { applyBump } from '../../utils/overdueVisit';
 
 type RouteProps = RouteProp<RootStackParamList, 'NewSymptomLog'>;
 
-type Step = 'select' | 'severity' | 'result';
+type Step = 'select' | 'severity' | 'review' | 'result';
 
 export default function NewSymptomLogScreen() {
   const navigation = useNavigation();
@@ -36,7 +36,7 @@ export default function NewSymptomLogScreen() {
 
   const { overdueState } = useOverdueState();
   // Remembers the raw AI-suggested outcome before any overdue bump is applied.
-  // Set once in handleSubmit; never reset by user interaction so the bump
+  // Set once in handlePreview; never reset by user interaction so the bump
   // explanation always shows the original suggestion as the "from" value.
   const aiSuggestedOutcomeRef = useRef<Outcome | null>(null);
 
@@ -45,6 +45,9 @@ export default function NewSymptomLogScreen() {
   const [severityScores, setSeverityScores] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState('');
   const [result, setResult] = useState<ThresholdResult | null>(null);
+  // Outcome the patient has selected (or accepted) on the review step.
+  // Initialised to the bumped suggestion in handlePreview; patient can override.
+  const [confirmedOutcome, setConfirmedOutcome] = useState<Outcome>('normal');
   const [saving, setSaving] = useState(false);
   const [latestTx, setLatestTx] = useState<Transfusion | null>(null);
   const [recentLogs, setRecentLogs] = useState<SymptomLog[]>([]);
@@ -100,7 +103,13 @@ export default function NewSymptomLogScreen() {
     setStep('severity');
   };
 
-  const handleSubmit = async () => {
+  /**
+   * Called when the patient taps Submit on the severity step.
+   * Runs AI evaluation, computes the overdue bump, and transitions to the
+   * review step so the patient can inspect and override the outcome before
+   * anything is saved. No createSymptomLog call happens here.
+   */
+  const handlePreview = () => {
     const evaluation = evaluateSymptoms(severityScores);
 
     // Record the AI-suggested outcome before any overdue bump.
@@ -108,13 +117,22 @@ export default function NewSymptomLogScreen() {
     const aiSuggested = evaluation.outcome;
     aiSuggestedOutcomeRef.current = aiSuggested;
 
-    // Apply overdue bump to the saved outcome and the displayed result.
+    // Apply overdue bump to derive the default outcome for the selector.
     const bumpTiers = overdueState?.isOverdue ? overdueState.bumpTiers : 0;
     const bumpedOutcome = applyBump(aiSuggested, bumpTiers);
     const bumpedEvaluation: ThresholdResult = { ...evaluation, outcome: bumpedOutcome };
 
     setResult(bumpedEvaluation);
+    // Default the selector to the bumped outcome; the patient may change it.
+    setConfirmedOutcome(bumpedOutcome);
+    setStep('review');
+  };
 
+  /**
+   * Called when the patient taps Confirm on the review step.
+   * Saves with whatever outcome the patient last selected, then moves to result.
+   */
+  const handleConfirm = async () => {
     if (!user) return;
     setSaving(true);
     try {
@@ -122,7 +140,7 @@ export default function NewSymptomLogScreen() {
         transfusion_id: transfusionId || null,
         symptoms: selectedSymptoms,
         severity_scores: severityScores,
-        outcome: bumpedOutcome,
+        outcome: confirmedOutcome,
         notes,
       };
       if (isMockMode) {
@@ -182,8 +200,7 @@ export default function NewSymptomLogScreen() {
 
             <Button
               label={t('symptoms.submit')}
-              onPress={handleSubmit}
-              isLoading={saving}
+              onPress={handlePreview}
               style={{ marginTop: SPACING.lg }}
             />
             <Button
@@ -195,9 +212,11 @@ export default function NewSymptomLogScreen() {
           </>
         )}
 
-        {step === 'result' && result && (
+        {step === 'review' && result && (
           <>
             <Text style={styles.stepTitle}>{t('symptoms.result')}</Text>
+
+            {/* Bump explanation — only shown when the bump is a real change */}
             {overdueState?.isOverdue &&
               aiSuggestedOutcomeRef.current !== null &&
               applyBump(aiSuggestedOutcomeRef.current, overdueState.bumpTiers) !== aiSuggestedOutcomeRef.current && (
@@ -212,7 +231,61 @@ export default function NewSymptomLogScreen() {
                   </Text>
                 </View>
               )}
-            <OutcomeDisplay result={result} />
+
+            {/* Outcome selector — patient picks the outcome that will be saved */}
+            <View style={styles.outcomeSelector}>
+              {(['normal', 'monitor', 'urgent'] as Outcome[]).map(option => {
+                const isSelected = confirmedOutcome === option;
+                const bgColor = option === 'normal' ? COLORS.statusNormalBg
+                  : option === 'monitor' ? COLORS.statusMonitorBg
+                  : COLORS.statusUrgentBg;
+                const borderColor = option === 'normal' ? COLORS.statusNormal
+                  : option === 'monitor' ? COLORS.statusMonitor
+                  : COLORS.statusUrgent;
+                const textColor = option === 'normal' ? COLORS.statusNormalText
+                  : option === 'monitor' ? COLORS.statusMonitorText
+                  : COLORS.statusUrgentText;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={[
+                      styles.outcomeSelectorOption,
+                      { backgroundColor: isSelected ? bgColor : COLORS.white, borderColor },
+                      isSelected && styles.outcomeSelectorOptionSelected,
+                    ]}
+                    onPress={() => setConfirmedOutcome(option)}
+                    activeOpacity={0.75}
+                  >
+                    {isSelected && (
+                      <Feather name="check" size={14} color={borderColor} style={{ marginRight: 4 }} />
+                    )}
+                    <Text style={[styles.outcomeSelectorLabel, { color: isSelected ? textColor : COLORS.textSecondary }]}>
+                      {t(`status.${option}` as TranslationKey)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Button
+              label={t('common.confirm')}
+              onPress={handleConfirm}
+              isLoading={saving}
+              style={{ marginTop: SPACING.lg }}
+            />
+            <Button
+              label={t('common.back')}
+              onPress={() => setStep('severity')}
+              variant="outline"
+              style={{ marginTop: SPACING.sm }}
+            />
+          </>
+        )}
+
+        {step === 'result' && result && (
+          <>
+            <Text style={styles.stepTitle}>{t('symptoms.result')}</Text>
+            <OutcomeDisplay result={{ ...result, outcome: confirmedOutcome }} />
             <Button
               label={t('common.done')}
               onPress={() => navigation.goBack()}
@@ -316,4 +389,34 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   bumpNoteText: { flex: 1, fontSize: 12, color: COLORS.text, lineHeight: 17 },
+  outcomeSelector: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
+  },
+  outcomeSelectorOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm + 2,
+    paddingHorizontal: SPACING.xs,
+    borderRadius: RADIUS.md,
+    borderWidth: 2,
+  },
+  outcomeSelectorOptionSelected: {
+    // extra visual emphasis on the selected option
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  outcomeSelectorLabel: {
+    ...TYPOGRAPHY.bodySmall,
+    fontWeight: '700',
+    textAlign: 'center',
+    flexShrink: 1,
+  },
 });
