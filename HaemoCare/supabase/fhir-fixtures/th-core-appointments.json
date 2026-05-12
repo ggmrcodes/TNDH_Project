@@ -1,0 +1,113 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "request": { "method": "PUT", "url": "Appointment/haemocare-demo-1" },
+      "resource": {
+        "resourceType": "Appointment",
+        "id": "haemocare-demo-1",
+        "meta": {
+          "profile": [
+            "https://fhir-ig.sil-th.org/build/core/StructureDefinition/TH-Core-Appointment"
+          ]
+        },
+        "status": "booked",
+        "serviceType": [{ "text": "Blood transfusion follow-up" }],
+        "description": "Monthly transfusion appointment",
+        "comment": "Please arrive 30 minutes early for pre-transfusion blood work.",
+        "start": "2026-05-07T02:00:00Z",
+        "end": "2026-05-07T03:00:00Z",
+        "participant": [
+          {
+            "actor": {
+              "reference": "Patient/haemocare-mock-patient",
+              "display": "Mock Patient"
+            },
+            "status": "accepted"
+          },
+          {
+            "actor": {
+              "reference": "Organization/thammasat-chalermprakiat",
+              "display": "โรงพยาบาลธรรมศาสตร์เฉลิมพระเกียรติ"
+            },
+            "status": "accepted"
+          },
+          {
+            "actor": {
+              "reference": "Practitioner/dr-pranee",
+              "display": "Dr. Pranee Suksawat, Hematology"
+            },
+            "status": "accepted"
+          }
+        ]
+      }
+    },
+    {
+      "request": { "method": "PUT", "url": "Appointment/haemocare-demo-2" },
+      "resource": {
+        "resourceType": "Appointment",
+        "id": "haemocare-demo-2",
+        "meta": {
+          "profile": [
+            "https://fhir-ig.sil-th.org/build/core/StructureDefinition/TH-Core-Appointment"
+          ]
+        },
+        "status": "booked",
+        "serviceType": [{ "text": "Iron chelation therapy review" }],
+        "description": "Review ferritin trend, discuss chelation dose adjustment",
+        "start": "2026-05-21T06:00:00Z",
+        "end": "2026-05-21T07:00:00Z",
+        "participant": [
+          {
+            "actor": {
+              "reference": "Patient/haemocare-mock-patient",
+              "display": "Mock Patient"
+            },
+            "status": "accepted"
+          },
+          {
+            "actor": {
+              "reference": "Organization/thammasat-chalermprakiat",
+              "display": "โรงพยาบาลธรรมศาสตร์เฉลิมพระเกียรติ"
+            },
+            "status": "accepted"
+          }
+        ]
+      }
+    },
+    {
+      "request": { "method": "PUT", "url": "Appointment/haemocare-demo-3" },
+      "resource": {
+        "resourceType": "Appointment",
+        "id": "haemocare-demo-3",
+        "meta": {
+          "profile": [
+            "https://fhir-ig.sil-th.org/build/core/StructureDefinition/TH-Core-Appointment"
+          ]
+        },
+        "status": "booked",
+        "serviceType": [{ "text": "Hematology follow-up" }],
+        "description": "Six-month follow-up with hematologist",
+        "start": "2026-06-11T03:30:00Z",
+        "end": "2026-06-11T04:00:00Z",
+        "participant": [
+          {
+            "actor": {
+              "reference": "Patient/haemocare-mock-patient",
+              "display": "Mock Patient"
+            },
+            "status": "accepted"
+          },
+          {
+            "actor": {
+              "reference": "Organization/bumrungrad-international",
+              "display": "Bumrungrad International Hospital"
+            },
+            "status": "accepted"
+          }
+        ]
+      }
+    }
+  ]
+}

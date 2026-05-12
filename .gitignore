@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Claude Code / Superpowers agent state — local-only
+.claude/
+.superpowers/
+
+# Defensive: any node_modules anywhere in the tree
+**/node_modules/
+
+# OS / editor cruft
+*.swp
+Thumbs.db

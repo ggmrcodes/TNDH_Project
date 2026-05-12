@@ -1,0 +1,150 @@
+-- HaemoCare Database Schema
+-- Run this in Supabase SQL Editor
+
+create extension if not exists "uuid-ossp";
+
+-- ============================================
+-- PROFILES
+-- ============================================
+create table public.profiles (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null unique,
+  patient_id text unique,
+  full_name text not null default '',
+  blood_type text default '' check (blood_type in ('A', 'B', 'AB', 'O', '')),
+  rh_factor text default '' check (rh_factor in ('+', '-', '')),
+  antibodies text[] default '{}',
+  known_reactions text default '',
+  medications text default '',
+  language_preference text default 'th' check (language_preference in ('th', 'en')),
+  pdpa_consented boolean default false,
+  pdpa_consented_at timestamptz,
+  share_full_name boolean default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- ============================================
+-- TRANSFUSIONS
+-- ============================================
+create table public.transfusions (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  date timestamptz not null,
+  hospital text not null default '',
+  units_received integer not null default 1,
+  reaction_noted boolean default false,
+  reaction_detail text default '',
+  notes text default '',
+  created_at timestamptz default now()
+);
+
+-- ============================================
+-- SYMPTOM LOGS
+-- ============================================
+create table public.symptom_logs (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  transfusion_id uuid references public.transfusions(id) on delete set null,
+  logged_at timestamptz default now(),
+  symptoms jsonb not null default '[]',
+  severity_scores jsonb not null default '{}',
+  outcome text default 'normal' check (outcome in ('normal', 'monitor', 'urgent')),
+  notes text default '',
+  created_at timestamptz default now()
+);
+
+-- ============================================
+-- APPOINTMENTS
+-- ============================================
+create table public.appointments (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  scheduled_date timestamptz not null,
+  hospital text not null default '',
+  notes text default '',
+  linked_transfusion_id uuid references public.transfusions(id) on delete set null,
+  -- Integration fields: where this appointment came from
+  source text not null default 'manual',          -- 'manual' | 'ics_import' | 'fhir_th_core' | 'mor_prom' | 'hospital_api'
+  external_id text,                               -- ICS UID or FHIR Appointment.id
+  external_source_name text,                      -- human label, e.g. 'TH Core FHIR sandbox'
+  created_at timestamptz default now()
+);
+
+-- Dedup guard for imported appointments: (user, source, external_id) uniqueness.
+-- NULL external_id (manual entries) are not subject to this constraint.
+create unique index idx_appointments_external
+  on public.appointments(user_id, source, external_id)
+  where external_id is not null;
+
+-- ============================================
+-- INDEXES
+-- ============================================
+create index idx_transfusions_user_date on public.transfusions(user_id, date desc);
+create index idx_symptom_logs_user on public.symptom_logs(user_id, logged_at desc);
+create index idx_symptom_logs_transfusion on public.symptom_logs(transfusion_id);
+create index idx_appointments_user_date on public.appointments(user_id, scheduled_date desc);
+
+-- ============================================
+-- UPDATED_AT TRIGGER
+-- ============================================
+create or replace function update_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger profiles_updated_at
+  before update on public.profiles
+  for each row execute function update_updated_at();
+
+-- ============================================
+-- AUTO-GENERATE PATIENT ID
+-- ============================================
+create or replace function generate_patient_id()
+returns trigger as $$
+begin
+  if new.patient_id is null then
+    new.patient_id := 'HC-' || lpad(floor(random() * 999999 + 1)::text, 6, '0');
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger profiles_generate_patient_id
+  before insert on public.profiles
+  for each row execute function generate_patient_id();
+
+-- ============================================
+-- ROW LEVEL SECURITY
+-- ============================================
+alter table public.profiles enable row level security;
+alter table public.transfusions enable row level security;
+alter table public.symptom_logs enable row level security;
+alter table public.appointments enable row level security;
+
+-- Profiles
+create policy "Users can view own profile" on public.profiles for select using (auth.uid() = user_id);
+create policy "Users can insert own profile" on public.profiles for insert with check (auth.uid() = user_id);
+create policy "Users can update own profile" on public.profiles for update using (auth.uid() = user_id);
+create policy "Users can delete own profile" on public.profiles for delete using (auth.uid() = user_id);
+
+-- Transfusions
+create policy "Users can view own transfusions" on public.transfusions for select using (auth.uid() = user_id);
+create policy "Users can insert own transfusions" on public.transfusions for insert with check (auth.uid() = user_id);
+create policy "Users can update own transfusions" on public.transfusions for update using (auth.uid() = user_id);
+create policy "Users can delete own transfusions" on public.transfusions for delete using (auth.uid() = user_id);
+
+-- Symptom logs
+create policy "Users can view own symptom_logs" on public.symptom_logs for select using (auth.uid() = user_id);
+create policy "Users can insert own symptom_logs" on public.symptom_logs for insert with check (auth.uid() = user_id);
+create policy "Users can update own symptom_logs" on public.symptom_logs for update using (auth.uid() = user_id);
+create policy "Users can delete own symptom_logs" on public.symptom_logs for delete using (auth.uid() = user_id);
+
+-- Appointments
+create policy "Users can view own appointments" on public.appointments for select using (auth.uid() = user_id);
+create policy "Users can insert own appointments" on public.appointments for insert with check (auth.uid() = user_id);
+create policy "Users can update own appointments" on public.appointments for update using (auth.uid() = user_id);
+create policy "Users can delete own appointments" on public.appointments for delete using (auth.uid() = user_id);
