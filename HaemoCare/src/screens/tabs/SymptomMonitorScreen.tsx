@@ -17,6 +17,8 @@ import { SymptomLog, Transfusion, Outcome } from '../../types/database';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import ResponsiveContainer from '../../components/common/ResponsiveContainer';
 import EmptyState from '../../components/common/EmptyState';
+import OverdueBanner from '../../components/common/OverdueBanner';
+import { useOverdueState } from '../../hooks/useOverdueState';
 import { TranslationKey } from '../../i18n';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
@@ -57,12 +59,14 @@ export default function SymptomMonitorScreen() {
   const { user, isMockMode } = useAuth();
   const { t, language } = useLanguage();
   const { isMobile, isDesktop } = useResponsive();
+  const { overdueState, refresh: refreshOverdue } = useOverdueState();
   const [logs, setLogs] = useState<SymptomLog[]>([]);
   const [latestTx, setLatestTx] = useState<Transfusion | null>(null);
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
+      refreshOverdue();
       if (!user) return;
       let cancelled = false;
       (async () => {
@@ -73,7 +77,7 @@ export default function SymptomMonitorScreen() {
         if (!cancelled) { setLogs(logsData); setLatestTx(tx); setLoading(false); }
       })();
       return () => { cancelled = true; };
-    }, [user, isMockMode])
+    }, [user, isMockMode, refreshOverdue])
   );
 
   const overallStatus = useMemo((): Outcome => {
@@ -131,6 +135,13 @@ export default function SymptomMonitorScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <>
+              {overdueState?.isOverdue && (
+                <OverdueBanner
+                  daysOverdue={overdueState.daysOverdue}
+                  variant="monitor"
+                  onPressCta={() => navigation.navigate('Appointments' as never)}
+                />
+              )}
               <View style={isDesktop ? styles.topRowDesktop : undefined}>
                 {/* Health Status Card */}
                 <View style={[styles.statusCard, isDesktop && styles.statusCardDesktop]}>
