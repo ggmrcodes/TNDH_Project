@@ -13,6 +13,8 @@ import * as mockServices from '../../mock/services';
 import { Appointment } from '../../types/database';
 import { formatDate, formatDateTime, daysUntil } from '../../utils/dateHelpers';
 import LanguageToggle from '../../components/common/LanguageToggle';
+import OverdueBanner from '../../components/common/OverdueBanner';
+import { useOverdueState } from '../../hooks/useOverdueState';
 import ResponsiveContainer from '../../components/common/ResponsiveContainer';
 import EmptyState from '../../components/common/EmptyState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
@@ -25,8 +27,11 @@ export default function AppointmentsScreen() {
   const [upcoming, setUpcoming] = useState<Appointment[]>([]);
   const [past, setPast] = useState<Appointment[]>([]);
 
+  const { overdueState, refresh: refreshOverdue } = useOverdueState();
+
   useFocusEffect(
     useCallback(() => {
+      refreshOverdue();
       if (!user) return;
       let cancelled = false;
       (async () => {
@@ -36,7 +41,7 @@ export default function AppointmentsScreen() {
         if (!cancelled) { setUpcoming(u); setPast(p); }
       })();
       return () => { cancelled = true; };
-    }, [user, isMockMode])
+    }, [user, isMockMode, refreshOverdue])
   );
 
   const nextAppt = upcoming[0];
@@ -104,6 +109,13 @@ export default function AppointmentsScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <>
+              {overdueState?.isOverdue && (
+                <OverdueBanner
+                  daysOverdue={overdueState.daysOverdue}
+                  variant="appointments"
+                  onPressCta={() => navigation.navigate('AddAppointment')}
+                />
+              )}
               {nextAppt && (
                 <View style={[styles.heroCard, isDesktop && styles.heroCardDesktop]}>
                   <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
