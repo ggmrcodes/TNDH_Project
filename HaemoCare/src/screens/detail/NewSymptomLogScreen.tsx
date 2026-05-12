@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, TextInput, StyleSheet, SafeAreaView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -11,13 +11,15 @@ import { triageSymptoms, TriageResult } from '../../analytics';
 import * as realSymptomService from '../../services/symptomService';
 import * as realTransfusionService from '../../services/transfusionService';
 import * as mockServices from '../../mock/services';
-import { SymptomLog, Transfusion } from '../../types/database';
+import { Outcome, SymptomLog, Transfusion } from '../../types/database';
 import SymptomChecklist from '../../components/symptoms/SymptomChecklist';
 import SeveritySlider from '../../components/common/SeveritySlider';
 import OutcomeDisplay from '../../components/symptoms/OutcomeDisplay';
 import Button from '../../components/common/Button';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
 import { TranslationKey } from '../../i18n';
+import { useOverdueState } from '../../hooks/useOverdueState';
+import { applyBump } from '../../utils/overdueVisit';
 
 type RouteProps = RouteProp<RootStackParamList, 'NewSymptomLog'>;
 
@@ -31,6 +33,12 @@ export default function NewSymptomLogScreen() {
 
   const { isMobile } = useResponsive();
   const transfusionId = route.params?.transfusionId;
+
+  const { overdueState } = useOverdueState();
+  // Remembers the raw AI-suggested outcome before any overdue bump is applied.
+  // Set once in handleSubmit; never reset by user interaction so the bump
+  // explanation always shows the original suggestion as the "from" value.
+  const aiSuggestedOutcomeRef = useRef<Outcome | null>(null);
 
   const [step, setStep] = useState<Step>('select');
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -94,7 +102,18 @@ export default function NewSymptomLogScreen() {
 
   const handleSubmit = async () => {
     const evaluation = evaluateSymptoms(severityScores);
-    setResult(evaluation);
+
+    // Record the AI-suggested outcome before any overdue bump.
+    // This is the stable "from" value used in the bump explanation copy.
+    const aiSuggested = evaluation.outcome;
+    aiSuggestedOutcomeRef.current = aiSuggested;
+
+    // Apply overdue bump to the saved outcome and the displayed result.
+    const bumpTiers = overdueState?.isOverdue ? overdueState.bumpTiers : 0;
+    const bumpedOutcome = applyBump(aiSuggested, bumpTiers);
+    const bumpedEvaluation: ThresholdResult = { ...evaluation, outcome: bumpedOutcome };
+
+    setResult(bumpedEvaluation);
 
     if (!user) return;
     setSaving(true);
@@ -103,7 +122,7 @@ export default function NewSymptomLogScreen() {
         transfusion_id: transfusionId || null,
         symptoms: selectedSymptoms,
         severity_scores: severityScores,
-        outcome: evaluation.outcome,
+        outcome: bumpedOutcome,
         notes,
       };
       if (isMockMode) {
@@ -179,6 +198,20 @@ export default function NewSymptomLogScreen() {
         {step === 'result' && result && (
           <>
             <Text style={styles.stepTitle}>{t('symptoms.result')}</Text>
+            {overdueState?.isOverdue &&
+              aiSuggestedOutcomeRef.current !== null &&
+              applyBump(aiSuggestedOutcomeRef.current, overdueState.bumpTiers) !== aiSuggestedOutcomeRef.current && (
+                <View style={styles.bumpNote}>
+                  <Feather name="alert-triangle" size={16} color={COLORS.statusUrgent as string} />
+                  <Text style={styles.bumpNoteText}>
+                    {t('overdue.bumpExplanation' as TranslationKey, {
+                      days: overdueState.daysOverdue,
+                      from: t(`status.${aiSuggestedOutcomeRef.current}` as TranslationKey),
+                      to: t(`status.${applyBump(aiSuggestedOutcomeRef.current, overdueState.bumpTiers)}` as TranslationKey),
+                    })}
+                  </Text>
+                </View>
+              )}
             <OutcomeDisplay result={result} />
             <Button
               label={t('common.done')}
@@ -271,4 +304,16 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  bumpNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    borderRadius: 12,
+    backgroundColor: COLORS.statusUrgentBg,
+    borderWidth: 1,
+    borderColor: COLORS.statusUrgent,
+    marginBottom: SPACING.md,
+  },
+  bumpNoteText: { flex: 1, fontSize: 12, color: COLORS.text, lineHeight: 17 },
 });
