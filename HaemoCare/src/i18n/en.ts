@@ -48,6 +48,8 @@ const en = {
   'profileSetup.knownReactions': 'Known Transfusion Reactions',
   'profileSetup.medications': 'Current Medications',
   'profileSetup.complete': 'Complete Profile',
+  'profileSetup.visitInterval': 'Days between transfusions',
+  'profileSetup.visitIntervalHint': 'Default 28 days. Used to warn when you are overdue.',
 
   // Tabs
   'tab.passport': 'Passport',
