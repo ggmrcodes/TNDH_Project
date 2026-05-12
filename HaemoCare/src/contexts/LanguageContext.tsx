@@ -6,7 +6,7 @@ import { supabase } from '../config/supabase';
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -38,8 +38,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   );
 
   const t = useCallback(
-    (key: TranslationKey): string => {
-      return translations[language][key] || key;
+    (key: TranslationKey, params?: Record<string, string | number>): string => {
+      let str = translations[language][key] || key;
+      if (params) {
+        for (const [k, v] of Object.entries(params)) {
+          str = str.replaceAll(`{${k}}`, String(v));
+        }
+      }
+      return str;
     },
     [language]
   );
