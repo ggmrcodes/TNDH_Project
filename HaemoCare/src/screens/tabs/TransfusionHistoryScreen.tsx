@@ -55,7 +55,7 @@ export default function TransfusionHistoryScreen() {
           {item.reaction_noted && (
             <View style={styles.reactionBadge}>
               <Feather name="alert-triangle" size={11} color={COLORS.statusUrgent} />
-              <Text style={styles.reactionText}>Reaction</Text>
+              <Text style={styles.reactionText}>{t('history.reaction')}</Text>
             </View>
           )}
         </View>
@@ -66,7 +66,7 @@ export default function TransfusionHistoryScreen() {
         <View style={styles.txFooter}>
           <View style={styles.unitPill}>
             <Feather name="droplet" size={12} color={COLORS.primary} />
-            <Text style={styles.unitText}>{item.units_received} Units</Text>
+            <Text style={styles.unitText}>{item.units_received} {t('history.summary.units')}</Text>
           </View>
           <Feather name="chevron-right" size={18} color={COLORS.textLight} />
         </View>
@@ -115,19 +115,19 @@ export default function TransfusionHistoryScreen() {
                 <View style={styles.statItem}>
                   <Feather name="hash" size={18} color="rgba(255,255,255,0.5)" />
                   <Text style={styles.statNumber}>{transfusions.length}</Text>
-                  <Text style={styles.statLabel}>Total</Text>
+                  <Text style={styles.statLabel}>{t('history.summary.total')}</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
                   <Feather name="droplet" size={18} color="rgba(255,255,255,0.5)" />
                   <Text style={styles.statNumber}>{totalUnits}</Text>
-                  <Text style={styles.statLabel}>Units</Text>
+                  <Text style={styles.statLabel}>{t('history.summary.units')}</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
                   <Feather name="alert-triangle" size={18} color={reactionCount > 0 ? '#FCA5A5' : 'rgba(255,255,255,0.5)'} />
                   <Text style={[styles.statNumber, reactionCount > 0 && { color: '#FCA5A5' }]}>{reactionCount}</Text>
-                  <Text style={styles.statLabel}>Reaction</Text>
+                  <Text style={styles.statLabel}>{t('history.summary.reaction')}</Text>
                 </View>
               </View>
             ) : null

@@ -204,15 +204,15 @@ export default function PassportScreen() {
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.primaryBtn} onPress={handleExportPdf} activeOpacity={0.8}>
               <Feather name="share" size={16} color={COLORS.white} />
-              <Text style={styles.primaryBtnText}>Share</Text>
+              <Text style={styles.primaryBtnText}>{t('common.share')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.outlineBtn} onPress={() => setShowQR(!showQR)} activeOpacity={0.7}>
               <Feather name="grid" size={16} color={COLORS.primary} />
-              <Text style={styles.outlineBtnText}>QR Code</Text>
+              <Text style={styles.outlineBtnText}>{t('common.qrCode')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.ghostBtn} onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.7}>
               <Feather name="edit-2" size={16} color={COLORS.textSecondary} />
-              <Text style={styles.ghostBtnText}>Edit</Text>
+              <Text style={styles.ghostBtnText}>{t('common.edit')}</Text>
             </TouchableOpacity>
           </View>
 

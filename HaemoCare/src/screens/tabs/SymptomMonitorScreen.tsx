@@ -93,7 +93,10 @@ export default function SymptomMonitorScreen() {
   }, [logs]);
 
   const cfg = OUTCOME_COLORS[overallStatus];
-  const statusLabel = overallStatus === 'urgent' ? 'Needs Attention' : overallStatus === 'monitor' ? 'Monitor Closely' : 'Overall: Normal';
+  const statusLabel =
+    overallStatus === 'urgent' ? t('symptoms.status.attention')
+    : overallStatus === 'monitor' ? t('symptoms.status.monitorClosely')
+    : t('symptoms.status.overallNormal');
   const ringPct = overallStatus === 'urgent' ? 40 : overallStatus === 'monitor' ? 65 : 85;
   const activeMonitoring = latestTx && isWithin72Hours(latestTx.date);
   const remaining = latestTx ? hoursRemaining72(latestTx.date) : 0;
@@ -114,7 +117,7 @@ export default function SymptomMonitorScreen() {
             {formatDate(item.logged_at, language)} · {sympSummary}
           </Text>
           <Text style={styles.logSub}>
-            Post-transfusion — {t(`status.${item.outcome}` as TranslationKey)}
+            {t('symptoms.postTransfusion')} — {t(`status.${item.outcome}` as TranslationKey)}
           </Text>
         </View>
         <View style={[styles.logBadge, { backgroundColor: itemCfg.bg }]}>
@@ -166,12 +169,17 @@ export default function SymptomMonitorScreen() {
                   <View style={styles.statusCol}>
                     <Text style={[styles.statusTitle, { color: cfg.color }]}>{statusLabel}</Text>
                     <Text style={styles.statusSub}>
-                      Last log {logs.length > 0 ? `${daysSince(logs[0].logged_at)}d ago` : 'never'} · {logs.length} total logs
+                      {t('symptoms.lastLog', {
+                        when: logs.length > 0
+                          ? t('symptoms.lastLog.daysAgo', { days: daysSince(logs[0].logged_at) })
+                          : t('symptoms.lastLog.never'),
+                        count: logs.length,
+                      })}
                     </Text>
                     <Text style={styles.statusDetail}>
-                      {overallStatus === 'normal' ? 'No urgent symptoms flagged' :
-                       overallStatus === 'monitor' ? 'Some symptoms need monitoring' :
-                       'Contact your care team'}
+                      {overallStatus === 'normal' ? t('status.normal.message') :
+                       overallStatus === 'monitor' ? t('status.monitor.message') :
+                       t('symptoms.contactCareTeam')}
                     </Text>
                   </View>
                 </View>
@@ -203,7 +211,7 @@ export default function SymptomMonitorScreen() {
               {logs.length > 0 && (
                 <View style={styles.sectionRow}>
                   <Feather name="list" size={14} color={COLORS.textLight} />
-                  <Text style={styles.sectionLabel}>RECENT TIMELINE</Text>
+                  <Text style={styles.sectionLabel}>{t('symptoms.recentTimeline').toUpperCase()}</Text>
                 </View>
               )}
             </>
