@@ -4,6 +4,7 @@ import type {
   Transfusion,
   SymptomLog,
   Appointment,
+  EmergencyContact,
 } from '../types/database';
 
 export const MOCK_CLINICIAN_USER_ID = 'mock-clinician-001';
@@ -26,6 +27,7 @@ export interface MockLinkedPatient {
   transfusions: Transfusion[];
   symptomLogs: SymptomLog[];
   appointments: Appointment[];
+  emergencyContacts: EmergencyContact[];
 }
 
 const today = new Date('2026-05-13T08:00:00+07:00');
@@ -63,6 +65,10 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
       { id: 's1a', user_id: 'mock-pt-001', transfusion_id: 't1a', logged_at: daysAgo(3), symptoms: ['fatigue', 'headache'], severity_scores: { fatigue: 5, headache: 4 }, outcome: 'monitor', notes: '', created_at: daysAgo(3) },
     ],
     appointments: [],
+    emergencyContacts: [
+      { id: 'ec1a', user_id: 'mock-pt-001', name: 'Wanida Panyawong', phone: '0812345678', role_label: 'Spouse', priority: 1, created_at: daysAgo(180) },
+      { id: 'ec1b', user_id: 'mock-pt-001', name: 'Dr. Suwan', phone: '0898765432', role_label: 'Hematologist', priority: 2, created_at: daysAgo(180) },
+    ],
   },
   // Patient 2: tier-1 overdue (14 days), urgent log in last 7d
   {
@@ -74,6 +80,9 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
       { id: 's2a', user_id: 'mock-pt-002', transfusion_id: 't2a', logged_at: daysAgo(2), symptoms: ['fever', 'chills', 'back_pain'], severity_scores: { fever: 8, chills: 6, back_pain: 5 }, outcome: 'urgent', notes: '', created_at: daysAgo(2) },
     ],
     appointments: [],
+    emergencyContacts: [
+      { id: 'ec2a', user_id: 'mock-pt-002', name: 'Pranee Tonsuk', phone: '0823456789', role_label: 'Mother', priority: 1, created_at: daysAgo(200) },
+    ],
   },
   // Patient 3: stable, recent appointment scheduled
   {
@@ -85,6 +94,7 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
     appointments: [
       { id: 'a3a', user_id: 'mock-pt-003', scheduled_date: daysAgo(-7), hospital: 'Songklanagarind', notes: '', linked_transfusion_id: null, source: 'manual', external_id: null, external_source_name: null, created_at: daysAgo(15) },
     ],
+    emergencyContacts: [],
   },
   // Patient 4: had a recent transfusion reaction
   {
@@ -94,6 +104,7 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
     ],
     symptomLogs: [],
     appointments: [],
+    emergencyContacts: [],
   },
   // Patient 5: stable, fully on cadence
   {
@@ -107,5 +118,6 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
     appointments: [
       { id: 'a5a', user_id: 'mock-pt-005', scheduled_date: daysAgo(-14), hospital: 'Siriraj', notes: '', linked_transfusion_id: null, source: 'manual', external_id: null, external_source_name: null, created_at: daysAgo(20) },
     ],
+    emergencyContacts: [],
   },
 ];

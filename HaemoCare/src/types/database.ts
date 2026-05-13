@@ -78,6 +78,18 @@ export interface MedicationReminder {
   updated_at: string;
 }
 
+export interface EmergencyContact {
+  id: string;
+  user_id: string;
+  name: string;
+  phone: string;
+  role_label: string;
+  priority: 1 | 2 | 3;
+  created_at: string;
+}
+
+export type EmergencyContext = 'sos' | 'urgent_symptom' | 'overdue';
+
 export type Outcome = 'normal' | 'monitor' | 'urgent';
 
 export type LinkStatus = 'pending' | 'active' | 'declined' | 'revoked' | 'expired';
