@@ -1,4 +1,16 @@
-import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder } from '../types/database';
+import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, ClinicianProfile } from '../types/database';
+import {
+  MOCK_PROFILE,
+  MOCK_TRANSFUSIONS,
+  MOCK_SYMPTOM_LOGS,
+  MOCK_APPOINTMENTS,
+  MOCK_MEDICATION_REMINDERS,
+} from './data';
+import {
+  MOCK_CLINICIAN_PROFILE,
+  MOCK_LINKED_PATIENTS,
+  type MockLinkedPatient,
+} from './clinicianData';
 
 interface AppointmentInput {
   scheduled_date: string;
@@ -9,13 +21,6 @@ interface AppointmentInput {
   external_id?: string | null;
   external_source_name?: string | null;
 }
-import {
-  MOCK_PROFILE,
-  MOCK_TRANSFUSIONS,
-  MOCK_SYMPTOM_LOGS,
-  MOCK_APPOINTMENTS,
-  MOCK_MEDICATION_REMINDERS,
-} from './data';
 
 // Mutable copies so the user can add data during the session
 let profile = { ...MOCK_PROFILE };
@@ -289,4 +294,41 @@ export async function unmarkMedicationTaken(
     return medicationReminders[idx];
   }
   throw new Error('Medication reminder not found');
+}
+
+// ── Clinician-side mock services ──────────────────────────────
+
+export async function getClinicianProfile(): Promise<ClinicianProfile | null> {
+  return MOCK_CLINICIAN_PROFILE;
+}
+
+export async function getAssignedPatients(): Promise<Profile[]> {
+  return MOCK_LINKED_PATIENTS.map(p => p.profile);
+}
+
+export async function getAssignedPatientById(userId: string): Promise<MockLinkedPatient | null> {
+  return MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId) ?? null;
+}
+
+export async function getTransfusionsForPatient(userId: string): Promise<Transfusion[]> {
+  return MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.transfusions ?? [];
+}
+
+export async function getLatestTransfusionForPatient(userId: string): Promise<Transfusion | null> {
+  const list = MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.transfusions ?? [];
+  return list[0] ?? null;
+}
+
+export async function getSymptomLogsForPatient(userId: string): Promise<SymptomLog[]> {
+  return MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.symptomLogs ?? [];
+}
+
+export async function getMostRecentPastAppointmentForPatient(
+  userId: string
+): Promise<Appointment | null> {
+  const list = MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.appointments ?? [];
+  const nowIso = new Date().toISOString();
+  const past = list.filter(a => a.scheduled_date < nowIso)
+    .sort((a, b) => (a.scheduled_date < b.scheduled_date ? 1 : -1));
+  return past[0] ?? null;
 }
