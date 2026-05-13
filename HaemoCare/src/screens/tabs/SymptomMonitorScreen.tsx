@@ -19,6 +19,8 @@ import ResponsiveContainer from '../../components/common/ResponsiveContainer';
 import EmptyState from '../../components/common/EmptyState';
 import OverdueBanner from '../../components/common/OverdueBanner';
 import { useOverdueState } from '../../hooks/useOverdueState';
+import EmergencyContactSheet from '../../components/emergency/EmergencyContactSheet';
+import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
 import { TranslationKey } from '../../i18n';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
@@ -56,10 +58,12 @@ function HealthRing({ percentage, color, gradientColors }: { percentage: number;
 
 export default function SymptomMonitorScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { user, isMockMode } = useAuth();
+  const { user, isMockMode, profile } = useAuth();
   const { t, language } = useLanguage();
   const { isMobile, isDesktop } = useResponsive();
   const { overdueState, refresh: refreshOverdue } = useOverdueState();
+  const { contacts } = useEmergencyContacts();
+  const [notifySheetVisible, setNotifySheetVisible] = useState(false);
   const [logs, setLogs] = useState<SymptomLog[]>([]);
   const [latestTx, setLatestTx] = useState<Transfusion | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,8 +144,21 @@ export default function SymptomMonitorScreen() {
                   daysOverdue={overdueState.daysOverdue}
                   variant="monitor"
                   onPressCta={() => navigation.navigate('AddAppointment')}
+                  onPressNotify={
+                    overdueState.bumpTiers === 2 && contacts.length > 0
+                      ? () => setNotifySheetVisible(true)
+                      : undefined
+                  }
                 />
               )}
+              <EmergencyContactSheet
+                visible={notifySheetVisible}
+                onClose={() => setNotifySheetVisible(false)}
+                contacts={contacts}
+                context="overdue"
+                patientName={profile?.full_name?.trim() || profile?.patient_id || ''}
+                daysOverdue={overdueState?.isOverdue ? overdueState.daysOverdue : undefined}
+              />
               <View style={isDesktop ? styles.topRowDesktop : undefined}>
                 {/* Health Status Card */}
                 <View style={[styles.statusCard, isDesktop && styles.statusCardDesktop]}>
