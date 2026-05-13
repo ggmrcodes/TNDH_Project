@@ -20,13 +20,14 @@ import ScanTransfusionScreen from '../screens/detail/ScanTransfusionScreen';
 import ImportAppointmentsScreen from '../screens/detail/ImportAppointmentsScreen';
 import IcsImportScreen from '../screens/detail/IcsImportScreen';
 import FhirImportScreen from '../screens/detail/FhirImportScreen';
+import ClinicianStackNavigator from './ClinicianStackNavigator';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { COLORS } from '../config/theme';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { user, isLoading, isProfileComplete, isPdpaConsented } = useAuth();
+  const { user, isLoading, isProfileComplete, isPdpaConsented, role } = useAuth();
   const { t } = useLanguage();
 
   if (isLoading) {
@@ -35,6 +36,10 @@ export default function AppNavigator() {
 
   if (!user) {
     return <AuthNavigator />;
+  }
+
+  if (role === 'clinician') {
+    return <ClinicianStackNavigator />;
   }
 
   // Show PDPA consent screen before profile completion

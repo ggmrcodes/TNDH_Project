@@ -293,6 +293,19 @@ const th: Record<TranslationKey, string> = {
   'importAppt.ics.eventFound': 'รายการ',
   'importAppt.ics.eventsFound': 'รายการ',
   'importAppt.ics.saveSelected': 'นำเข้าที่เลือก',
+
+  // Clinician dashboard
+  'clinician.dashboard.title': 'แดชบอร์ดแพทย์',
+  'clinician.cohort.overdue': 'เลยกำหนด',
+  'clinician.cohort.monitor': 'เฝ้าระวัง',
+  'clinician.cohort.stable': 'ปกติ',
+  'clinician.filter.overdue': 'เลยกำหนด',
+  'clinician.filter.recentUrgent': 'อาการรุนแรงใน 14 วัน',
+  'clinician.filter.hasReactions': 'มีประวัติแพ้',
+  'clinician.queue.empty': 'ยังไม่มีผู้ป่วยที่ได้รับมอบหมาย',
+  'clinician.detail.empty': 'เลือกผู้ป่วย',
+  'clinician.detail.reactionOnFile': 'มีอาการแพ้ในการให้เลือดครั้งล่าสุด',
+  'clinician.signOut': 'ออกจากระบบ',
 };
 
 export default th;

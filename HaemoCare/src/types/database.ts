@@ -79,3 +79,27 @@ export interface MedicationReminder {
 }
 
 export type Outcome = 'normal' | 'monitor' | 'urgent';
+
+export type LinkStatus = 'pending' | 'active' | 'declined' | 'revoked' | 'expired';
+
+export interface ClinicianProfile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  license_number: string;
+  hospital_affiliation: string;
+  verified: boolean;
+  verified_at: string | null;
+  created_at: string;
+}
+
+export interface ClinicianPatientLink {
+  id: string;
+  clinician_id: string;
+  patient_user_id: string;
+  status: LinkStatus;
+  requested_at: string;
+  consented_at: string | null;
+  revoked_at: string | null;
+  share_full_name: boolean;
+}
