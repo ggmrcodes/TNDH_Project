@@ -16,12 +16,14 @@ import * as realApptService from '../../services/appointmentService';
 import * as realSymptomService from '../../services/symptomService';
 import { Transfusion, SymptomLog } from '../../types/database';
 import QRCodeView from '../../components/passport/QRCodeView';
+import UpdateBanner from '../../components/common/UpdateBanner';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import EmergencySosButton from '../../components/emergency/EmergencySosButton';
 import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
 import ResponsiveContainer from '../../components/common/ResponsiveContainer';
 import TodayMedicationWidget from '../../components/medications/TodayMedicationWidget';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import { useNativeUpdateCheck } from '../../hooks/useNativeUpdateCheck';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
 function GradientBackground({ width, height, borderRadius }: { width: number | string; height: number | string; borderRadius?: number }) {
@@ -45,6 +47,7 @@ export default function PassportScreen() {
   const { t, language } = useLanguage();
   const { isMobile, isDesktop } = useResponsive();
   const { contacts } = useEmergencyContacts();
+  const { status: updateStatus } = useNativeUpdateCheck();
   const [showQR, setShowQR] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [txCount, setTxCount] = useState(0);
@@ -96,6 +99,7 @@ export default function PassportScreen() {
           <LanguageToggle />
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <UpdateBanner status={updateStatus} />
           {/* Hero Card with SVG gradient */}
           <View style={[styles.hero, isDesktop && styles.heroDesktop]}>
             <GradientBackground width="100%" height="100%" borderRadius={isDesktop ? 24 : 0} />
