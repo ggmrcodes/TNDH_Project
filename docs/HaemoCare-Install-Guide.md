@@ -157,7 +157,7 @@ This guide walks you, the staff member, through helping a patient install HaemoC
 ## Before the patient arrives
 
 <ol class="checklist">
-  <li><strong>Get the install link or QR code</strong> for the current HaemoCare preview build. It comes from the Expo EAS internal distribution page and looks like <code>https://expo.dev/accounts/.../builds/...</code>. Open it once on your own device first to confirm it loads.</li>
+  <li><strong>Print the install-QR handout</strong> (shown below) or have it open on your own phone. The QR points to the latest HaemoCare release on GitHub, where the APK is attached. The same QR keeps working when new versions ship, so a sheet printed today is still valid next month.</li>
   <li><strong>Have the patient's email and phone number on hand</strong> (in case you need to reach them).</li>
   <li><strong>Find a quiet spot with reliable Wi-Fi.</strong> The APK is roughly 60 to 80 MB.</li>
   <li><strong>Block five to ten minutes</strong> of uninterrupted time.</li>
@@ -166,6 +166,21 @@ This guide walks you, the staff member, through helping a patient install HaemoC
 <div class="callout tip">
   <span class="label">Tip</span>
   <p style="margin:0">Ask the patient to charge their phone above 30% before the session, and to connect to your facility's Wi-Fi when they arrive.</p>
+</div>
+
+### The install QR code
+
+<div style="text-align:center; margin: 1.5em 0;">
+  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAlgAAAJYAQMAAACEqAqfAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAADG0lEQVR4nO3dMW7zMAyGYRkdMuYIOYqPFh3NR/ERMmYIqj+SSIq0EzQ/0KGA328oVCV62oklaLVN6Y9mLjF996su5nKri5p7mnTxzLWsz4/T5uQDCwsLC6tZt2T5CpbErJwu/VRu+5MuWi5YWFhYWGZJIb6N0hz1WUtzzbe+FHUsLCwsrPeWxdDTjthWbSwsLCysH6wwU2il+ToWa/qvGo2FhYV1MMsSe99Z9df5ZD6BhYWFdUQrxhFuYZ1uXIRgYWFhYVVrH9OXsXPXQuxmtZ8ECwsL63hWGByU3umea73tlvS+pzFKsPganbGwsLCwbCAgJ2usfbWhrW9or+09flZbnotTP7piYWFhYe2tluW5ExfF975FH3199527olhYWFhY1ZqLFeJ9y3seNTp2us6SnYSFhYWFlVzcO5dRteOdrQ3qb3FV9IGFhYWF1Swrza4iJ7WSVm0hWhNsM4WcbIxbsLCwsLBKv7P15uarsyRZJwhZW94em95iYWFhYfXEJ15usa/RruX1yfYtYGFhYR3dmvsndXnui1nfsPQv44g1pVGjPZrbTAELCwsL6/etfZn/2uj3Tb1f9SeA3P8a9R4LCwsLS7LoyTAJlrj7X/L0TAbARb/MioWFhYVls1pJJPqOt676WU6pl+bid7CwsLCwNDI4cH8GJuljNNFPoeXtls0Uts/TsLCwsA5tzf2MmylIsbZFfVlqtPttWjdKmHZzXywsLKxDW7dNjZaEm7Zy8qLDBanRfbjg5hNYWFhYWOGJ12PT8krm9zX6UoruYGFhYWGplfSkXbBtsR2ryDV2ycAixfqBhYWFhaWtbcg83mXTW2twbUQrTbD0vvmFg4WFhXVMy51sqXvn0Pv2Z2DFzRS6NenO/v4XFhYW1qGtV//P0E9vS3EV2RJ3su+jsbCwsA5vxWdgc9lm8S3vFEa0NfISFhYWFtY7y6a31gTHUcJViTR6XywsLCysj6wWsexkbm2vjRIsWFhYWFiv5qtJfyd2LpbtBCEN3XawsLCwsLoV43b2NbrGHn2lfjs2jQUWFhYW1u9afzT/ANKzU55T7gQlAAAAAElFTkSuQmCC" alt="HaemoCare install QR code" style="width: 220px; height: 220px; border: 1px solid #E5E7EB; border-radius: 8px; padding: 12px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.06);" />
+  <div style="margin-top: 10px; font-size: 12px; color: #475569;">
+    Scan with the patient's Android camera<br/>
+    <span style="font-family: ui-monospace, monospace; font-size: 11px; color: #64748B;">github.com/ggmrcodes/TNDH_Project/releases/latest</span>
+  </div>
+</div>
+
+<div class="callout staff">
+  <span class="label">Source file</span>
+  <p style="margin:0">The master QR lives at <code>HaemoCare/assets/handout/qr-install.png</code> (600×600 PNG, B/W). To regenerate or point it at a different mirror (e.g. a hospital intranet), run <code>bash scripts/regenerate-qr.sh</code> with the <code>REGENERATE_QR_URL</code> environment variable set.</p>
 </div>
 
 ## Things to tell the patient up front
@@ -192,33 +207,41 @@ Confirm all of the following on the patient's phone:
   <p style="margin:0">Android version is below 8.0. Flag your team lead, do not proceed.</p>
 </div>
 
-## Step 2 — Open the install link
+## Step 2 — Scan the QR code
 
-<div class="step"><span class="num">2</span><span class="title">Open the install link or scan the QR code</span></div>
+<div class="step"><span class="num">2</span><span class="title">Scan the install QR with the patient's camera</span></div>
 
-Hand the patient your phone or the printed sheet with the QR code. Two ways in:
+Hold up the printed QR sheet (or your phone showing it). Have the patient:
 
-- **Tap a link** sent via SMS, LINE, or email.
-- **Scan a QR code** with the phone's camera app, then tap the popup link.
+1. Open the **Camera** app on their Android phone.
+2. Point it at the QR code, hold steady for a second.
+3. Tap the link popup that appears at the bottom of the camera screen.
 
-The link opens in **Chrome** (or Samsung Internet). The page shows *HaemoCare*, the app icon, and a green **Install** button.
+The link opens **GitHub** in Chrome (or Samsung Internet) and lands on the **latest HaemoCare release** page. The page lists the release notes at the top and the downloadable files lower down.
+
+<div class="callout tip">
+  <span class="label">No camera popup?</span>
+  <p style="margin:0">Some older camera apps don't auto-detect QR codes. Open the <strong>Google Lens</strong> shortcut from the camera, or download <strong>Google Lens</strong> from Play Store. Lens reads any QR and offers the link.</p>
+</div>
 
 <div class="callout tip">
   <span class="label">If the page doesn't load</span>
-  <p style="margin:0">Check Wi-Fi. Open <code>google.com</code> to confirm internet is working. Try the link again.</p>
+  <p style="margin:0">Check Wi-Fi. Open <code>google.com</code> first to confirm internet is working, then try scanning again.</p>
 </div>
 
 ## Step 3 — Download the APK
 
-<div class="step"><span class="num">3</span><span class="title">Download the APK file</span></div>
+<div class="step"><span class="num">3</span><span class="title">Tap the APK on the release page</span></div>
 
-The patient taps **Install** on the Expo page. Chrome downloads <code>haemocare.apk</code>. A small progress notification appears at the top.
+On the GitHub release page, scroll down to the **Assets** section. The patient taps the file ending in <code>.apk</code> (it will be named something like <code>haemocare-v1.0.0.apk</code>).
+
+Chrome starts downloading the file. A small progress notification appears at the top of the screen.
 
 Chrome will likely show:
 
 > *"This type of file can harm your device. Do you want to keep haemocare.apk anyway?"*
 
-This is a generic warning for any APK from outside Play Store. The patient taps **Keep** (or **Download anyway**).
+This is a generic warning for any APK downloaded outside Play Store. The patient taps **Keep** (or **Download anyway**).
 
 Wait 30 to 90 seconds for the download to finish.
 
@@ -354,8 +377,13 @@ Then find **Privacy Settings** from the Passport tab. Show the patient where **E
 ## Common issues and how to handle them
 
 <div class="callout warn">
-  <span class="label">"The Expo link won't load"</span>
-  <p style="margin:0">Check Wi-Fi. Try opening any other website. If Wi-Fi is the issue, ask if the patient is comfortable using mobile data for the install (60 to 80 MB). Otherwise reschedule.</p>
+  <span class="label">"The camera won't scan the QR code"</span>
+  <p style="margin:0">Some older camera apps don't auto-detect QR. Install <strong>Google Lens</strong> from Play Store, point Lens at the QR. As a fallback, type the URL manually into the browser: <code>github.com/ggmrcodes/TNDH_Project/releases/latest</code>.</p>
+</div>
+
+<div class="callout warn">
+  <span class="label">"The GitHub page won't load"</span>
+  <p style="margin:0">Check Wi-Fi. Open <code>google.com</code> first to confirm internet is working. If Wi-Fi is the issue, ask whether the patient is comfortable using mobile data for the install (60 to 80 MB). Otherwise reschedule.</p>
 </div>
 
 <div class="callout warn">
@@ -420,8 +448,8 @@ Print this page. Use it as a single-page reference at the patient's side.
 
 <ol class="checklist">
   <li>Wi-Fi connected, Android 8+, 200 MB free.</li>
-  <li>Open the install link or scan the QR code.</li>
-  <li>Tap <strong>Install</strong> on the Expo page; tap <strong>Keep</strong> if Chrome warns.</li>
+  <li><strong>Scan the QR code</strong> with the patient's camera — opens the GitHub releases page.</li>
+  <li>Tap the <strong>.apk</strong> file under <strong>Assets</strong>; tap <strong>Keep</strong> if Chrome warns.</li>
   <li>Tap the downloaded APK from notifications or Files.</li>
   <li>Allow install from this source: <strong>Settings → toggle ON → back</strong>.</li>
   <li>Tap <strong>Install</strong>; tap <strong>Install anyway</strong> if Play Protect prompts.</li>
