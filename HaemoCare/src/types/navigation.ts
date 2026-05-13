@@ -12,6 +12,10 @@ export type MainTabParamList = {
   TransfusionHistory: undefined;
 };
 
+export type ClinicianStackParamList = {
+  ClinicianDashboard: undefined;
+};
+
 export type RootStackParamList = {
   MainTabs: undefined;
   TransfusionDetail: { transfusionId: string };
