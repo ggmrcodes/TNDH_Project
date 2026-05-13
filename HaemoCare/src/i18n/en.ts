@@ -21,6 +21,7 @@ const en = {
   'common.close': 'Close',
   'common.confirm': 'Confirm',
   'common.required': 'Required',
+  'common.qrCode': 'QR Code',
 
   // Auth
   'auth.login': 'Sign In',
@@ -94,6 +95,15 @@ const en = {
   'symptoms.submit': 'Submit Log',
   'symptoms.notes': 'Additional notes',
   'symptoms.severity': 'Severity',
+  'symptoms.status.attention': 'Needs Attention',
+  'symptoms.status.monitorClosely': 'Monitor Closely',
+  'symptoms.status.overallNormal': 'Overall: Normal',
+  'symptoms.lastLog': 'Last log {when} · {count} total logs',
+  'symptoms.lastLog.daysAgo': '{days}d ago',
+  'symptoms.lastLog.never': 'never',
+  'symptoms.contactCareTeam': 'Contact your care team',
+  'symptoms.recentTimeline': 'Recent Timeline',
+  'symptoms.postTransfusion': 'Post-transfusion',
 
   // Symptom names
   'symptom.fever': 'Fever',
@@ -132,6 +142,10 @@ const en = {
   'appointments.symptomSummary': 'Symptom Summary',
   'appointments.totalLogs': 'Total Logs',
   'appointments.flaggedSymptoms': 'Flagged Symptoms',
+  'appointments.next': 'Next: {date}',
+  'appointments.nextVisit': 'Next visit',
+  'appointments.daysAway': '{days} days away',
+  'appointments.scheduleNew': 'Schedule New Appointment',
 
   // Transfusion History
   'history.title': 'Transfusion History',
@@ -145,6 +159,9 @@ const en = {
   'history.details': 'Details',
   'history.notes': 'Notes',
   'history.linkedLogs': 'Related Symptom Logs',
+  'history.summary.total': 'Total',
+  'history.summary.units': 'Units',
+  'history.summary.reaction': 'Reaction',
 
   // PDPA & Privacy
   'pdpa.title': 'Data Privacy Consent',
@@ -387,6 +404,10 @@ const en = {
   'clinician.detail.timeline.outcome.normal': 'normal',
   'clinician.detail.timeline.outcome.monitor': 'monitor',
   'clinician.detail.timeline.outcome.urgent': 'urgent',
+  'clinician.detail.recent.tx': 'Transfusions',
+  'clinician.detail.recent.logs': 'Symptom logs',
+  'clinician.detail.recent.flagged': 'Flagged',
+  'clinician.detail.disclaimer': 'Derived from patient self-reports. Verify before clinical action.',
   'clinician.signOut': 'Sign out',
 } as const;
 

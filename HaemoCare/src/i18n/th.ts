@@ -23,6 +23,7 @@ const th: Record<TranslationKey, string> = {
   'common.close': 'ปิด',
   'common.confirm': 'ยืนยัน',
   'common.required': 'จำเป็น',
+  'common.qrCode': 'QR Code',
 
   // Auth
   'auth.login': 'เข้าสู่ระบบ',
@@ -96,6 +97,15 @@ const th: Record<TranslationKey, string> = {
   'symptoms.submit': 'บันทึก',
   'symptoms.notes': 'หมายเหตุเพิ่มเติม',
   'symptoms.severity': 'ความรุนแรง',
+  'symptoms.status.attention': 'ต้องดูแล',
+  'symptoms.status.monitorClosely': 'เฝ้าระวังใกล้ชิด',
+  'symptoms.status.overallNormal': 'ภาพรวม: ปกติ',
+  'symptoms.lastLog': 'บันทึกล่าสุด {when} · ทั้งหมด {count} รายการ',
+  'symptoms.lastLog.daysAgo': '{days} วันที่แล้ว',
+  'symptoms.lastLog.never': 'ยังไม่มี',
+  'symptoms.contactCareTeam': 'ติดต่อทีมแพทย์ของคุณ',
+  'symptoms.recentTimeline': 'ไทม์ไลน์ล่าสุด',
+  'symptoms.postTransfusion': 'หลังการรับเลือด',
 
   // Symptom names
   'symptom.fever': 'มีไข้',
@@ -134,6 +144,10 @@ const th: Record<TranslationKey, string> = {
   'appointments.symptomSummary': 'สรุปอาการ',
   'appointments.totalLogs': 'จำนวนบันทึกทั้งหมด',
   'appointments.flaggedSymptoms': 'อาการที่ต้องเฝ้าระวัง',
+  'appointments.next': 'นัดถัดไป: {date}',
+  'appointments.nextVisit': 'นัดหมายถัดไป',
+  'appointments.daysAway': 'อีก {days} วัน',
+  'appointments.scheduleNew': 'เพิ่มนัดหมายใหม่',
 
   // Transfusion History
   'history.title': 'ประวัติการรับเลือด',
@@ -147,6 +161,9 @@ const th: Record<TranslationKey, string> = {
   'history.details': 'รายละเอียด',
   'history.notes': 'หมายเหตุ',
   'history.linkedLogs': 'บันทึกอาการที่เกี่ยวข้อง',
+  'history.summary.total': 'ทั้งหมด',
+  'history.summary.units': 'ยูนิต',
+  'history.summary.reaction': 'ปฏิกิริยา',
 
   // PDPA & Privacy
   'pdpa.title': 'ความยินยอมด้านข้อมูลส่วนบุคคล',
@@ -389,6 +406,10 @@ const th: Record<TranslationKey, string> = {
   'clinician.detail.timeline.outcome.normal': 'ปกติ',
   'clinician.detail.timeline.outcome.monitor': 'เฝ้าระวัง',
   'clinician.detail.timeline.outcome.urgent': 'ฉุกเฉิน',
+  'clinician.detail.recent.tx': 'การรับเลือด',
+  'clinician.detail.recent.logs': 'บันทึกอาการ',
+  'clinician.detail.recent.flagged': 'ที่เฝ้าระวัง',
+  'clinician.detail.disclaimer': 'ข้อมูลจากที่ผู้ป่วยรายงานเอง กรุณาตรวจสอบก่อนใช้ในการตัดสินใจทางคลินิก',
   'clinician.signOut': 'ออกจากระบบ',
 };
 
