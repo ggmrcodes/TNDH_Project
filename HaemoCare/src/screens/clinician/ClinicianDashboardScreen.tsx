@@ -7,6 +7,7 @@ import { useAssignedPatients } from '../../hooks/useAssignedPatients';
 import { computeOverdueState, OverdueState } from '../../utils/overdueVisit';
 import { sortTriageDescending, type TriageInput } from '../../utils/triageQueue';
 import * as mockServices from '../../mock/services';
+import * as realClinicianService from '../../services/clinicianService';
 import CohortStats from '../../components/clinician/CohortStats';
 import FilterChips, { FilterId } from '../../components/clinician/FilterChips';
 import PatientQueueRow from '../../components/clinician/PatientQueueRow';
@@ -38,7 +39,7 @@ export default function ClinicianDashboardScreen() {
 
   // Hydrate per-patient slices for queue triage scoring.
   useEffect(() => {
-    if (!isMockMode || patients.length === 0) {
+    if (patients.length === 0) {
       setSlices([]);
       return;
     }
@@ -46,11 +47,12 @@ export default function ClinicianDashboardScreen() {
     (async () => {
       const today = new Date();
       const fourteenDaysAgo = new Date(today.getTime() - FOURTEEN_DAYS_MS);
+      const svc = isMockMode ? mockServices : realClinicianService;
       const built = await Promise.all(patients.map(async (profile) => {
         const [latestTx, pastAppt, allLogs] = await Promise.all([
-          mockServices.getLatestTransfusionForPatient(profile.user_id),
-          mockServices.getMostRecentPastAppointmentForPatient(profile.user_id),
-          mockServices.getSymptomLogsForPatient(profile.user_id),
+          svc.getLatestTransfusionForPatient(profile.user_id),
+          svc.getMostRecentPastAppointmentForPatient(profile.user_id),
+          svc.getSymptomLogsForPatient(profile.user_id),
         ]);
         const recentLogs = allLogs.filter(l => new Date(l.logged_at) >= fourteenDaysAgo);
         const overdueState = computeOverdueState({
@@ -91,9 +93,13 @@ export default function ClinicianDashboardScreen() {
     } satisfies TriageInput));
   }, [slices, filter]);
 
-  // Default to top-overdue (the first item after sort) on load.
+  // Default to top-overdue on load; also re-select top when current selection
+  // drops out of the visible set (e.g. after a refresh or filter change).
   useEffect(() => {
-    if (selectedId == null && visibleSlices.length > 0) {
+    if (visibleSlices.length === 0) return;
+    const stillVisible = selectedId != null
+      && visibleSlices.some(s => s.profile.user_id === selectedId);
+    if (!stillVisible) {
       setSelectedId(visibleSlices[0].profile.user_id);
     }
   }, [visibleSlices, selectedId]);
