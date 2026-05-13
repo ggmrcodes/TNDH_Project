@@ -19,9 +19,9 @@ import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 import * as realProfileService from '../../services/profileService';
 import * as mockServices from '../../mock/services';
 import { generatePassportPdf } from '../../utils/pdfGenerator';
-import { formatDate } from '../../utils/dateHelpers';
+import { formatDate, formatDateTime } from '../../utils/dateHelpers';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
-import { useNativeUpdateCheck } from '../../hooks/useNativeUpdateCheck';
+import { useUpdateContext } from '../../contexts/UpdateContext';
 
 export default function PrivacySettingsScreen() {
   const navigation = useNavigation();
@@ -30,7 +30,7 @@ export default function PrivacySettingsScreen() {
   const { isMobile } = useResponsive();
   const [shareFullName, setShareFullName] = useState(profile?.share_full_name ?? false);
   const [isExporting, setIsExporting] = useState(false);
-  const { status, loading, lastCheckedAt, check } = useNativeUpdateCheck();
+  const { status, loading, lastCheckedAt, check } = useUpdateContext();
   const installedVersion = Application.nativeApplicationVersion ?? 'dev';
 
   if (!profile || !user) return null;
@@ -211,7 +211,7 @@ export default function PrivacySettingsScreen() {
 
               {lastCheckedAt && (
                 <Text style={styles.updateCaption}>
-                  {t('update.settings.lastCheckedAt', { time: lastCheckedAt.toLocaleString() })}
+                  {t('update.settings.lastCheckedAt', { time: formatDateTime(lastCheckedAt, language) })}
                 </Text>
               )}
             </View>

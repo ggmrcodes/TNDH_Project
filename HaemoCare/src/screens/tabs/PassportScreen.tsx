@@ -23,7 +23,7 @@ import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
 import ResponsiveContainer from '../../components/common/ResponsiveContainer';
 import TodayMedicationWidget from '../../components/medications/TodayMedicationWidget';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { useNativeUpdateCheck } from '../../hooks/useNativeUpdateCheck';
+import { useUpdateContext } from '../../contexts/UpdateContext';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
 function GradientBackground({ width, height, borderRadius }: { width: number | string; height: number | string; borderRadius?: number }) {
@@ -47,7 +47,7 @@ export default function PassportScreen() {
   const { t, language } = useLanguage();
   const { isMobile, isDesktop } = useResponsive();
   const { contacts } = useEmergencyContacts();
-  const { status: updateStatus } = useNativeUpdateCheck();
+  const { status: updateStatus } = useUpdateContext();
   const [showQR, setShowQR] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [txCount, setTxCount] = useState(0);

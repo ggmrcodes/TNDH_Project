@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import * as Application from 'expo-application';
 import { fetchReleaseManifest } from '../services/updateManifestService';
 import { evaluateUpdateStatus, type UpdateStatus } from '../utils/updateCheck';
+
+const FOREGROUND_REFRESH_MIN_INTERVAL_MS = 15 * 60 * 1000; // 15 min
 
 export interface UseNativeUpdateCheckResult {
   status: UpdateStatus | null;
@@ -24,6 +27,19 @@ export function useNativeUpdateCheck(): UseNativeUpdateCheckResult {
   const [tick, setTick] = useState(0);
 
   const check = useCallback(() => setTick(t => t + 1), []);
+
+  const lastForegroundCheckRef = useRef<number>(0);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next: AppStateStatus) => {
+      if (next !== 'active') return;
+      const now = Date.now();
+      if (now - lastForegroundCheckRef.current < FOREGROUND_REFRESH_MIN_INTERVAL_MS) return;
+      lastForegroundCheckRef.current = now;
+      setTick(t => t + 1);
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
