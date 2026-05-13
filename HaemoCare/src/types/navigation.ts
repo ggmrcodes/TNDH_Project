@@ -31,4 +31,5 @@ export type RootStackParamList = {
   ImportAppointments: undefined;
   IcsImport: undefined;
   FhirImport: undefined;
+  EmergencyContacts: undefined;
 };
