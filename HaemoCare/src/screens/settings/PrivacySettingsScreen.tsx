@@ -8,9 +8,11 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import * as Application from 'expo-application';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
@@ -19,6 +21,7 @@ import * as mockServices from '../../mock/services';
 import { generatePassportPdf } from '../../utils/pdfGenerator';
 import { formatDate } from '../../utils/dateHelpers';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
+import { useNativeUpdateCheck } from '../../hooks/useNativeUpdateCheck';
 
 export default function PrivacySettingsScreen() {
   const navigation = useNavigation();
@@ -27,6 +30,8 @@ export default function PrivacySettingsScreen() {
   const { isMobile } = useResponsive();
   const [shareFullName, setShareFullName] = useState(profile?.share_full_name ?? false);
   const [isExporting, setIsExporting] = useState(false);
+  const { status, loading, lastCheckedAt, check } = useNativeUpdateCheck();
+  const installedVersion = Application.nativeApplicationVersion ?? 'dev';
 
   if (!profile || !user) return null;
 
@@ -179,6 +184,78 @@ export default function PrivacySettingsScreen() {
           </View>
           <Feather name="chevron-right" size={18} color={COLORS.statusUrgent} />
         </TouchableOpacity>
+
+        {/* App updates */}
+        <Text style={styles.sectionLabel}>{t('update.settings.title')}</Text>
+        <View style={styles.settingCard}>
+          <View style={styles.infoRow}>
+            <Feather name="refresh-cw" size={16} color={COLORS.primary} />
+            <View style={styles.infoCol}>
+              <Text style={styles.settingTitle}>
+                {t('update.settings.currentVersion', { version: installedVersion })}
+              </Text>
+
+              {status?.state === 'current' && (
+                <Text style={styles.settingDesc}>{t('update.settings.upToDate')}</Text>
+              )}
+              {status?.state === 'optional_update' && (
+                <Text style={styles.settingDesc}>
+                  {t('update.settings.optionalAvailable', { version: status.latestVersion ?? '' })}
+                </Text>
+              )}
+              {status?.state === 'required_update' && (
+                <Text style={styles.settingDesc}>
+                  {t('update.settings.requiredAvailable', { version: status.latestVersion ?? '' })}
+                </Text>
+              )}
+
+              {lastCheckedAt && (
+                <Text style={styles.updateCaption}>
+                  {t('update.settings.lastCheckedAt', { time: lastCheckedAt.toLocaleString() })}
+                </Text>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.cardDivider} />
+
+          <View style={styles.updateButtonsRow}>
+            <TouchableOpacity
+              onPress={check}
+              disabled={loading}
+              style={styles.updatePrimaryBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.updatePrimaryBtnText}>
+                {loading ? t('update.settings.checking') : t('update.settings.checkAction')}
+              </Text>
+            </TouchableOpacity>
+
+            {(status?.state === 'optional_update' || status?.state === 'required_update') && status.apkUrl && (
+              <TouchableOpacity
+                onPress={() => Linking.openURL(status.apkUrl!).catch(() => {})}
+                style={styles.updatePrimaryBtn}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.updatePrimaryBtnText}>
+                  {t('update.settings.downloadAction', { version: status.latestVersion ?? '' })}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {status?.releaseNotesUrl && (
+              <TouchableOpacity
+                onPress={() => Linking.openURL(status.releaseNotesUrl!).catch(() => {})}
+                style={styles.updateSecondaryBtn}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.updateSecondaryBtnText}>
+                  {t('update.settings.releaseNotesAction')}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
         {/* Footer */}
         <View style={styles.footer}>
@@ -366,6 +443,42 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
     lineHeight: 16,
+  },
+  // App updates
+  updateCaption: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textLight,
+    marginTop: 4,
+    lineHeight: 16,
+  },
+  updateButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+    flexWrap: 'wrap',
+  },
+  updatePrimaryBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  updatePrimaryBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  updateSecondaryBtn: {
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  updateSecondaryBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
   // Footer
   footer: {
