@@ -346,14 +346,14 @@ export default function PatientDetailPane({
           <Text style={styles.subtitle}>{t('preVisit.subtitle')}</Text>
         </View>
 
-        <Disclaimer />
+        <Disclaimer message={t('clinician.detail.disclaimer')} />
 
         {/* 30-day snapshot */}
         <Section label={t('preVisit.section.recent')}>
           <View style={styles.row30}>
-            <Stat value={thirtyDayStats.txCount} label="Transfusions" icon="droplet" color={COLORS.primary} />
-            <Stat value={thirtyDayStats.logCount} label="Symptom logs" icon="activity" color={COLORS.accent} />
-            <Stat value={thirtyDayStats.flagged} label="Flagged" icon="alert-circle" color={COLORS.statusMonitor} />
+            <Stat value={thirtyDayStats.txCount} label={t('clinician.detail.recent.tx')} icon="droplet" color={COLORS.primary} />
+            <Stat value={thirtyDayStats.logCount} label={t('clinician.detail.recent.logs')} icon="activity" color={COLORS.accent} />
+            <Stat value={thirtyDayStats.flagged} label={t('clinician.detail.recent.flagged')} icon="alert-circle" color={COLORS.statusMonitor} />
           </View>
         </Section>
 
