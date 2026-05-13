@@ -12,7 +12,7 @@ Done once per machine.
 
 ```bash
 npm install -g eas-cli
-eas --version    # should print 12.x or newer
+eas --version    # should print 16.x or newer
 ```
 
 ### 2. Sign in to your Expo account
@@ -126,9 +126,9 @@ Within seconds the bundle is live. Next time any patient opens HaemoCare, it sil
 ### Native update (rare — new permission, new dep, SDK upgrade)
 
 ```bash
-# 1. Bump version in app.json
+# 1. Bump the `version` field in app.json (versionCode is owned by EAS Cloud — do NOT touch it here)
 $EDITOR app.json
-# Update "version": "1.0.0" -> "1.1.0" and "android.versionCode": 1 -> 2
+# Update "version": "1.0.0" -> "1.1.0"
 git add app.json
 git commit -m "chore(release): bump to v1.1.0 (added X native dep)"
 

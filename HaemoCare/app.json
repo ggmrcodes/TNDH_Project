@@ -24,8 +24,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "app.haemocare",
-      "versionCode": 1
+      "package": "app.haemocare"
     },
     "web": {
       "favicon": "./assets/favicon.png"

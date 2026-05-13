@@ -24,7 +24,7 @@ On the next app launch, `expo-updates` fetches the latest bundle for the branch 
 
 ## Shipping a native update (when needed)
 
-1. **Bump `version` and `versionCode` in `app.json`.** For example, `"version": "0.2.0"` and `"versionCode": 2`. The `versionCode` must always increase; Android rejects installs where it does not.
+1. **Bump `version` in `app.json`.** For example, `"version": "0.1.0"` → `"0.2.0"`. Do NOT manually edit `versionCode` — `eas.json` declares `appVersionSource: "remote"` and the `preview` profile has `autoIncrement: "versionCode"`, so EAS Cloud owns the counter and increments it on every build. Local edits to `versionCode` are ignored (or warned about) at build time.
 
 2. **Build the APK on EAS:**
    ```bash
