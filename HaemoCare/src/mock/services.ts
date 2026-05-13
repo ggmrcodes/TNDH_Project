@@ -1,4 +1,4 @@
-import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, ClinicianProfile } from '../types/database';
+import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, ClinicianProfile, EmergencyContact } from '../types/database';
 import {
   MOCK_PROFILE,
   MOCK_TRANSFUSIONS,
@@ -345,4 +345,59 @@ export async function getMostRecentPastAppointmentForPatient(
   const past = list.filter(a => a.scheduled_date < nowIso)
     .sort((a, b) => (a.scheduled_date < b.scheduled_date ? 1 : -1));
   return past[0] ?? null;
+}
+
+// ── Emergency contacts (mock) ──────────────────────────────────
+
+let mockEmergencyContacts: EmergencyContact[] = [];
+let mockEmergencyContactIdCounter = 1;
+
+export async function listEmergencyContacts(_userId: string): Promise<EmergencyContact[]> {
+  return [...mockEmergencyContacts].sort((a, b) => a.priority - b.priority);
+}
+
+export async function addEmergencyContact(
+  userId: string,
+  input: { name: string; phone: string; role_label: string; priority: 1 | 2 | 3 }
+): Promise<EmergencyContact> {
+  if (mockEmergencyContacts.some(c => c.priority === input.priority)) {
+    throw new Error(`Priority ${input.priority} already taken`);
+  }
+  if (mockEmergencyContacts.length >= 3) {
+    throw new Error('Maximum 3 contacts');
+  }
+  const row: EmergencyContact = {
+    id: `mock-ec-${mockEmergencyContactIdCounter++}`,
+    user_id: userId,
+    name: input.name,
+    phone: input.phone,
+    role_label: input.role_label,
+    priority: input.priority,
+    created_at: new Date().toISOString(),
+  };
+  mockEmergencyContacts.push(row);
+  return row;
+}
+
+export async function updateEmergencyContact(
+  id: string,
+  input: Partial<Pick<EmergencyContact, 'name' | 'phone' | 'role_label'>>
+): Promise<EmergencyContact> {
+  const idx = mockEmergencyContacts.findIndex(c => c.id === id);
+  if (idx === -1) throw new Error('Contact not found');
+  mockEmergencyContacts[idx] = { ...mockEmergencyContacts[idx], ...input };
+  return mockEmergencyContacts[idx];
+}
+
+export async function deleteEmergencyContact(id: string): Promise<void> {
+  mockEmergencyContacts = mockEmergencyContacts.filter(c => c.id !== id);
+}
+
+export async function swapEmergencyContactPriorities(aId: string, bId: string): Promise<void> {
+  const a = mockEmergencyContacts.find(c => c.id === aId);
+  const b = mockEmergencyContacts.find(c => c.id === bId);
+  if (!a || !b) throw new Error('Contact not found');
+  const aPrio = a.priority;
+  a.priority = b.priority;
+  b.priority = aPrio;
 }
