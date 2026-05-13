@@ -13,6 +13,7 @@ import SymptomLogDetailScreen from '../screens/detail/SymptomLogDetailScreen';
 import TransfusionDetailScreen from '../screens/detail/TransfusionDetailScreen';
 import AppointmentDetailScreen from '../screens/detail/AppointmentDetailScreen';
 import AddAppointmentScreen from '../screens/detail/AddAppointmentScreen';
+import EmergencyContactsScreen from '../screens/settings/EmergencyContactsScreen';
 import PrivacySettingsScreen from '../screens/settings/PrivacySettingsScreen';
 import MedicationRemindersScreen from '../screens/detail/MedicationRemindersScreen';
 import PreVisitSummaryScreen from '../screens/detail/PreVisitSummaryScreen';
@@ -102,6 +103,11 @@ export default function AppNavigator() {
         name="PrivacySettings"
         component={PrivacySettingsScreen}
         options={{ title: t('privacy.title') }}
+      />
+      <RootStack.Screen
+        name="EmergencyContacts"
+        component={EmergencyContactsScreen}
+        options={{ title: t('emergency.settings.title') }}
       />
       <RootStack.Screen
         name="MedicationReminders"

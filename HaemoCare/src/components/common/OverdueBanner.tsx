@@ -9,9 +9,10 @@ export interface OverdueBannerProps {
   daysOverdue: number;
   variant: 'monitor' | 'appointments';
   onPressCta: () => void;
+  onPressNotify?: () => void;
 }
 
-export default function OverdueBanner({ daysOverdue, variant, onPressCta }: OverdueBannerProps) {
+export default function OverdueBanner({ daysOverdue, variant, onPressCta, onPressNotify }: OverdueBannerProps) {
   const { t } = useLanguage();
 
   const messageKey =
@@ -33,6 +34,11 @@ export default function OverdueBanner({ daysOverdue, variant, onPressCta }: Over
         <TouchableOpacity onPress={onPressCta} style={styles.ctaBtn} activeOpacity={0.8}>
           <Text style={styles.ctaText}>{t(ctaKey)}</Text>
         </TouchableOpacity>
+        {onPressNotify && (
+          <TouchableOpacity onPress={onPressNotify} style={styles.notifyBtn} activeOpacity={0.8}>
+            <Text style={styles.notifyText}>{t('emergency.overdueNotify')}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -69,4 +75,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.statusUrgent ?? '#DC3B3B',
   },
   ctaText: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
+  notifyBtn: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.statusUrgent ?? '#DC3B3B',
+    marginTop: SPACING.sm,
+  },
+  notifyText: { color: COLORS.statusUrgent ?? '#DC3B3B', fontSize: 13, fontWeight: '700' },
 });

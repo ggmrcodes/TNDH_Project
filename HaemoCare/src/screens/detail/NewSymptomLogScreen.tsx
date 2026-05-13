@@ -20,6 +20,8 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
 import { TranslationKey } from '../../i18n';
 import { useOverdueState } from '../../hooks/useOverdueState';
 import { applyBump } from '../../utils/overdueVisit';
+import EmergencyContactSheet from '../../components/emergency/EmergencyContactSheet';
+import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
 
 type RouteProps = RouteProp<RootStackParamList, 'NewSymptomLog'>;
 
@@ -28,13 +30,16 @@ type Step = 'select' | 'severity' | 'review' | 'result';
 export default function NewSymptomLogScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
-  const { user, isMockMode } = useAuth();
+  const { user, isMockMode, profile } = useAuth();
   const { t } = useLanguage();
 
   const { isMobile } = useResponsive();
   const transfusionId = route.params?.transfusionId;
 
   const { overdueState } = useOverdueState();
+  const { contacts } = useEmergencyContacts();
+  const [notifySheetVisible, setNotifySheetVisible] = useState(false);
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
   // Remembers the raw AI-suggested outcome before any overdue bump is applied.
   // Set once in handlePreview; never reset by user interaction so the bump
   // explanation always shows the original suggestion as the "from" value.
@@ -286,6 +291,26 @@ export default function NewSymptomLogScreen() {
           <>
             <Text style={styles.stepTitle}>{t('symptoms.result')}</Text>
             <OutcomeDisplay result={{ ...result, outcome: confirmedOutcome }} />
+            {confirmedOutcome === 'urgent' && contacts.length > 0 && !nudgeDismissed && (
+              <View style={styles.urgentNotifyBanner}>
+                <Text style={styles.urgentNotifyText}>{t('emergency.notifyPrompt')}</Text>
+                <View style={styles.urgentNotifyActions}>
+                  <TouchableOpacity style={styles.urgentNotifyPrimary} onPress={() => setNotifySheetVisible(true)}>
+                    <Text style={styles.urgentNotifyPrimaryText}>{t('emergency.notifyAction')}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.urgentNotifyGhost} onPress={() => setNudgeDismissed(true)}>
+                    <Text style={styles.urgentNotifyGhostText}>{t('emergency.notifyDismiss')}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            <EmergencyContactSheet
+              visible={notifySheetVisible}
+              onClose={() => setNotifySheetVisible(false)}
+              contacts={contacts}
+              context="urgent_symptom"
+              patientName={profile?.full_name?.trim() || profile?.patient_id || ''}
+            />
             <Button
               label={t('common.done')}
               onPress={() => navigation.goBack()}
@@ -419,4 +444,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flexShrink: 1,
   },
+  urgentNotifyBanner: {
+    padding: SPACING.md,
+    borderRadius: 12,
+    backgroundColor: COLORS.statusUrgentBg ?? '#FEF2F2',
+    borderWidth: 1,
+    borderColor: COLORS.statusUrgent ?? '#DC3B3B',
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+  },
+  urgentNotifyText: { fontSize: 13, color: COLORS.text, fontWeight: '600' },
+  urgentNotifyActions: { flexDirection: 'row', gap: SPACING.sm },
+  urgentNotifyPrimary: {
+    backgroundColor: COLORS.statusUrgent ?? '#DC3B3B',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 8,
+  },
+  urgentNotifyPrimaryText: { color: COLORS.white, fontSize: 13, fontWeight: '700' },
+  urgentNotifyGhost: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
+  urgentNotifyGhostText: { color: COLORS.textLight, fontSize: 13, fontWeight: '600' },
 });

@@ -15,19 +15,23 @@ import { formatDate, formatDateTime, daysUntil } from '../../utils/dateHelpers';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import OverdueBanner from '../../components/common/OverdueBanner';
 import { useOverdueState } from '../../hooks/useOverdueState';
+import EmergencyContactSheet from '../../components/emergency/EmergencyContactSheet';
+import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
 import ResponsiveContainer from '../../components/common/ResponsiveContainer';
 import EmptyState from '../../components/common/EmptyState';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
 export default function AppointmentsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { user, isMockMode } = useAuth();
+  const { user, isMockMode, profile } = useAuth();
   const { t, language } = useLanguage();
   const { isDesktop } = useResponsive();
   const [upcoming, setUpcoming] = useState<Appointment[]>([]);
   const [past, setPast] = useState<Appointment[]>([]);
 
   const { overdueState, refresh: refreshOverdue } = useOverdueState();
+  const { contacts } = useEmergencyContacts();
+  const [notifySheetVisible, setNotifySheetVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -114,8 +118,21 @@ export default function AppointmentsScreen() {
                   daysOverdue={overdueState.daysOverdue}
                   variant="appointments"
                   onPressCta={() => navigation.navigate('AddAppointment')}
+                  onPressNotify={
+                    overdueState.bumpTiers === 2 && contacts.length > 0
+                      ? () => setNotifySheetVisible(true)
+                      : undefined
+                  }
                 />
               )}
+              <EmergencyContactSheet
+                visible={notifySheetVisible}
+                onClose={() => setNotifySheetVisible(false)}
+                contacts={contacts}
+                context="overdue"
+                patientName={profile?.full_name?.trim() || profile?.patient_id || ''}
+                daysOverdue={overdueState?.isOverdue ? overdueState.daysOverdue : undefined}
+              />
               {nextAppt && (
                 <View style={[styles.heroCard, isDesktop && styles.heroCardDesktop]}>
                   <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
