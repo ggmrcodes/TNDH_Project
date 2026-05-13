@@ -3,9 +3,13 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import { Profile } from '../types/database';
 import { MOCK_PROFILE, MOCK_USER_ID } from '../mock/data';
+import { MOCK_CLINICIAN_PROFILE, MOCK_CLINICIAN_USER_ID } from '../mock/clinicianData';
+import type { ClinicianProfile } from '../types/database';
 
 const MOCK_EMAIL = 'demo@haemocare.app';
 const MOCK_PASSWORD = 'HaemoDemo2024';
+const MOCK_CLINICIAN_EMAIL = 'demo-doctor@haemocare.app';
+const MOCK_CLINICIAN_PASSWORD = 'HaemoDoc2024';
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +19,8 @@ interface AuthContextType {
   isProfileComplete: boolean;
   isPdpaConsented: boolean;
   isMockMode: boolean;
+  role: 'patient' | 'clinician' | null;
+  clinicianProfile: ClinicianProfile | null;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
@@ -30,6 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMockMode, setIsMockMode] = useState(false);
+  const [clinicianProfile, setClinicianProfile] = useState<ClinicianProfile | null>(null);
+
+  const role: 'patient' | 'clinician' | null =
+    clinicianProfile ? 'clinician' : profile ? 'patient' : null;
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
@@ -102,6 +112,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isMockMode, fetchProfile]);
 
   const signIn = async (email: string, password: string): Promise<{ error?: string }> => {
+    // Mock mode: accept clinician demo credentials
+    if (email.trim().toLowerCase() === MOCK_CLINICIAN_EMAIL && password === MOCK_CLINICIAN_PASSWORD) {
+      setIsMockMode(true);
+      setUser({ id: MOCK_CLINICIAN_USER_ID, email: MOCK_CLINICIAN_EMAIL } as User);
+      setClinicianProfile(MOCK_CLINICIAN_PROFILE);
+      setProfile(null);
+      return {};
+    }
+
     // Mock mode: accept demo credentials
     if (email.trim().toLowerCase() === MOCK_EMAIL && password === MOCK_PASSWORD) {
       setIsMockMode(true);
@@ -128,6 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setProfile(null);
       setSession(null);
+      setClinicianProfile(null);
       return;
     }
     await supabase.auth.signOut();
@@ -144,6 +164,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isProfileComplete,
         isPdpaConsented,
         isMockMode,
+        role,
+        clinicianProfile,
         signIn,
         signUp,
         signOut,
