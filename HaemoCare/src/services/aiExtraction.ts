@@ -101,6 +101,16 @@ export class MissingApiKeyError extends Error {
   }
 }
 
+export class FeatureDisabledError extends Error {
+  constructor() {
+    super('Photo extraction is disabled in this build.');
+    this.name = 'FeatureDisabledError';
+  }
+}
+
+const AI_EXTRACTION_ENABLED =
+  process.env.EXPO_PUBLIC_AI_EXTRACTION_ENABLED === 'true';
+
 export class ExtractionError extends Error {
   constructor(message: string, public status?: number) {
     super(message);
@@ -108,10 +118,15 @@ export class ExtractionError extends Error {
   }
 }
 
+export function isAiExtractionEnabled(): boolean {
+  return AI_EXTRACTION_ENABLED;
+}
+
 export async function extractTransfusionFromImage(
   base64: string,
   mimeType: 'image/jpeg' | 'image/png' | 'image/webp' = 'image/jpeg'
 ): Promise<ExtractedTransfusion> {
+  if (!AI_EXTRACTION_ENABLED) throw new FeatureDisabledError();
   const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
   if (!apiKey) throw new MissingApiKeyError();
 
