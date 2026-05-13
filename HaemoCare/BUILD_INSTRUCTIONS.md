@@ -61,20 +61,32 @@ eas build --platform android --profile preview
 
 ## Cut a GitHub Release for v1.0.0
 
+**Important:** name the APK file `haemocare-v1.0.0.apk` exactly — the patient handout (`PATIENT_HANDOUT.md`) and `update-manifest.json` both reference this filename. If you change it, regenerate the handout + edit the manifest.
+
 ```bash
+# Rename the downloaded APK so it matches the filename in the handout/manifest:
+mv ~/Downloads/build-*.apk ./haemocare-v1.0.0.apk
+
 # In the repo root:
 gh release create v1.0.0 \
-  /path/to/haemocare-v1.0.0.apk \
+  ./haemocare-v1.0.0.apk \
   --title "HaemoCare v1.0.0" \
-  --notes "First public pilot release. See README for install."
+  --notes "First public pilot release. See PATIENT_HANDOUT.md for install instructions."
 ```
 
-(Or do it via the web UI at https://github.com/ggmrcodes/TNDH_Project/releases/new — tag `v1.0.0`, attach the APK, write release notes.)
+(Or do it via the web UI at https://github.com/ggmrcodes/TNDH_Project/releases/new — tag `v1.0.0`, attach the APK with that exact filename, write release notes.)
 
-The APK URL will look like:
+The APK URL will be:
 ```
 https://github.com/ggmrcodes/TNDH_Project/releases/download/v1.0.0/haemocare-v1.0.0.apk
 ```
+
+The release-page URL (what the patient handout's QR points at) will be:
+```
+https://github.com/ggmrcodes/TNDH_Project/releases/latest
+```
+
+This URL auto-redirects to whatever the latest release is. **You do not need to regenerate the QR for v1.1.0, v1.2.0, etc.** — the same QR keeps working as long as you keep cutting GitHub Releases.
 
 ## Update `update-manifest.json`
 
@@ -92,15 +104,32 @@ The HaemoCare app fetches this file from `https://raw.githubusercontent.com/ggmr
 
 ## Distribute to testers
 
-Share the GitHub Release URL or the direct APK URL with patients. Their flow:
+### Option 1 (in-person, recommended) — print the handout
 
-1. Open the link on their Android phone
-2. Tap to download the `.apk`
+`HaemoCare/PATIENT_HANDOUT.md` is a printable 1-page card (TH + EN) with a QR code (`HaemoCare/assets/handout/qr-install.png`), the fallback URL, install steps, and demo credentials.
+
+To print: open the markdown in any preview tool that supports embedded images (VS Code preview, Typora, etc.), Cmd+P → print at A6 (10 × 14 cm) or A5 (14 × 21 cm) for easier reading. Hand one card to each patient.
+
+The QR points at `github.com/ggmrcodes/TNDH_Project/releases/latest`, so the SAME printed card stays valid for v1.0.0, v1.1.0, etc. — no reprint needed when you cut a new release.
+
+If you change the release tag pattern OR want the QR to point somewhere else (e.g. a hospital intranet mirror), regenerate it:
+```bash
+bash scripts/regenerate-qr.sh
+# Or with a custom URL:
+REGENERATE_QR_URL='https://your.url' bash scripts/regenerate-qr.sh
+```
+
+### Option 2 (remote) — share the URL via LINE
+
+Send patients this link: `https://github.com/ggmrcodes/TNDH_Project/releases/latest`. Same install flow.
+
+### Patient install flow (what they actually do)
+
+1. Scan the QR (or open the link) on their Android phone
+2. On the GitHub release page, tap `haemocare-v1.0.0.apk` under "Assets" to download
 3. When prompted, allow "install unknown apps" for the browser (Settings → Apps → Browser → Install unknown apps)
 4. Open the downloaded file, tap Install
-5. Open HaemoCare
-
-`HaemoCare/INSTALL.md` has a TH/EN install guide they can be sent alongside.
+5. Open HaemoCare → sign up or use demo mode (`demo@haemocare.app` / `HaemoDemo2024`)
 
 ---
 
