@@ -19,8 +19,19 @@ const CHIPS: Array<{ id: Exclude<FilterId, null>; key: TranslationKey }> = [
 
 export default function FilterChips({ active, onChange }: FilterChipsProps) {
   const { t } = useLanguage();
+  const allActive = active === null;
   return (
     <View style={styles.row}>
+      <TouchableOpacity
+        key="all"
+        style={[styles.chip, allActive && styles.chipActive]}
+        onPress={() => onChange(null)}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.chipText, allActive && styles.chipTextActive]}>
+          {t('clinician.filter.all' as TranslationKey)}
+        </Text>
+      </TouchableOpacity>
       {CHIPS.map(chip => {
         const isActive = active === chip.id;
         return (

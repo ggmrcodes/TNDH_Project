@@ -5,6 +5,7 @@ import type {
   Transfusion,
   SymptomLog,
   Appointment,
+  EmergencyContact,
 } from '../types/database';
 
 export async function getClinicianProfile(userId: string): Promise<ClinicianProfile | null> {
@@ -84,4 +85,35 @@ export async function getMostRecentPastAppointmentForPatient(
     .maybeSingle();
   if (error) throw new Error(error.message);
   return (data as Appointment | null) ?? null;
+}
+
+export async function getPastAppointmentsForPatient(
+  userId: string,
+  sinceISO: string
+): Promise<Appointment[]> {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('scheduled_date', sinceISO)
+    .lt('scheduled_date', new Date().toISOString())
+    .order('scheduled_date', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Appointment[];
+}
+
+// RLS must allow clinician reads on emergency_contacts via clinician_patient_links.
+// If RLS denies access, Supabase returns an empty result set (not an error), and
+// this function returns []. We deliberately do not throw on access-denied so
+// the detail UI can render the "contacts hidden by patient" empty state.
+export async function getEmergencyContactsForPatient(
+  userId: string
+): Promise<EmergencyContact[]> {
+  const { data, error } = await supabase
+    .from('emergency_contacts')
+    .select('*')
+    .eq('user_id', userId)
+    .order('priority', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as EmergencyContact[];
 }

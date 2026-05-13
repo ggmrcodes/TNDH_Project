@@ -4,6 +4,7 @@ export const BREAKPOINTS = {
   mobile: 0,
   tablet: 768,
   desktop: 1024,
+  wide: 1100,
 } as const;
 
 export const MAX_CONTENT_WIDTH = 600;
@@ -18,6 +19,7 @@ export interface ResponsiveInfo {
   isMobile: boolean;
   isTablet: boolean;
   isDesktop: boolean;
+  isWide: boolean;
   contentPadding: number;
   contentMaxWidth: number;
 }
@@ -35,6 +37,7 @@ export function useResponsive(): ResponsiveInfo {
   const isMobile = deviceSize === 'mobile';
   const isTablet = deviceSize === 'tablet';
   const isDesktop = deviceSize === 'desktop';
+  const isWide = width >= BREAKPOINTS.wide;
 
   const contentPadding = isDesktop ? 32 : isTablet ? 24 : 16;
   const contentMaxWidth = isDesktop ? MAX_CONTENT_WIDTH : isTablet ? MAX_CONTENT_WIDTH : 9999;
@@ -46,6 +49,7 @@ export function useResponsive(): ResponsiveInfo {
     isMobile,
     isTablet,
     isDesktop,
+    isWide,
     contentPadding,
     contentMaxWidth,
   };

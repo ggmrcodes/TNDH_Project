@@ -1,17 +1,29 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { MedicationReminder, Profile, SymptomLog, Transfusion } from '../../types/database';
+import {
+  Appointment,
+  EmergencyContact,
+  MedicationReminder,
+  Profile,
+  SymptomLog,
+  Transfusion,
+} from '../../types/database';
 import * as mockServices from '../../mock/services';
 import * as realSymptomService from '../../services/symptomService';
 import * as realTransfusionService from '../../services/transfusionService';
 import * as realClinicianService from '../../services/clinicianService';
-import { formatDate } from '../../utils/dateHelpers';
+import { formatDate, relativeTime } from '../../utils/dateHelpers';
 import { computeOverdueState } from '../../utils/overdueVisit';
+import { computeRiskScore, type RiskInput } from '../../utils/riskScore';
+import { buildCareEventsTimeline } from '../../utils/careEventsTimeline';
 import OverdueBadge from './OverdueBadge';
+import RiskBadge from './RiskBadge';
+import CareEventsTimeline from './CareEventsTimeline';
+import { TranslationKey } from '../../i18n';
 import {
   projectHbDecay,
   HbDecayResult,
@@ -51,20 +63,30 @@ interface LoadedData {
   logs: SymptomLog[];
   medications: MedicationReminder[];
   profile: Profile | null;
+  pastAppointments: Appointment[];
+  emergencyContacts: EmergencyContact[];
 }
+
+const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
 
 async function loadPatientData(
   userId: string,
   isMockMode: boolean,
   isClinicianView: boolean
 ): Promise<LoadedData> {
+  const sinceISO = new Date(Date.now() - SIXTY_DAYS_MS).toISOString();
   if (isMockMode && isClinicianView) {
-    const [txs, slogs, prof] = await Promise.all([
+    const [txs, slogs, prof, appts, contacts] = await Promise.all([
       mockServices.getTransfusionsForPatient(userId),
       mockServices.getSymptomLogsForPatient(userId),
       mockServices.getProfileForPatient(userId),
+      mockServices.getPastAppointmentsForPatient(userId, sinceISO),
+      mockServices.getEmergencyContactsForPatient(userId),
     ]);
-    return { transfusions: txs, logs: slogs, medications: [], profile: prof };
+    return {
+      transfusions: txs, logs: slogs, medications: [], profile: prof,
+      pastAppointments: appts, emergencyContacts: contacts,
+    };
   }
   if (isMockMode) {
     const [txs, slogs, meds] = await Promise.all([
@@ -72,21 +94,32 @@ async function loadPatientData(
       mockServices.getSymptomLogs(userId, 200),
       mockServices.getMedicationReminders(userId),
     ]);
-    return { transfusions: txs, logs: slogs, medications: meds, profile: null };
+    return {
+      transfusions: txs, logs: slogs, medications: meds, profile: null,
+      pastAppointments: [], emergencyContacts: [],
+    };
   }
   if (isClinicianView) {
-    const [txs, slogs, prof] = await Promise.all([
+    const [txs, slogs, prof, appts, contacts] = await Promise.all([
       realClinicianService.getTransfusionsForPatient(userId),
       realClinicianService.getSymptomLogsForPatient(userId),
       realClinicianService.getProfileForPatient(userId),
+      realClinicianService.getPastAppointmentsForPatient(userId, sinceISO),
+      realClinicianService.getEmergencyContactsForPatient(userId),
     ]);
-    return { transfusions: txs, logs: slogs, medications: [], profile: prof };
+    return {
+      transfusions: txs, logs: slogs, medications: [], profile: prof,
+      pastAppointments: appts, emergencyContacts: contacts,
+    };
   }
   const [txs, slogs] = await Promise.all([
     realTransfusionService.getTransfusions(userId),
     realSymptomService.getSymptomLogs(userId, 200),
   ]);
-  return { transfusions: txs, logs: slogs, medications: [], profile: null };
+  return {
+    transfusions: txs, logs: slogs, medications: [], profile: null,
+    pastAppointments: [], emergencyContacts: [],
+  };
 }
 
 export default function PatientDetailPane({
@@ -100,11 +133,15 @@ export default function PatientDetailPane({
   const [logs, setLogs] = useState<SymptomLog[]>([]);
   const [medications, setMedications] = useState<MedicationReminder[]>([]);
   const [patientProfile, setPatientProfile] = useState<Profile | null>(null);
+  const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
+  const [contactsExpanded, setContactsExpanded] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       if (!userId) return;
       let cancelled = false;
+      setContactsExpanded(false);
       (async () => {
         setLoading(true);
         const data = await loadPatientData(userId, isMockMode, isClinicianView);
@@ -113,6 +150,8 @@ export default function PatientDetailPane({
           setLogs(data.logs);
           setMedications(data.medications);
           setPatientProfile(data.profile);
+          setPastAppointments(data.pastAppointments);
+          setEmergencyContacts(data.emergencyContacts);
           setLoading(false);
         }
       })();
@@ -164,6 +203,64 @@ export default function PatientDetailPane({
     return { txCount, logCount, flagged };
   }, [transfusions, logs]);
 
+  const worstRecentOutcome = useMemo((): 'normal' | 'monitor' | 'urgent' => {
+    const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recent = logs.filter(l => new Date(l.logged_at).getTime() >= cutoff);
+    if (recent.some(l => l.outcome === 'urgent')) return 'urgent';
+    if (recent.some(l => l.outcome === 'monitor')) return 'monitor';
+    return 'normal';
+  }, [logs]);
+
+  const latestTxHasReaction = useMemo(() => {
+    if (transfusions.length === 0) return false;
+    const sorted = [...transfusions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    return sorted[0]?.reaction_noted === true;
+  }, [transfusions]);
+
+  const riskResult = useMemo(() => {
+    if (!isClinicianView || !patientProfile) return null;
+    const input: RiskInput = {
+      bumpTiers: overdueState.isOverdue ? overdueState.bumpTiers : 0,
+      worstRecentOutcome,
+      hasReactionOnFile: latestTxHasReaction,
+      hbDaysUntilThreshold: hbResult.daysUntilThreshold ?? null,
+    };
+    return computeRiskScore(input);
+  }, [isClinicianView, patientProfile, overdueState, worstRecentOutcome, latestTxHasReaction, hbResult.daysUntilThreshold]);
+
+  const careEventsResult = useMemo(() => {
+    if (!isClinicianView) return null;
+    return buildCareEventsTimeline({
+      transfusions,
+      logs,
+      appointments: pastAppointments,
+      today: new Date(),
+    });
+  }, [isClinicianView, transfusions, logs, pastAppointments]);
+
+  const primaryHospital = useMemo(() => {
+    if (!isClinicianView || transfusions.length === 0) return null;
+    const freq: Record<string, number> = {};
+    for (const tx of transfusions) {
+      if (tx.hospital) freq[tx.hospital] = (freq[tx.hospital] ?? 0) + 1;
+    }
+    const top = Object.entries(freq).sort((a, b) => b[1] - a[1])[0];
+    return top?.[0] ?? null;
+  }, [isClinicianView, transfusions]);
+
+  const lastActivityISO = useMemo(() => {
+    if (!isClinicianView) return null;
+    const candidates: number[] = [
+      ...transfusions.map(tx => new Date(tx.date).getTime()),
+      ...logs.map(l => new Date(l.logged_at).getTime()),
+      ...pastAppointments.map(a => new Date(a.scheduled_date).getTime()),
+    ].filter(ts => Number.isFinite(ts) && ts > 0);
+    if (candidates.length === 0) return null;
+    return new Date(Math.max(...candidates)).toISOString();
+  }, [isClinicianView, transfusions, logs, pastAppointments]);
+
   if (loading) return <LoadingSpinner />;
 
   return (
@@ -175,9 +272,12 @@ export default function PatientDetailPane({
               <Text style={styles.patientName}>
                 {patientProfile.share_full_name ? patientProfile.full_name : patientProfile.patient_id}
               </Text>
-              {overdueState.isOverdue && (
-                <OverdueBadge daysOverdue={overdueState.daysOverdue} tier={overdueState.bumpTiers} />
-              )}
+              <View style={styles.badgeRow}>
+                {overdueState.isOverdue && (
+                  <OverdueBadge daysOverdue={overdueState.daysOverdue} tier={overdueState.bumpTiers} />
+                )}
+                {riskResult && <RiskBadge risk={riskResult} />}
+              </View>
             </View>
             <Text style={styles.patientMeta}>
               {patientProfile.patient_id} · {patientProfile.blood_type || '?'}{patientProfile.rh_factor || ''}
@@ -185,6 +285,58 @@ export default function PatientDetailPane({
             </Text>
             {patientProfile.known_reactions.trim().length > 0 && (
               <Text style={styles.patientReactions}>⚠ {patientProfile.known_reactions}</Text>
+            )}
+            <View style={styles.contactStrip}>
+              {primaryHospital && (
+                <Text style={styles.contactItem}>
+                  {t('clinician.detail.hospital' as TranslationKey)}: {primaryHospital}
+                </Text>
+              )}
+              <View style={styles.langPill}>
+                <Text style={styles.contactItem}>
+                  {t('clinician.detail.language' as TranslationKey)}: {patientProfile.language_preference.toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.contactItem}>
+                {lastActivityISO
+                  ? `${t('clinician.detail.lastActivity' as TranslationKey).replace('{when}', relativeTime(lastActivityISO, language))}`
+                  : t('clinician.detail.lastActivity.none' as TranslationKey)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.contactsToggle}
+              onPress={() => setContactsExpanded(e => !e)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              disabled={!patientProfile.share_full_name || emergencyContacts.length === 0}
+            >
+              <Feather name="phone" size={12} color={COLORS.textSecondary} />
+              <Text style={styles.contactItem}>
+                {patientProfile.share_full_name
+                  ? t('clinician.detail.contactsCount' as TranslationKey).replace(
+                      '{count}',
+                      String(emergencyContacts.length)
+                    )
+                  : t('clinician.detail.contactsHidden' as TranslationKey)}
+              </Text>
+              {patientProfile.share_full_name && emergencyContacts.length > 0 && (
+                <Feather
+                  name={contactsExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={14}
+                  color={COLORS.textSecondary}
+                />
+              )}
+            </TouchableOpacity>
+            {contactsExpanded && patientProfile.share_full_name && emergencyContacts.length > 0 && (
+              <View style={styles.contactList}>
+                {emergencyContacts.map(ec => (
+                  <View key={ec.id} style={styles.contactRow}>
+                    <Text style={[styles.contactItem, styles.contactName]}>{ec.name}</Text>
+                    <Text style={styles.contactItem}>{ec.role_label}</Text>
+                    <Text style={styles.contactItem}>{ec.phone}</Text>
+                  </View>
+                ))}
+              </View>
             )}
           </View>
         )}
@@ -295,6 +447,14 @@ export default function PatientDetailPane({
           )}
         </Section>
 
+        {isClinicianView && careEventsResult && (
+          <CareEventsTimeline
+            events={careEventsResult.events}
+            totalInWindow={careEventsResult.totalInWindow}
+            language={language}
+          />
+        )}
+
         <View style={styles.footer}>
           <Feather name="shield" size={12} color={COLORS.textLight} />
           <Text style={styles.footerText}>Observations only. Share with your care team.</Text>
@@ -375,9 +535,40 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: SPACING.sm,
   },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
   patientName: { ...TYPOGRAPHY.h2, color: COLORS.text, flex: 1 },
   patientMeta: { ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary },
   patientReactions: { ...TYPOGRAPHY.bodySmall, color: COLORS.statusUrgent ?? '#DC3B3B', fontWeight: '600' },
+  contactStrip: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  contactItem: { ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary },
+  langPill: {
+    backgroundColor: COLORS.surfaceElevated,
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+  },
+  contactsToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: SPACING.xs,
+  },
+  contactList: { gap: 4, marginTop: SPACING.xs },
+  contactRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+    paddingVertical: 2,
+  },
+  contactName: { fontWeight: '600', color: COLORS.text },
   header: { gap: 4, marginBottom: SPACING.xs },
   title: { ...TYPOGRAPHY.h2, color: COLORS.text },
   subtitle: { ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary },
