@@ -16,7 +16,7 @@ export const MOCK_PROFILE: Profile = {
   pdpa_consented: true,
   pdpa_consented_at: '2025-01-15T00:00:00+07:00',
   share_full_name: false,
-  recommended_visit_interval_days: 28,
+  recommended_visit_interval_days: 14,
   created_at: '2025-01-15T00:00:00+07:00',
   updated_at: '2026-04-01T00:00:00+07:00',
 };
@@ -130,6 +130,42 @@ export const MOCK_SYMPTOM_LOGS: SymptomLog[] = [
     notes: 'Mild tiredness, resting at home.',
     created_at: '2026-02-10T18:00:00+07:00',
   },
+  // Recent between-visit logs (no linked transfusion). These show the overdue-aware
+  // bump in action — the patient is 21 days past their planned visit, so any
+  // logged symptoms here are evaluated with elevated severity.
+  {
+    id: 'sl-007',
+    user_id: MOCK_USER_ID,
+    transfusion_id: null,
+    logged_at: '2026-05-04T11:00:00+07:00',
+    symptoms: ['fatigue'],
+    severity_scores: { fatigue: 3 },
+    outcome: 'normal',
+    notes: 'Tired today. Hb feels low.',
+    created_at: '2026-05-04T11:00:00+07:00',
+  },
+  {
+    id: 'sl-008',
+    user_id: MOCK_USER_ID,
+    transfusion_id: null,
+    logged_at: '2026-05-09T15:00:00+07:00',
+    symptoms: ['fatigue', 'fever'],
+    severity_scores: { fatigue: 5, fever: 4 },
+    outcome: 'monitor',
+    notes: 'Low-grade fever this afternoon. No clear cause.',
+    created_at: '2026-05-09T15:00:00+07:00',
+  },
+  {
+    id: 'sl-009',
+    user_id: MOCK_USER_ID,
+    transfusion_id: null,
+    logged_at: '2026-05-12T19:30:00+07:00',
+    symptoms: ['fever', 'chills', 'dark_urine'],
+    severity_scores: { fever: 7, chills: 5, dark_urine: 4 },
+    outcome: 'urgent',
+    notes: 'Fever spiked, urine darker than usual. Need to contact clinician.',
+    created_at: '2026-05-12T19:30:00+07:00',
+  },
 ];
 
 export const MOCK_MEDICATION_REMINDERS: MedicationReminder[] = [
@@ -187,5 +223,19 @@ export const MOCK_APPOINTMENTS: Appointment[] = [
     external_id: null,
     external_source_name: null,
     created_at: '2026-04-01T00:00:00+07:00',
+  },
+  // Auto-imported from the TH Core FHIR sandbox — showcases the hospital
+  // appointment-sync integration path.
+  {
+    id: 'appt-003',
+    user_id: MOCK_USER_ID,
+    scheduled_date: '2026-06-05T10:00:00+07:00',
+    hospital: 'โรงพยาบาลสงขลานครินทร์',
+    notes: 'Hematology follow-up (auto-imported from hospital FHIR).',
+    linked_transfusion_id: null,
+    source: 'fhir_th_core',
+    external_id: 'Appointment/HC-FHIR-48291-203',
+    external_source_name: 'TH Core FHIR sandbox',
+    created_at: '2026-05-10T08:00:00+07:00',
   },
 ];

@@ -5,6 +5,7 @@ import {
   MOCK_SYMPTOM_LOGS,
   MOCK_APPOINTMENTS,
   MOCK_MEDICATION_REMINDERS,
+  MOCK_USER_ID,
 } from './data';
 import {
   MOCK_CLINICIAN_PROFILE,
@@ -349,7 +350,37 @@ export async function getMostRecentPastAppointmentForPatient(
 
 // ── Emergency contacts (mock) ──────────────────────────────────
 
-let mockEmergencyContacts: EmergencyContact[] = [];
+// Pre-populated for the demo patient (สมชาย / Somchai). In real Supabase mode
+// these come from the emergency_contacts table via RLS-gated queries.
+let mockEmergencyContacts: EmergencyContact[] = [
+  {
+    id: 'ec-mock-001',
+    user_id: MOCK_USER_ID,
+    name: 'วนิดา ทะลังสาง',
+    phone: '0812345678',
+    role_label: 'Caretaker',
+    priority: 1,
+    created_at: '2025-01-20T00:00:00+07:00',
+  },
+  {
+    id: 'ec-mock-002',
+    user_id: MOCK_USER_ID,
+    name: 'นายแพทย์สุวรรณ ตันตระกูล',
+    phone: '0898765432',
+    role_label: 'Doctor',
+    priority: 2,
+    created_at: '2025-01-20T00:00:00+07:00',
+  },
+  {
+    id: 'ec-mock-003',
+    user_id: MOCK_USER_ID,
+    name: 'นิรันดร์ ทะลังสาง',
+    phone: '0856789012',
+    role_label: 'Other',
+    priority: 3,
+    created_at: '2025-01-20T00:00:00+07:00',
+  },
+];
 let mockEmergencyContactIdCounter = 1;
 
 export async function listEmergencyContacts(_userId: string): Promise<EmergencyContact[]> {
