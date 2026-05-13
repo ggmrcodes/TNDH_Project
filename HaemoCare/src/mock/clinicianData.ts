@@ -56,8 +56,8 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
   {
     profile: baseProfile('mock-pt-001', 'Somchai Panyawong', 'HC-100001', 28),
     transfusions: [
-      { id: 't1a', user_id: 'mock-pt-001', date: daysAgo(35), hospital: 'Songklanagarind', units_received: 2, reaction_noted: false, reaction_detail: '', notes: '', pre_hb_g_dl: 6.8, post_hb_g_dl: 9.4, created_at: daysAgo(35) },
-      { id: 't1b', user_id: 'mock-pt-001', date: daysAgo(63), hospital: 'Songklanagarind', units_received: 2, reaction_noted: false, reaction_detail: '', notes: '', pre_hb_g_dl: 7.1, post_hb_g_dl: 9.6, created_at: daysAgo(63) },
+      { id: 't1a', user_id: 'mock-pt-001', date: daysAgo(56), hospital: 'Songklanagarind', units_received: 2, reaction_noted: false, reaction_detail: '', notes: '', pre_hb_g_dl: 6.8, post_hb_g_dl: 9.4, created_at: daysAgo(56) },
+      { id: 't1b', user_id: 'mock-pt-001', date: daysAgo(84), hospital: 'Songklanagarind', units_received: 2, reaction_noted: false, reaction_detail: '', notes: '', pre_hb_g_dl: 7.1, post_hb_g_dl: 9.6, created_at: daysAgo(84) },
     ],
     symptomLogs: [
       { id: 's1a', user_id: 'mock-pt-001', transfusion_id: 't1a', logged_at: daysAgo(3), symptoms: ['fatigue', 'headache'], severity_scores: { fatigue: 5, headache: 4 }, outcome: 'monitor', notes: '', created_at: daysAgo(3) },

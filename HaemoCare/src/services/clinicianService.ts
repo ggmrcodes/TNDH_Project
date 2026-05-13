@@ -61,6 +61,16 @@ export async function getSymptomLogsForPatient(userId: string): Promise<SymptomL
   return (data ?? []) as SymptomLog[];
 }
 
+export async function getProfileForPatient(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as Profile | null) ?? null;
+}
+
 export async function getMostRecentPastAppointmentForPatient(
   userId: string
 ): Promise<Appointment | null> {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import { Profile } from '../types/database';
@@ -37,6 +37,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isMockMode, setIsMockMode] = useState(false);
   const [clinicianProfile, setClinicianProfile] = useState<ClinicianProfile | null>(null);
+
+  const isMockModeRef = useRef(isMockMode);
+  useEffect(() => { isMockModeRef.current = isMockMode; }, [isMockMode]);
 
   const role: 'patient' | 'clinician' | null =
     clinicianProfile ? 'clinician' : profile ? 'patient' : null;
@@ -81,11 +84,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (isMockModeRef.current) return; // Don't let real auth events disturb mock sessions.
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
         fetchProfile(s.user.id);
-      } else if (!isMockMode) {
+      } else {
         setProfile(null);
       }
     });
@@ -126,6 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsMockMode(true);
       setUser({ id: MOCK_USER_ID, email: MOCK_EMAIL } as User);
       setProfile({ ...MOCK_PROFILE });
+      setClinicianProfile(null);
       return {};
     }
 
@@ -152,6 +157,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     await supabase.auth.signOut();
     setProfile(null);
+    setClinicianProfile(null);
+    setIsMockMode(false);
   };
 
   return (

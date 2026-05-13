@@ -320,6 +320,10 @@ export async function getAssignedPatientById(userId: string): Promise<MockLinked
   return MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId) ?? null;
 }
 
+export async function getProfileForPatient(userId: string): Promise<Profile | null> {
+  return MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.profile ?? null;
+}
+
 export async function getTransfusionsForPatient(userId: string): Promise<Transfusion[]> {
   return MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.transfusions ?? [];
 }

@@ -4,12 +4,14 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { MedicationReminder, SymptomLog, Transfusion } from '../../types/database';
+import { MedicationReminder, Profile, SymptomLog, Transfusion } from '../../types/database';
 import * as mockServices from '../../mock/services';
 import * as realSymptomService from '../../services/symptomService';
 import * as realTransfusionService from '../../services/transfusionService';
 import * as realClinicianService from '../../services/clinicianService';
 import { formatDate } from '../../utils/dateHelpers';
+import { computeOverdueState } from '../../utils/overdueVisit';
+import OverdueBadge from './OverdueBadge';
 import {
   projectHbDecay,
   HbDecayResult,
@@ -48,6 +50,7 @@ interface LoadedData {
   transfusions: Transfusion[];
   logs: SymptomLog[];
   medications: MedicationReminder[];
+  profile: Profile | null;
 }
 
 async function loadPatientData(
@@ -56,11 +59,12 @@ async function loadPatientData(
   isClinicianView: boolean
 ): Promise<LoadedData> {
   if (isMockMode && isClinicianView) {
-    const [txs, slogs] = await Promise.all([
+    const [txs, slogs, prof] = await Promise.all([
       mockServices.getTransfusionsForPatient(userId),
       mockServices.getSymptomLogsForPatient(userId),
+      mockServices.getProfileForPatient(userId),
     ]);
-    return { transfusions: txs, logs: slogs, medications: [] };
+    return { transfusions: txs, logs: slogs, medications: [], profile: prof };
   }
   if (isMockMode) {
     const [txs, slogs, meds] = await Promise.all([
@@ -68,20 +72,21 @@ async function loadPatientData(
       mockServices.getSymptomLogs(userId, 200),
       mockServices.getMedicationReminders(userId),
     ]);
-    return { transfusions: txs, logs: slogs, medications: meds };
+    return { transfusions: txs, logs: slogs, medications: meds, profile: null };
   }
   if (isClinicianView) {
-    const [txs, slogs] = await Promise.all([
+    const [txs, slogs, prof] = await Promise.all([
       realClinicianService.getTransfusionsForPatient(userId),
       realClinicianService.getSymptomLogsForPatient(userId),
+      realClinicianService.getProfileForPatient(userId),
     ]);
-    return { transfusions: txs, logs: slogs, medications: [] };
+    return { transfusions: txs, logs: slogs, medications: [], profile: prof };
   }
   const [txs, slogs] = await Promise.all([
     realTransfusionService.getTransfusions(userId),
     realSymptomService.getSymptomLogs(userId, 200),
   ]);
-  return { transfusions: txs, logs: slogs, medications: [] };
+  return { transfusions: txs, logs: slogs, medications: [], profile: null };
 }
 
 export default function PatientDetailPane({
@@ -94,6 +99,7 @@ export default function PatientDetailPane({
   const [transfusions, setTransfusions] = useState<Transfusion[]>([]);
   const [logs, setLogs] = useState<SymptomLog[]>([]);
   const [medications, setMedications] = useState<MedicationReminder[]>([]);
+  const [patientProfile, setPatientProfile] = useState<Profile | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -106,6 +112,7 @@ export default function PatientDetailPane({
           setTransfusions(data.transfusions);
           setLogs(data.logs);
           setMedications(data.medications);
+          setPatientProfile(data.profile);
           setLoading(false);
         }
       })();
@@ -116,6 +123,20 @@ export default function PatientDetailPane({
   );
 
   const hbResult: HbDecayResult = useMemo(() => projectHbDecay(transfusions), [transfusions]);
+
+  const overdueState = useMemo(() => {
+    if (!patientProfile || transfusions.length === 0) return { isOverdue: false as const };
+    const sorted = [...transfusions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const mostRecentTransfusion = sorted[0] ?? null;
+    return computeOverdueState({
+      profile: { recommended_visit_interval_days: patientProfile.recommended_visit_interval_days },
+      mostRecentTransfusion,
+      mostRecentPastAppointment: null,
+      today: new Date(),
+    });
+  }, [patientProfile, transfusions]);
 
   const timepoints: SymptomTimepoint[] = useMemo(
     () => computeSymptomTimepoints(logs, transfusions),
@@ -148,6 +169,26 @@ export default function PatientDetailPane({
   return (
     <ResponsiveContainer>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {isClinicianView && patientProfile && (
+          <View style={styles.passportHeader}>
+            <View style={styles.passportTop}>
+              <Text style={styles.patientName}>
+                {patientProfile.share_full_name ? patientProfile.full_name : patientProfile.patient_id}
+              </Text>
+              {overdueState.isOverdue && (
+                <OverdueBadge daysOverdue={overdueState.daysOverdue} tier={overdueState.bumpTiers} />
+              )}
+            </View>
+            <Text style={styles.patientMeta}>
+              {patientProfile.patient_id} · {patientProfile.blood_type || '?'}{patientProfile.rh_factor || ''}
+              {patientProfile.antibodies.length > 0 ? `  ·  Antibodies: ${patientProfile.antibodies.join(', ')}` : ''}
+            </Text>
+            {patientProfile.known_reactions.trim().length > 0 && (
+              <Text style={styles.patientReactions}>⚠ {patientProfile.known_reactions}</Text>
+            )}
+          </View>
+        )}
+
         <View style={styles.header}>
           <Text style={styles.title}>{t('preVisit.title')}</Text>
           <Text style={styles.subtitle}>{t('preVisit.subtitle')}</Text>
@@ -319,6 +360,24 @@ function windowRange(p: SymptomPattern): string {
 
 const styles = StyleSheet.create({
   scroll: { padding: SPACING.md, paddingBottom: SPACING.xxl, gap: SPACING.md },
+  passportHeader: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    gap: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    ...SHADOWS.card,
+  },
+  passportTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: SPACING.sm,
+  },
+  patientName: { ...TYPOGRAPHY.h2, color: COLORS.text, flex: 1 },
+  patientMeta: { ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary },
+  patientReactions: { ...TYPOGRAPHY.bodySmall, color: COLORS.statusUrgent ?? '#DC3B3B', fontWeight: '600' },
   header: { gap: 4, marginBottom: SPACING.xs },
   title: { ...TYPOGRAPHY.h2, color: COLORS.text },
   subtitle: { ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary },
