@@ -291,6 +291,19 @@ const en = {
   'importAppt.ics.eventFound': 'event found',
   'importAppt.ics.eventsFound': 'events found',
   'importAppt.ics.saveSelected': 'Import selected',
+
+  // Clinician dashboard
+  'clinician.dashboard.title': 'Clinician Dashboard',
+  'clinician.cohort.overdue': 'OVERDUE',
+  'clinician.cohort.monitor': 'MONITOR',
+  'clinician.cohort.stable': 'STABLE',
+  'clinician.filter.overdue': 'Overdue',
+  'clinician.filter.recentUrgent': 'Urgent in last 14d',
+  'clinician.filter.hasReactions': 'Has reactions on file',
+  'clinician.queue.empty': 'No assigned patients',
+  'clinician.detail.empty': 'Select a patient',
+  'clinician.detail.reactionOnFile': 'Reaction on last transfusion',
+  'clinician.signOut': 'Sign out',
 } as const;
 
 export default en;
