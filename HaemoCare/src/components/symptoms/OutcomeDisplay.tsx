@@ -48,7 +48,7 @@ export default function OutcomeDisplay({ result }: OutcomeDisplayProps) {
         isUrgent && styles.urgentMessage,
         { color: ICON_COLORS[result.outcome] },
       ]}>
-        {t(result.messageKey as TranslationKey)}
+        {t(`status.${result.outcome}.message` as TranslationKey)}
       </Text>
       {result.triggeringSymptoms.length > 0 && (
         <View style={styles.triggers}>
