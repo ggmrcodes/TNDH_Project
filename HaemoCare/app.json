@@ -2,7 +2,7 @@
   "expo": {
     "name": "HaemoCare",
     "slug": "haemocare",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "runtimeVersion": { "policy": "appVersion" },
     "updates": { "url": "https://u.expo.dev/PLACEHOLDER_PROJECT_ID" },
     "orientation": "portrait",
@@ -32,7 +32,8 @@
     "plugins": [
       "expo-secure-store",
       "expo-font",
-      "expo-updates"
+      "expo-updates",
+      "expo-notifications"
     ]
   }
 }
