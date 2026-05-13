@@ -17,7 +17,10 @@
     ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg))"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^.+/config/supabase$": "<rootDir>/src/__mocks__/supabase.ts"
+    }
   },
   "dependencies": {
     "@expo-google-fonts/fraunces": "^0.4.1",
@@ -58,6 +61,7 @@
   },
   "devDependencies": {
     "@expo/vector-icons": "^15.1.1",
+    "@testing-library/react-native": "^13.3.3",
     "@types/react": "~19.1.0",
     "babel-preset-expo": "~54.0.10",
     "playwright": "^1.59.1",

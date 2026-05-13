@@ -154,6 +154,16 @@ export async function getPastAppointments(): Promise<Appointment[]> {
     .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 }
 
+export async function getMostRecentPastAppointment(
+  _userId?: string
+): Promise<Appointment | null> {
+  const now = Date.now();
+  const past = appointments
+    .filter((a) => new Date(a.scheduled_date).getTime() < now)
+    .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+  return past[0] ?? null;
+}
+
 export async function getAppointmentById(id: string): Promise<Appointment | null> {
   return appointments.find((a) => a.id === id) ?? null;
 }

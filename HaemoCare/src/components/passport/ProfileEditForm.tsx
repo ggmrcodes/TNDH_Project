@@ -24,6 +24,9 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
   const [newAntibody, setNewAntibody] = useState('');
   const [knownReactions, setKnownReactions] = useState(profile?.known_reactions || '');
   const [medications, setMedications] = useState(profile?.medications || '');
+  const [intervalDays, setIntervalDays] = useState<number>(
+    profile?.recommended_visit_interval_days ?? 28
+  );
 
   const addAntibody = () => {
     const trimmed = newAntibody.trim();
@@ -45,6 +48,7 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
       antibodies,
       known_reactions: knownReactions.trim(),
       medications: medications.trim(),
+      recommended_visit_interval_days: intervalDays,
     });
   };
 
@@ -133,6 +137,20 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
         numberOfLines={3}
       />
 
+      <Text style={styles.label}>{t('profileSetup.visitInterval')}</Text>
+      <TextInput
+        style={styles.input}
+        keyboardType="number-pad"
+        value={String(intervalDays)}
+        onChangeText={(s) => {
+          const n = parseInt(s.replace(/[^0-9]/g, ''), 10);
+          setIntervalDays(Number.isFinite(n) ? Math.min(180, Math.max(7, n)) : 28);
+        }}
+        placeholder="28"
+        placeholderTextColor={COLORS.textLight}
+      />
+      <Text style={styles.hint}>{t('profileSetup.visitIntervalHint')}</Text>
+
       <Button
         label={submitLabel || t('common.save')}
         onPress={handleSubmit}
@@ -168,6 +186,11 @@ const styles = StyleSheet.create({
   multiline: {
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  hint: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textLight,
+    marginBottom: SPACING.sm,
   },
   segmentRow: {
     flexDirection: 'row',

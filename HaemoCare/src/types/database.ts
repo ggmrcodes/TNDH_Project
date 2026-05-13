@@ -12,6 +12,7 @@ export interface Profile {
   pdpa_consented: boolean;
   pdpa_consented_at: string | null;
   share_full_name: boolean;
+  recommended_visit_interval_days: number;
   created_at: string;
   updated_at: string;
 }

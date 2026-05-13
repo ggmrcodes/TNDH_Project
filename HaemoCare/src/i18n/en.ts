@@ -48,6 +48,8 @@ const en = {
   'profileSetup.knownReactions': 'Known Transfusion Reactions',
   'profileSetup.medications': 'Current Medications',
   'profileSetup.complete': 'Complete Profile',
+  'profileSetup.visitInterval': 'Days between transfusions',
+  'profileSetup.visitIntervalHint': 'Default 28 days. Used to warn when you are overdue.',
 
   // Tabs
   'tab.passport': 'Passport',
@@ -70,6 +72,13 @@ const en = {
   'passport.noAntibodies': 'None recorded',
   'passport.noReactions': 'None recorded',
   'passport.noMedications': 'None recorded',
+
+  // Overdue Visit
+  'overdue.banner.monitor': "You're {days} days past your planned visit. Logged symptoms are being treated as more severe.",
+  'overdue.banner.monitor.cta': 'Book appointment',
+  'overdue.banner.appointments': "{days} days overdue — book an appointment now.",
+  'overdue.banner.appointments.cta': 'Book now',
+  'overdue.bumpExplanation': "Because you're {days} days past your planned visit, we've raised this from {from} to {to}. You can change it back, but please contact your hospital.",
 
   // Symptom Monitor
   'symptoms.title': 'Symptom Monitor',

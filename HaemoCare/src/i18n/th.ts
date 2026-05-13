@@ -50,6 +50,8 @@ const th: Record<TranslationKey, string> = {
   'profileSetup.knownReactions': 'ปฏิกิริยาจากการรับเลือดที่เคยเกิดขึ้น',
   'profileSetup.medications': 'ยาที่ใช้อยู่ปัจจุบัน',
   'profileSetup.complete': 'บันทึกโปรไฟล์',
+  'profileSetup.visitInterval': 'ระยะห่างระหว่างการให้เลือด (วัน)',
+  'profileSetup.visitIntervalHint': 'ค่าเริ่มต้น 28 วัน ใช้สำหรับเตือนเมื่อคุณเลยกำหนด',
 
   // Tabs
   'tab.passport': 'พาสปอร์ต',
@@ -72,6 +74,13 @@ const th: Record<TranslationKey, string> = {
   'passport.noAntibodies': 'ไม่มีบันทึก',
   'passport.noReactions': 'ไม่มีบันทึก',
   'passport.noMedications': 'ไม่มีบันทึก',
+
+  // Overdue Visit
+  'overdue.banner.monitor': 'คุณเลยกำหนดนัดมา {days} วันแล้ว อาการที่บันทึกจะถูกประเมินว่ามีความรุนแรงสูงขึ้น',
+  'overdue.banner.monitor.cta': 'จองนัด',
+  'overdue.banner.appointments': 'เลยกำหนด {days} วัน — กรุณาจองนัดทันที',
+  'overdue.banner.appointments.cta': 'จองตอนนี้',
+  'overdue.bumpExplanation': 'เนื่องจากคุณเลยกำหนดนัดมา {days} วัน เราจึงยกระดับจาก {from} เป็น {to} คุณสามารถเปลี่ยนกลับได้ แต่กรุณาติดต่อโรงพยาบาล',
 
   // Symptom Monitor
   'symptoms.title': 'ติดตามอาการ',

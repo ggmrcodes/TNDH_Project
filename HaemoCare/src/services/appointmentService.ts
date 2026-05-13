@@ -35,6 +35,22 @@ export async function getPastAppointments(userId: string): Promise<Appointment[]
   return (data ?? []) as Appointment[];
 }
 
+export async function getMostRecentPastAppointment(
+  userId: string
+): Promise<Appointment | null> {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('*')
+    .eq('user_id', userId)
+    .lt('scheduled_date', new Date().toISOString())
+    .order('scheduled_date', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return (data as Appointment | null) ?? null;
+}
+
 export async function getAppointmentById(id: string): Promise<Appointment | null> {
   const { data, error } = await supabase
     .from('appointments')
