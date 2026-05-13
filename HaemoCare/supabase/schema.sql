@@ -203,7 +203,10 @@ begin
   if a_user is null or b_user is null then
     raise exception 'contact not found';
   end if;
-  if a_user <> auth.uid() or b_user <> auth.uid() then
+  if auth.uid() is null then
+    raise exception 'not authenticated';
+  end if;
+  if a_user is distinct from auth.uid() or b_user is distinct from auth.uid() then
     raise exception 'not authorized';
   end if;
   update emergency_contacts
@@ -215,6 +218,9 @@ begin
     where id in (a_id, b_id);
 end;
 $$;
+
+revoke execute on function public.swap_emergency_contact_priorities(uuid, uuid) from anon;
+grant execute on function public.swap_emergency_contact_priorities(uuid, uuid) to authenticated;
 
 -- ============================================
 -- INDEXES

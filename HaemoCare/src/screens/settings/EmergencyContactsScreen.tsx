@@ -14,7 +14,7 @@ import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
-import { isValidPhone } from '../../utils/emergencySms';
+import { isValidPhone, digitsOnly } from '../../utils/emergencySms';
 import * as realService from '../../services/emergencyContactsService';
 import * as mockServices from '../../mock/services';
 import { COLORS, SPACING } from '../../config/theme';
@@ -43,10 +43,10 @@ export default function EmergencyContactsScreen() {
 
   const handleDelete = useCallback(
     (c: EmergencyContact) => {
-      Alert.alert('Delete contact', `Remove ${c.name}?`, [
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert(t('emergency.settings.deleteConfirmTitle'), t('emergency.settings.deleteConfirmBody', { name: c.name }), [
+        { text: t('emergency.settings.cancelAction'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: t('emergency.settings.deleteAction'),
           style: 'destructive',
           onPress: async () => {
             await svc.deleteEmergencyContact(c.id);
@@ -108,7 +108,7 @@ export default function EmergencyContactsScreen() {
                 {priority > 1 && (
                   <TouchableOpacity
                     onPress={() => handleMove(c, -1)}
-                    accessibilityLabel="Move up"
+                    accessibilityLabel={t('emergency.settings.a11yMoveUp')}
                   >
                     <Feather name="arrow-up" size={18} color={COLORS.textLight} />
                   </TouchableOpacity>
@@ -116,20 +116,20 @@ export default function EmergencyContactsScreen() {
                 {priority < 3 && (
                   <TouchableOpacity
                     onPress={() => handleMove(c, 1)}
-                    accessibilityLabel="Move down"
+                    accessibilityLabel={t('emergency.settings.a11yMoveDown')}
                   >
                     <Feather name="arrow-down" size={18} color={COLORS.textLight} />
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   onPress={() => setEditing({ priority, existing: c })}
-                  accessibilityLabel="Edit"
+                  accessibilityLabel={t('emergency.settings.a11yEdit')}
                 >
                   <Feather name="edit-2" size={18} color={COLORS.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(c)}
-                  accessibilityLabel="Delete"
+                  accessibilityLabel={t('emergency.settings.a11yDelete')}
                 >
                   <Feather name="trash-2" size={18} color={COLORS.statusUrgent} />
                 </TouchableOpacity>
@@ -176,40 +176,40 @@ function ContactFormModal({
   const { t } = useLanguage();
   const [name, setName] = useState(existing?.name ?? '');
   const [phone, setPhone] = useState(existing?.phone ?? '');
-  const [role, setRole] = useState<Role>(() => {
-    const label = existing?.role_label ?? '';
-    if (label === 'Doctor' || label === 'แพทย์') return 'doctor';
-    if (label === 'Caretaker' || label === 'ผู้ดูแล') return 'caretaker';
-    return 'other';
-  });
-  const [customRole, setCustomRole] = useState(
-    role === 'other' ? (existing?.role_label ?? '') : '',
+  const [role, setRole] = useState<Role>(() =>
+    existing?.role_label === 'Doctor' ? 'doctor'
+      : existing?.role_label === 'Caretaker' ? 'caretaker'
+      : 'other'
+  );
+  const [customRole, setCustomRole] = useState(() =>
+    existing?.role_label && existing.role_label !== 'Doctor' && existing.role_label !== 'Caretaker'
+      ? existing.role_label
+      : ''
   );
   const [error, setError] = useState<string | null>(null);
   const svc = isMockMode ? mockServices : realService;
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setError('Name is required');
+      setError(t('emergency.settings.nameRequired'));
       return;
     }
     if (!isValidPhone(phone)) {
       setError(t('emergency.errors.invalidPhone'));
       return;
     }
-    const role_label =
-      role === 'other' ? customRole.trim() : t(ROLE_KEYS[role]);
+    const role_label = role === 'other' ? customRole.trim() : (role === 'caretaker' ? 'Caretaker' : 'Doctor');
     try {
       if (existing) {
         await svc.updateEmergencyContact(existing.id, {
           name: name.trim(),
-          phone: phone.trim(),
+          phone: digitsOnly(phone),
           role_label,
         });
       } else {
         await svc.addEmergencyContact(userId, {
           name: name.trim(),
-          phone: phone.trim(),
+          phone: digitsOnly(phone),
           role_label,
           priority,
         });
@@ -226,28 +226,28 @@ function ContactFormModal({
         <View style={styles.modalCard}>
           <Text style={styles.modalTitle}>
             {existing
-              ? 'Edit contact'
-              : `Add contact (priority ${priority})`}
+              ? t('emergency.settings.editTitle')
+              : t('emergency.settings.addTitle', { n: priority })}
           </Text>
 
-          <Text style={styles.label}>Name</Text>
+          <Text style={styles.label}>{t('emergency.settings.fieldName')}</Text>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
-            placeholder="Full name"
+            placeholder={t('emergency.settings.fieldNamePlaceholder')}
           />
 
-          <Text style={styles.label}>Phone</Text>
+          <Text style={styles.label}>{t('emergency.settings.fieldPhone')}</Text>
           <TextInput
             style={styles.input}
             value={phone}
             onChangeText={setPhone}
-            placeholder="0812345678"
+            placeholder={t('emergency.settings.fieldPhonePlaceholder')}
             keyboardType="phone-pad"
           />
 
-          <Text style={styles.label}>Role</Text>
+          <Text style={styles.label}>{t('emergency.settings.fieldRole')}</Text>
           <View style={styles.chipRow}>
             {(['caretaker', 'doctor', 'other'] as Role[]).map(r => (
               <TouchableOpacity
@@ -272,7 +272,7 @@ function ContactFormModal({
               style={styles.input}
               value={customRole}
               onChangeText={setCustomRole}
-              placeholder="Custom role"
+              placeholder={t('emergency.settings.customRolePlaceholder')}
             />
           )}
 
@@ -280,10 +280,10 @@ function ContactFormModal({
 
           <View style={styles.modalActions}>
             <TouchableOpacity style={styles.modalCancel} onPress={onClose}>
-              <Text style={styles.modalCancelText}>Cancel</Text>
+              <Text style={styles.modalCancelText}>{t('emergency.settings.cancelAction')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.modalSave} onPress={handleSave}>
-              <Text style={styles.modalSaveText}>Save</Text>
+              <Text style={styles.modalSaveText}>{t('emergency.settings.saveAction')}</Text>
             </TouchableOpacity>
           </View>
         </View>
