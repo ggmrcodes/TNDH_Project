@@ -20,6 +20,8 @@ create table public.profiles (
   pdpa_consented boolean default false,
   pdpa_consented_at timestamptz,
   share_full_name boolean default false,
+  recommended_visit_interval_days integer not null default 28
+    check (recommended_visit_interval_days between 7 and 180),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
