@@ -58,15 +58,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(data as Profile);
   }, []);
 
+  const fetchClinicianProfile = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from('clinician_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error || !data) {
+      setClinicianProfile(null);
+      return;
+    }
+    // Only treat as a clinician if admin has flipped verified=true.
+    if ((data as ClinicianProfile).verified) {
+      setClinicianProfile(data as ClinicianProfile);
+    } else {
+      setClinicianProfile(null);
+    }
+  }, []);
+
   const refreshProfile = useCallback(async () => {
     if (isMockMode) {
-      setProfile({ ...MOCK_PROFILE });
+      if (clinicianProfile) {
+        setClinicianProfile({ ...MOCK_CLINICIAN_PROFILE });
+      } else {
+        setProfile({ ...MOCK_PROFILE });
+      }
       return;
     }
     if (user) {
-      await fetchProfile(user.id);
+      await Promise.all([fetchProfile(user.id), fetchClinicianProfile(user.id)]);
     }
-  }, [user, fetchProfile, isMockMode]);
+  }, [user, fetchProfile, fetchClinicianProfile, isMockMode, clinicianProfile]);
 
   useEffect(() => {
     supabase.auth.getSession()
@@ -74,7 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(s);
         setUser(s?.user ?? null);
         if (s?.user) {
-          fetchProfile(s.user.id).finally(() => setIsLoading(false));
+          Promise.all([fetchProfile(s.user.id), fetchClinicianProfile(s.user.id)])
+            .finally(() => setIsLoading(false));
         } else {
           setIsLoading(false);
         }
@@ -89,13 +112,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(s?.user ?? null);
       if (s?.user) {
         fetchProfile(s.user.id);
+        fetchClinicianProfile(s.user.id);
       } else {
         setProfile(null);
+        setClinicianProfile(null);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile, isMockMode]);
+  }, [fetchProfile, fetchClinicianProfile, isMockMode]);
 
   const isProfileComplete = !!(profile && profile.full_name.trim().length > 0);
   const isPdpaConsented = !!(profile && profile.pdpa_consented);

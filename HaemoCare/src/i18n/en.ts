@@ -409,6 +409,29 @@ const en = {
   'clinician.detail.recent.flagged': 'Flagged',
   'clinician.detail.disclaimer': 'Derived from patient self-reports. Verify before clinical action.',
   'clinician.signOut': 'Sign out',
+
+  // App updates
+  'update.banner.optional.title': 'Update available',
+  'update.banner.optional.body': 'Version {version} is ready. Tap to download.',
+  'update.banner.optional.cta': 'Download',
+  'update.banner.optional.dismiss': 'Later',
+  'update.banner.required.title': 'Update required',
+  'update.banner.required.body': 'This version is no longer supported. Please update to {version}.',
+  'update.banner.required.cta': 'Download now',
+  'update.releaseNotes.link': 'See what\'s new',
+  'update.errors.openFailed': 'Could not open the download link.',
+  'update.errors.fetchFailed': 'Could not check for updates right now.',
+  'update.errors.timeout': 'Update check timed out.',
+  'update.settings.title': 'App updates',
+  'update.settings.currentVersion': 'Current version: {version}',
+  'update.settings.checkAction': 'Check for updates',
+  'update.settings.checking': 'Checking...',
+  'update.settings.upToDate': 'You\'re on the latest version.',
+  'update.settings.optionalAvailable': 'Version {version} available.',
+  'update.settings.requiredAvailable': 'Version {version} required.',
+  'update.settings.lastCheckedAt': 'Last checked {time}',
+  'update.settings.releaseNotesAction': 'Release notes',
+  'update.settings.downloadAction': 'Download {version}',
 } as const;
 
 export default en;

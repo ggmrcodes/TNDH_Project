@@ -411,6 +411,29 @@ const th: Record<TranslationKey, string> = {
   'clinician.detail.recent.flagged': 'ที่เฝ้าระวัง',
   'clinician.detail.disclaimer': 'ข้อมูลจากที่ผู้ป่วยรายงานเอง กรุณาตรวจสอบก่อนใช้ในการตัดสินใจทางคลินิก',
   'clinician.signOut': 'ออกจากระบบ',
+
+  // App updates
+  'update.banner.optional.title': 'มีการอัปเดต',
+  'update.banner.optional.body': 'เวอร์ชัน {version} พร้อมแล้ว แตะเพื่อดาวน์โหลด',
+  'update.banner.optional.cta': 'ดาวน์โหลด',
+  'update.banner.optional.dismiss': 'ภายหลัง',
+  'update.banner.required.title': 'จำเป็นต้องอัปเดต',
+  'update.banner.required.body': 'เวอร์ชันนี้ไม่ได้รับการสนับสนุนแล้ว กรุณาอัปเดตเป็น {version}',
+  'update.banner.required.cta': 'ดาวน์โหลดทันที',
+  'update.releaseNotes.link': 'ดูสิ่งที่เปลี่ยนแปลง',
+  'update.errors.openFailed': 'ไม่สามารถเปิดลิงก์ดาวน์โหลดได้',
+  'update.errors.fetchFailed': 'ตรวจสอบการอัปเดตไม่สำเร็จ',
+  'update.errors.timeout': 'การตรวจสอบอัปเดตหมดเวลา',
+  'update.settings.title': 'การอัปเดตแอป',
+  'update.settings.currentVersion': 'เวอร์ชันปัจจุบัน: {version}',
+  'update.settings.checkAction': 'ตรวจสอบการอัปเดต',
+  'update.settings.checking': 'กำลังตรวจสอบ...',
+  'update.settings.upToDate': 'คุณใช้เวอร์ชันล่าสุดแล้ว',
+  'update.settings.optionalAvailable': 'มีเวอร์ชัน {version}',
+  'update.settings.requiredAvailable': 'จำเป็นต้องใช้เวอร์ชัน {version}',
+  'update.settings.lastCheckedAt': 'ตรวจสอบล่าสุดเมื่อ {time}',
+  'update.settings.releaseNotesAction': 'บันทึกประจำเวอร์ชัน',
+  'update.settings.downloadAction': 'ดาวน์โหลด {version}',
 };
 
 export default th;
