@@ -432,3 +432,23 @@ export async function swapEmergencyContactPriorities(aId: string, bId: string): 
   a.priority = b.priority;
   b.priority = aPrio;
 }
+
+// ── Clinician-side reads (used by clinician dashboard) ──────────
+
+export async function getPastAppointmentsForPatient(
+  userId: string,
+  sinceISO: string
+): Promise<Appointment[]> {
+  const list = MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.appointments ?? [];
+  const nowIso = new Date().toISOString();
+  return list
+    .filter(a => a.scheduled_date >= sinceISO && a.scheduled_date < nowIso)
+    .sort((a, b) => (a.scheduled_date < b.scheduled_date ? 1 : -1));
+}
+
+export async function getEmergencyContactsForPatient(
+  userId: string
+): Promise<EmergencyContact[]> {
+  const contacts = MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.emergencyContacts ?? [];
+  return [...contacts].sort((a, b) => a.priority - b.priority);
+}

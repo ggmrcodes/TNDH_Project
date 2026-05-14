@@ -150,9 +150,9 @@ export default function AppointmentsScreen() {
                     <Feather name="calendar" size={24} color={COLORS.white} />
                   </View>
                   <View style={styles.heroTextCol}>
-                    <Text style={styles.heroTitle}>Next: {formatDate(nextAppt.scheduled_date, language)}</Text>
+                    <Text style={styles.heroTitle}>{t('appointments.next', { date: formatDate(nextAppt.scheduled_date, language) })}</Text>
                     <Text style={styles.heroSub}>
-                      Monthly transfusion · {nextDays} days away
+                      {t('appointments.nextVisit')} · {t('appointments.daysAway', { days: nextDays })}
                     </Text>
                   </View>
                 </View>
@@ -189,7 +189,7 @@ export default function AppointmentsScreen() {
               activeOpacity={0.7}
             >
               <Feather name="calendar" size={18} color={COLORS.primary} />
-              <Text style={styles.scheduleBtnText}>Schedule New Appointment</Text>
+              <Text style={styles.scheduleBtnText}>{t('appointments.scheduleNew')}</Text>
             </TouchableOpacity>
           }
           ListEmptyComponent={<EmptyState icon="calendar-outline" message={t('appointments.noUpcoming')} />}
