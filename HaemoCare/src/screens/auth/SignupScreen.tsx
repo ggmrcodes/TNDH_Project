@@ -33,7 +33,7 @@ export default function SignupScreen({ navigation }: Props) {
     const result = await signUp(email.trim(), password);
     setIsLoading(false);
     if (result.error) {
-      setError(t('auth.signupError'));
+      setError(result.error);
     } else {
       Alert.alert('', t('auth.signupSuccess'));
       navigation.navigate('Login');
