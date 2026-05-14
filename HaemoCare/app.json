@@ -3,8 +3,12 @@
     "name": "HaemoCare",
     "slug": "haemocare",
     "version": "0.1.0",
-    "runtimeVersion": { "policy": "appVersion" },
-    "updates": { "url": "https://u.expo.dev/PLACEHOLDER_PROJECT_ID" },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/314bd085-73be-4d1f-b547-f275a63ce5e7"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -34,6 +38,12 @@
       "expo-font",
       "expo-updates",
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "314bd085-73be-4d1f-b547-f275a63ce5e7"
+      }
+    },
+    "owner": "ggmrdotdash"
   }
 }
