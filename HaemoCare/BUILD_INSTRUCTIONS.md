@@ -46,7 +46,7 @@ git commit -m "chore(eas): inject Expo project ID into app.json"
 git push
 ```
 
-## First APK build (v1.0.0)
+## First APK build (v0.1.0)
 
 The `version` in `app.json` is currently `1.0.0`. The preview profile in `eas.json` produces a signed APK distributable via direct download.
 
@@ -59,26 +59,26 @@ eas build --platform android --profile preview
 - EAS will ask permission to generate an Android keystore the first time — say yes. EAS stores + backs it up; you'll need the same keystore for every future build.
 - When done, the CLI prints a build URL. Visit it, download the `.apk` file.
 
-## Cut a GitHub Release for v1.0.0
+## Cut a GitHub Release for v0.1.0
 
-**Important:** name the APK file `haemocare-v1.0.0.apk` exactly — the patient handout (`PATIENT_HANDOUT.md`) and `update-manifest.json` both reference this filename. If you change it, regenerate the handout + edit the manifest.
+**Important:** name the APK file `haemocare-v0.1.0.apk` exactly — the patient handout (`PATIENT_HANDOUT.md`) and `update-manifest.json` both reference this filename. If you change it, regenerate the handout + edit the manifest.
 
 ```bash
 # Rename the downloaded APK so it matches the filename in the handout/manifest:
-mv ~/Downloads/build-*.apk ./haemocare-v1.0.0.apk
+mv ~/Downloads/build-*.apk ./haemocare-v0.1.0.apk
 
 # In the repo root:
-gh release create v1.0.0 \
-  ./haemocare-v1.0.0.apk \
-  --title "HaemoCare v1.0.0" \
+gh release create v0.1.0 \
+  ./haemocare-v0.1.0.apk \
+  --title "HaemoCare v0.1.0" \
   --notes "First public pilot release. See PATIENT_HANDOUT.md for install instructions."
 ```
 
-(Or do it via the web UI at https://github.com/ggmrcodes/TNDH_Project/releases/new — tag `v1.0.0`, attach the APK with that exact filename, write release notes.)
+(Or do it via the web UI at https://github.com/ggmrcodes/TNDH_Project/releases/new — tag `v0.1.0`, attach the APK with that exact filename, write release notes.)
 
 The APK URL will be:
 ```
-https://github.com/ggmrcodes/TNDH_Project/releases/download/v1.0.0/haemocare-v1.0.0.apk
+https://github.com/ggmrcodes/TNDH_Project/releases/download/v0.1.0/haemocare-v0.1.0.apk
 ```
 
 The release-page URL (what the patient handout's QR points at) will be:
@@ -90,13 +90,13 @@ This URL auto-redirects to whatever the latest release is. **You do not need to 
 
 ## Update `update-manifest.json`
 
-The starter manifest at `../update-manifest.json` (repo root) is already pointed at v1.0.0. If the actual APK filename or release tag differs, edit those fields:
+The starter manifest at `../update-manifest.json` (repo root) is already pointed at v0.1.0. If the actual APK filename or release tag differs, edit those fields:
 
 ```bash
 # From repo root:
 $EDITOR update-manifest.json
 git add update-manifest.json
-git commit -m "chore(release): publish manifest for v1.0.0"
+git commit -m "chore(release): publish manifest for v0.1.0"
 git push origin main
 ```
 
@@ -110,7 +110,7 @@ The HaemoCare app fetches this file from `https://raw.githubusercontent.com/ggmr
 
 To print: open the markdown in any preview tool that supports embedded images (VS Code preview, Typora, etc.), Cmd+P → print at A6 (10 × 14 cm) or A5 (14 × 21 cm) for easier reading. Hand one card to each patient.
 
-The QR points at `github.com/ggmrcodes/TNDH_Project/releases/latest`, so the SAME printed card stays valid for v1.0.0, v1.1.0, etc. — no reprint needed when you cut a new release.
+The QR points at `github.com/ggmrcodes/TNDH_Project/releases/latest`, so the SAME printed card stays valid for v0.1.0, v1.1.0, etc. — no reprint needed when you cut a new release.
 
 If you change the release tag pattern OR want the QR to point somewhere else (e.g. a hospital intranet mirror), regenerate it:
 ```bash
@@ -126,7 +126,7 @@ Send patients this link: `https://github.com/ggmrcodes/TNDH_Project/releases/lat
 ### Patient install flow (what they actually do)
 
 1. Scan the QR (or open the link) on their Android phone
-2. On the GitHub release page, tap `haemocare-v1.0.0.apk` under "Assets" to download
+2. On the GitHub release page, tap `haemocare-v0.1.0.apk` under "Assets" to download
 3. When prompted, allow "install unknown apps" for the browser (Settings → Apps → Browser → Install unknown apps)
 4. Open the downloaded file, tap Install
 5. Open HaemoCare → sign up or use demo mode (`demo@haemocare.app` / `HaemoDemo2024`)
@@ -157,7 +157,7 @@ Within seconds the bundle is live. Next time any patient opens HaemoCare, it sil
 ```bash
 # 1. Bump the `version` field in app.json (versionCode is owned by EAS Cloud — do NOT touch it here)
 $EDITOR app.json
-# Update "version": "1.0.0" -> "1.1.0"
+# Update "version": "0.1.0" -> "0.2.0"
 git add app.json
 git commit -m "chore(release): bump to v1.1.0 (added X native dep)"
 
@@ -220,7 +220,7 @@ Once you have 30+ pilot users and the app is stable enough for a public launch:
 1. Get a Google Play Developer account ($25 one-time, verification takes hours-to-days)
 2. Build with the production profile: `eas build --platform android --profile production` (produces an AAB)
 3. Submit: `eas submit --platform android --profile production`
-4. Push v1.0.0 (or whichever current version) to Internal Testing → Closed Testing → Production tracks
+4. Push v0.1.0 (or whichever current version) to Internal Testing → Closed Testing → Production tracks
 5. Tell existing sideload users: "uninstall the old app, install fresh from Play Store at <link>"
 6. From this point on, Play Store handles all updates (JS via Play, native via Play). You can stop publishing new `update-manifest.json` entries.
 

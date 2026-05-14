@@ -31,8 +31,8 @@
 1. **สแกน QR** ด้วยกล้องโทรศัพท์ของคุณ
    *Scan the QR with your phone camera*
 
-2. **แตะ "haemocare-v1.0.0.apk"** เพื่อดาวน์โหลด
-   *Tap "haemocare-v1.0.0.apk" to download*
+2. **แตะ "haemocare-v0.1.0.apk"** เพื่อดาวน์โหลด
+   *Tap "haemocare-v0.1.0.apk" to download*
 
 3. **เปิดไฟล์ที่ดาวน์โหลด** เมื่อระบบถาม ให้อนุญาต "ติดตั้งแอปจากแหล่งที่ไม่รู้จัก"
    *Open the downloaded file. When prompted, allow "install from unknown sources"*
