@@ -1,4 +1,4 @@
-import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, ClinicianProfile, EmergencyContact } from '../types/database';
+import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, MedicationAdherenceEvent, AdherenceEventSource, ClinicianProfile, EmergencyContact } from '../types/database';
 import {
   MOCK_PROFILE,
   MOCK_TRANSFUSIONS,
@@ -451,4 +451,119 @@ export async function getEmergencyContactsForPatient(
 ): Promise<EmergencyContact[]> {
   const contacts = MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.emergencyContacts ?? [];
   return [...contacts].sort((a, b) => a.priority - b.priority);
+}
+
+// ── Medication adherence events (mock) ─────────────────────────
+// Lightweight in-memory store. Real-mode equivalent lives in
+// src/services/medicationsService.ts. Seeded with a small history for the
+// demo patient so the clinician adherence widget has something to render.
+
+let mockAdherenceEvents: MedicationAdherenceEvent[] = (() => {
+  // Seed: 5 of 7 days of adherence for the demo patient.
+  const seeded: MedicationAdherenceEvent[] = [];
+  const now = new Date();
+  for (let i = 0; i < 7; i++) {
+    if (i === 2 || i === 5) continue; // simulate 2 missed days
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    d.setHours(8, 5, 0, 0);
+    seeded.push({
+      id: `mock-adh-${i}`,
+      user_id: MOCK_USER_ID,
+      reminder_id: 'mock-med-1',
+      scheduled_at: (() => { const s = new Date(d); s.setHours(8, 0, 0, 0); return s.toISOString(); })(),
+      taken_at: d.toISOString(),
+      skipped_at: null,
+      source: 'manual',
+      created_at: d.toISOString(),
+    });
+  }
+  return seeded;
+})();
+let mockAdherenceEventIdCounter = 1;
+
+export async function getAdherenceEvents(
+  _userId: string,
+  sinceISO: string
+): Promise<MedicationAdherenceEvent[]> {
+  const since = new Date(sinceISO).getTime();
+  return mockAdherenceEvents
+    .filter(e => new Date(e.scheduled_at).getTime() >= since)
+    .sort((a, b) => (a.scheduled_at < b.scheduled_at ? 1 : -1));
+}
+
+export async function getAdherenceEventsForPatient(
+  userId: string,
+  sinceISO: string
+): Promise<MedicationAdherenceEvent[]> {
+  const since = new Date(sinceISO).getTime();
+  return mockAdherenceEvents
+    .filter(e => e.user_id === userId && new Date(e.scheduled_at).getTime() >= since)
+    .sort((a, b) => (a.scheduled_at < b.scheduled_at ? 1 : -1));
+}
+
+export async function getMedicationRemindersForPatient(
+  userId: string
+): Promise<MedicationReminder[]> {
+  // For non-demo patients (clinician dashboard), we have no schedule data in
+  // the mock fixture set, so return an empty array. The widget will render
+  // its empty state.
+  if (userId !== MOCK_USER_ID) return [];
+  return [...medicationReminders];
+}
+
+export async function markMedicationSkipped(
+  userId: string,
+  reminderId: string,
+  source: AdherenceEventSource = 'tap'
+): Promise<void> {
+  const reminder = medicationReminders.find(m => m.id === reminderId);
+  const now = new Date();
+  const slot = reminder?.taken_today.length ?? 0;
+  const scheduledTime = reminder?.reminder_times[slot] ?? reminder?.reminder_times[0] ?? '08:00';
+  const [hh, mm] = scheduledTime.split(':').map(Number);
+  const scheduledAt = new Date(now);
+  scheduledAt.setHours(hh ?? 0, mm ?? 0, 0, 0);
+  mockAdherenceEvents.push({
+    id: `mock-adh-skip-${mockAdherenceEventIdCounter++}`,
+    user_id: userId,
+    reminder_id: reminderId,
+    scheduled_at: scheduledAt.toISOString(),
+    taken_at: null,
+    skipped_at: now.toISOString(),
+    source,
+    created_at: now.toISOString(),
+  });
+}
+
+// Patch markMedicationTaken to also write an adherence event so mock-mode
+// produces the same clinician-side data as real mode. We can't redefine the
+// existing export so we expose a new function the screen will call when it
+// wants the adherence side-effect; the legacy markMedicationTaken stays for
+// backward-compat with anything still calling it.
+export async function markMedicationTakenWithEvent(
+  userId: string,
+  id: string,
+  source: AdherenceEventSource = 'tap'
+): Promise<MedicationReminder> {
+  const reminder = medicationReminders.find(m => m.id === id);
+  if (!reminder) throw new Error('Medication reminder not found');
+  const now = new Date();
+  const slot = reminder.taken_today.length;
+  const scheduledTime = reminder.reminder_times[slot] ?? reminder.reminder_times[0] ?? '08:00';
+  const [hh, mm] = scheduledTime.split(':').map(Number);
+  const scheduledAt = new Date(now);
+  scheduledAt.setHours(hh ?? 0, mm ?? 0, 0, 0);
+
+  mockAdherenceEvents.push({
+    id: `mock-adh-take-${mockAdherenceEventIdCounter++}`,
+    user_id: userId,
+    reminder_id: id,
+    scheduled_at: scheduledAt.toISOString(),
+    taken_at: now.toISOString(),
+    skipped_at: null,
+    source,
+    created_at: now.toISOString(),
+  });
+  return markMedicationTaken(userId, id);
 }

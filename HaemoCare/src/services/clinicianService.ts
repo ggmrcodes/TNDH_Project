@@ -6,6 +6,7 @@ import type {
   SymptomLog,
   Appointment,
   EmergencyContact,
+  MedicationAdherenceEvent,
 } from '../types/database';
 
 export async function getClinicianProfile(userId: string): Promise<ClinicianProfile | null> {
@@ -100,6 +101,35 @@ export async function getPastAppointmentsForPatient(
     .order('scheduled_date', { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as Appointment[];
+}
+
+// Reads adherence events for an assigned patient over the given window.
+// RLS gates this via is_active_clinician_for(). The caller computes
+// aggregation in the service layer for parity with mock-mode behavior.
+export async function getAdherenceEventsForPatient(
+  userId: string,
+  sinceISO: string
+): Promise<MedicationAdherenceEvent[]> {
+  const { data, error } = await supabase
+    .from('medication_adherence_events')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('scheduled_at', sinceISO)
+    .order('scheduled_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as MedicationAdherenceEvent[];
+}
+
+export async function getMedicationRemindersForPatient(
+  userId: string
+): Promise<import('../types/database').MedicationReminder[]> {
+  const { data, error } = await supabase
+    .from('medication_reminders')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as import('../types/database').MedicationReminder[];
 }
 
 // RLS must allow clinician reads on emergency_contacts via clinician_patient_links.
