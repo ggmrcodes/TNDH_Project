@@ -51,8 +51,12 @@ const th: Record<TranslationKey, string> = {
   'profileSetup.knownReactions': 'ปฏิกิริยาจากการรับเลือดที่เคยเกิดขึ้น',
   'profileSetup.medications': 'ยาที่ใช้อยู่ปัจจุบัน',
   'profileSetup.complete': 'บันทึกโปรไฟล์',
-  'profileSetup.visitInterval': 'ระยะห่างระหว่างการให้เลือด (วัน)',
-  'profileSetup.visitIntervalHint': 'ค่าเริ่มต้น 28 วัน ใช้สำหรับเตือนเมื่อคุณเลยกำหนด',
+  'profileSetup.visitInterval': 'สัปดาห์ระหว่างการให้เลือด',
+  'profileSetup.visitIntervalHint': 'ค่าเริ่มต้น 4 สัปดาห์ ใช้สำหรับเตือนเมื่อคุณเลยกำหนด',
+  'profileSetup.visitIntervalUnit.one': 'สัปดาห์',
+  'profileSetup.visitIntervalUnit.other': 'สัปดาห์',
+  'profileSetup.visitIntervalDecrease': 'ลดระยะห่าง',
+  'profileSetup.visitIntervalIncrease': 'เพิ่มระยะห่าง',
 
   // Tabs
   'tab.passport': 'พาสปอร์ต',
