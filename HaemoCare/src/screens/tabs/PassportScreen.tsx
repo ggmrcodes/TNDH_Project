@@ -23,6 +23,8 @@ import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
 import ResponsiveContainer from '../../components/common/ResponsiveContainer';
 import TodayMedicationWidget from '../../components/medications/TodayMedicationWidget';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import LabSparkline from '../../components/charts/LabSparkline';
+import { buildLabTrendsSeries } from '../../utils/labTrendsData';
 import { useUpdateContext } from '../../contexts/UpdateContext';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
@@ -235,6 +237,58 @@ export default function PassportScreen() {
             </View>
           </View>
 
+          {/* Lab trends sparklines — Hb / Hct / Ferritin */}
+          {/* (Patient view per docs/superpowers/specs/2026-05-17-lab-trends-graph-brief.md.
+              Window = "all" so the passport always shows the full history at a
+              glance; clinician chart on the dashboard side has the toggleable
+              time-window UI.) */}
+          {(() => {
+            const labSeries = buildLabTrendsSeries(allTransfusions, 'all');
+            const anyData =
+              labSeries.hb.length > 0 ||
+              labSeries.hct.length > 0 ||
+              labSeries.ferritin.length > 0;
+            return (
+              <View style={styles.infoCard}>
+                <View style={styles.infoHeader}>
+                  <View style={[styles.infoIconBg, { backgroundColor: COLORS.primaryLight }]}>
+                    <Feather name="trending-up" size={14} color={COLORS.primary} />
+                  </View>
+                  <Text style={styles.infoLabel}>{t('labTrends.sectionLabel').toUpperCase()}</Text>
+                </View>
+                {!anyData ? (
+                  <Text style={[styles.infoText, { fontSize: 13, color: COLORS.textLight }]}>
+                    {t('labTrends.empty')}
+                  </Text>
+                ) : (
+                  <View style={styles.sparkRow}>
+                    <LabSparkline
+                      label={t('labTrends.hb.short')}
+                      unit={t('labTrends.unit.hb')}
+                      points={labSeries.hb}
+                      color={COLORS.primary}
+                      emptyMessage={t('labTrends.sparkline.empty')}
+                    />
+                    <LabSparkline
+                      label={t('labTrends.hct.short')}
+                      unit={t('labTrends.unit.hct')}
+                      points={labSeries.hct}
+                      color={COLORS.accent}
+                      emptyMessage={t('labTrends.sparkline.empty')}
+                    />
+                    <LabSparkline
+                      label={t('labTrends.ferritin.short')}
+                      unit={t('labTrends.unit.ferritin')}
+                      points={labSeries.ferritin}
+                      color={COLORS.statusNormal}
+                      emptyMessage={t('labTrends.sparkline.empty')}
+                    />
+                  </View>
+                )}
+              </View>
+            );
+          })()}
+
           {/* Today's Medication Widget */}
           <TodayMedicationWidget onPress={() => navigation.navigate('MedicationReminders')} />
 
@@ -363,6 +417,8 @@ const styles = StyleSheet.create({
   },
   infoLabel: { ...TYPOGRAPHY.label, color: COLORS.textLight },
   infoText: { ...TYPOGRAPHY.body, color: COLORS.text, lineHeight: 22 },
+  // Sparkline row for lab trends (Hb / Hct / Ferritin).
+  sparkRow: { flexDirection: 'row', gap: 8, alignItems: 'stretch' },
   // Actions
   actionRow: { flexDirection: 'row', gap: 10, marginHorizontal: SPACING.md, marginTop: SPACING.lg },
   primaryBtn: {
