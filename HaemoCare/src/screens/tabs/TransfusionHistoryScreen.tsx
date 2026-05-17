@@ -12,6 +12,8 @@ import * as realTransfusionService from '../../services/transfusionService';
 import * as mockServices from '../../mock/services';
 import { Transfusion } from '../../types/database';
 import { formatDate } from '../../utils/dateHelpers';
+import { isEmptyLabs } from '../../utils/preTransfusionLabs';
+import { TranslationKey } from '../../i18n';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import ResponsiveContainer from '../../components/common/ResponsiveContainer';
 import EmptyState from '../../components/common/EmptyState';
@@ -43,36 +45,61 @@ export default function TransfusionHistoryScreen() {
   const totalUnits = transfusions.reduce((sum, tx) => sum + tx.units_received, 0);
   const reactionCount = transfusions.filter(tx => tx.reaction_noted).length;
 
-  const renderTxCard = ({ item }: { item: Transfusion }) => (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('TransfusionDetail', { transfusionId: item.id })}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.txCard, item.reaction_noted && styles.txCardReaction]}>
-        <View style={styles.txDateRow}>
-          <Feather name="droplet" size={16} color={COLORS.primary} />
-          <Text style={styles.txDate}>{formatDate(item.date, language)}</Text>
-          {item.reaction_noted && (
-            <View style={styles.reactionBadge}>
-              <Feather name="alert-triangle" size={11} color={COLORS.statusUrgent} />
-              <Text style={styles.reactionText}>{t('history.reaction')}</Text>
+  const renderTxCard = ({ item }: { item: Transfusion }) => {
+    const labs = item.pre_labs ?? null;
+    const labsPresent = !isEmptyLabs(labs);
+    const fmt = (n: number | null | undefined): string => {
+      if (n == null) return '—';
+      return Number.isInteger(n) ? String(n) : n.toFixed(1);
+    };
+    const labsLine = labsPresent
+      ? t('preLabs.summary' as TranslationKey)
+          .replace('{hb}', fmt(labs?.hb))
+          .replace('{hct}', fmt(labs?.hct))
+          .replace('{ferritin}', fmt(labs?.ferritin))
+      : null;
+    return (
+      <TouchableOpacity
+        onPress={() => navigation.navigate('TransfusionDetail', { transfusionId: item.id })}
+        activeOpacity={0.7}
+      >
+        <View style={[styles.txCard, item.reaction_noted && styles.txCardReaction]}>
+          <View style={styles.txDateRow}>
+            <Feather name="droplet" size={16} color={COLORS.primary} />
+            <Text style={styles.txDate}>{formatDate(item.date, language)}</Text>
+            {item.reaction_noted && (
+              <View style={styles.reactionBadge}>
+                <Feather name="alert-triangle" size={11} color={COLORS.statusUrgent} />
+                <Text style={styles.reactionText}>{t('history.reaction')}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.txInfoRow}>
+            <Feather name="map-pin" size={14} color={COLORS.textLight} />
+            <Text style={styles.txHospital} numberOfLines={1}>{item.hospital}</Text>
+          </View>
+          {labsLine ? (
+            <View style={styles.preLabsRow}>
+              <Feather name="activity" size={12} color={COLORS.primary} />
+              <Text style={styles.preLabsText} numberOfLines={1}>{labsLine}</Text>
+            </View>
+          ) : (
+            <View style={styles.preLabsRow}>
+              <Feather name="activity" size={12} color={COLORS.textLight} />
+              <Text style={styles.preLabsCta}>{t('preLabs.addCta' as TranslationKey)}</Text>
             </View>
           )}
-        </View>
-        <View style={styles.txInfoRow}>
-          <Feather name="map-pin" size={14} color={COLORS.textLight} />
-          <Text style={styles.txHospital} numberOfLines={1}>{item.hospital}</Text>
-        </View>
-        <View style={styles.txFooter}>
-          <View style={styles.unitPill}>
-            <Feather name="droplet" size={12} color={COLORS.primary} />
-            <Text style={styles.unitText}>{item.units_received} {t('history.summary.units')}</Text>
+          <View style={styles.txFooter}>
+            <View style={styles.unitPill}>
+              <Feather name="droplet" size={12} color={COLORS.primary} />
+              <Text style={styles.unitText}>{item.units_received} {t('history.summary.units')}</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={COLORS.textLight} />
           </View>
-          <Feather name="chevron-right" size={18} color={COLORS.textLight} />
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -194,4 +221,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryLight, paddingVertical: 4, paddingHorizontal: 10, borderRadius: RADIUS.full,
   },
   unitText: { ...TYPOGRAPHY.caption, fontWeight: '700', color: COLORS.primary },
+  preLabsRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  preLabsText: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, fontWeight: '600', flex: 1 },
+  preLabsCta: { ...TYPOGRAPHY.caption, color: COLORS.primary, fontWeight: '700' },
 });

@@ -1,4 +1,5 @@
-import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, ClinicianProfile, EmergencyContact } from '../types/database';
+import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, ClinicianProfile, EmergencyContact, PreTransfusionLabs, TransfusionLabAuditEntry } from '../types/database';
+import { validateLabs } from '../utils/preTransfusionLabs';
 import {
   MOCK_PROFILE,
   MOCK_TRANSFUSIONS,
@@ -451,4 +452,85 @@ export async function getEmergencyContactsForPatient(
 ): Promise<EmergencyContact[]> {
   const contacts = MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.emergencyContacts ?? [];
   return [...contacts].sort((a, b) => a.priority - b.priority);
+}
+
+// ── Pre-transfusion labs (mock) ──────────────────────────────────────
+//
+// In real Supabase mode, `Transfusion.pre_labs` is a JSONB column on
+// `transfusions` and the audit history lives in `transfusion_lab_audit_log`.
+// Here we mirror that shape with in-memory mutation.
+
+const mockLabAuditLog: TransfusionLabAuditEntry[] = [];
+let mockLabAuditCounter = 1;
+
+function findTxIndex(transfusionId: string): { source: 'self' | 'patient'; idx: number; patientUserId?: string } | null {
+  const ownIdx = transfusions.findIndex(t => t.id === transfusionId);
+  if (ownIdx >= 0) return { source: 'self', idx: ownIdx };
+  for (const linked of MOCK_LINKED_PATIENTS) {
+    const idx = linked.transfusions.findIndex(t => t.id === transfusionId);
+    if (idx >= 0) return { source: 'patient', idx, patientUserId: linked.profile.user_id };
+  }
+  return null;
+}
+
+function applyMockLabsUpdate(
+  located: NonNullable<ReturnType<typeof findTxIndex>>,
+  labs: PreTransfusionLabs
+): Transfusion {
+  if (located.source === 'self') {
+    transfusions[located.idx] = { ...transfusions[located.idx], pre_labs: labs };
+    return transfusions[located.idx];
+  }
+  const linked = MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === located.patientUserId);
+  if (!linked) throw new Error('Linked patient missing');
+  linked.transfusions[located.idx] = { ...linked.transfusions[located.idx], pre_labs: labs };
+  return linked.transfusions[located.idx];
+}
+
+export async function savePreLabsForTransfusion(
+  transfusionId: string,
+  actorUserId: string,
+  labs: PreTransfusionLabs
+): Promise<Transfusion> {
+  const errors = validateLabs(labs);
+  if (errors.length > 0) {
+    throw new Error(
+      `Invalid pre-transfusion labs: ${errors
+        .map(e => `${e.field} ${e.code} (${e.min}–${e.max})`)
+        .join(', ')}`
+    );
+  }
+  const located = findTxIndex(transfusionId);
+  if (!located) throw new Error('Transfusion not found');
+  const current =
+    located.source === 'self'
+      ? transfusions[located.idx]
+      : MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === located.patientUserId)!.transfusions[located.idx];
+  mockLabAuditLog.unshift({
+    id: `mock-lab-audit-${mockLabAuditCounter++}`,
+    transfusion_id: transfusionId,
+    previous_value: current.pre_labs ?? null,
+    new_value: labs,
+    changed_by_user_id: actorUserId,
+    changed_at: new Date().toISOString(),
+  });
+  return applyMockLabsUpdate(located, labs);
+}
+
+export async function listLabAuditEntries(
+  transfusionId: string
+): Promise<TransfusionLabAuditEntry[]> {
+  return mockLabAuditLog
+    .filter(e => e.transfusion_id === transfusionId)
+    .sort((a, b) => (a.changed_at < b.changed_at ? 1 : -1));
+}
+
+// Stub for the photo-attach flow in mock mode — no real upload. Returns a
+// data URI so the display component can still render the chosen image.
+export async function uploadLabSlipPhotoMock(
+  _patientUserId: string,
+  _transfusionId: string,
+  localUri: string
+): Promise<string> {
+  return localUri;
 }

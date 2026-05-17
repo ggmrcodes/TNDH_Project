@@ -33,6 +33,16 @@ export const MOCK_TRANSFUSIONS: Transfusion[] = [
     notes: 'Hb pre: 7.0 g/dL. Uneventful transfusion.',
     pre_hb_g_dl: 7.0,
     post_hb_g_dl: 10.2,
+    pre_labs: {
+      hb: 7.0,
+      hct: 22.4,
+      ferritin: 1850,
+      recorded_at: '2026-04-09T08:45:00+07:00',
+      recorded_by_user_id: MOCK_USER_ID,
+      verified_by_clinician_id: 'mock-clinician-001',
+      lab_slip_photo_url: null,
+      source: 'manual',
+    },
     created_at: '2026-04-09T09:30:00+07:00',
   },
   {
@@ -46,6 +56,16 @@ export const MOCK_TRANSFUSIONS: Transfusion[] = [
     notes: 'Hb pre: 6.8 g/dL, post: 9.9 g/dL',
     pre_hb_g_dl: 6.8,
     post_hb_g_dl: 9.9,
+    pre_labs: {
+      hb: 6.8,
+      hct: 21.0,
+      ferritin: 2100,
+      recorded_at: '2026-03-12T09:15:00+07:00',
+      recorded_by_user_id: MOCK_USER_ID,
+      verified_by_clinician_id: null,
+      lab_slip_photo_url: null,
+      source: 'manual',
+    },
     created_at: '2026-03-12T10:00:00+07:00',
   },
   {
