@@ -19,7 +19,7 @@ export default function TodayMedicationWidget({ onPress }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!user) return;
+      if (!user || !isMockMode) return;
       (async () => {
         const data = await mockServices.getMedicationReminders(user.id);
         setMedications(data.filter(m => m.is_active));
@@ -27,7 +27,7 @@ export default function TodayMedicationWidget({ onPress }: Props) {
     }, [user, isMockMode])
   );
 
-  if (medications.length === 0) return null;
+  if (!isMockMode || medications.length === 0) return null;
 
   const takenCount = medications.filter(m => m.taken_today.length > 0).length;
   const totalCount = medications.length;

@@ -26,9 +26,13 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { useUpdateContext } from '../../contexts/UpdateContext';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
-function GradientBackground({ width, height, borderRadius }: { width: number | string; height: number | string; borderRadius?: number }) {
+function GradientBackground({ borderRadius }: { borderRadius?: number }) {
   return (
-    <Svg width={width as any} height={height as any} style={[StyleSheet.absoluteFill, borderRadius ? { borderRadius } : undefined]}>
+    <Svg
+      style={[StyleSheet.absoluteFill, borderRadius ? { borderRadius } : undefined]}
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+    >
       <Defs>
         <SvgLinearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <Stop offset="0%" stopColor="#074F4F" />
@@ -36,7 +40,7 @@ function GradientBackground({ width, height, borderRadius }: { width: number | s
           <Stop offset="100%" stopColor="#14A39A" />
         </SvgLinearGradient>
       </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill="url(#heroGrad)" rx={borderRadius || 0} />
+      <Rect x="0" y="0" width="100" height="100" fill="url(#heroGrad)" />
     </Svg>
   );
 }
@@ -95,14 +99,14 @@ export default function PassportScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ResponsiveContainer>
         <View style={styles.topBar}>
-          <View />
+          <Text style={styles.brand}>HaemoCare</Text>
           <LanguageToggle />
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <UpdateBanner status={updateStatus} />
           {/* Hero Card with SVG gradient */}
           <View style={[styles.hero, isDesktop && styles.heroDesktop]}>
-            <GradientBackground width="100%" height="100%" borderRadius={isDesktop ? 24 : 0} />
+            <GradientBackground borderRadius={isDesktop ? 24 : 0} />
 
             {/* Decorative circles */}
             <View style={styles.decoCircle1} />
@@ -117,8 +121,8 @@ export default function PassportScreen() {
                 <Text style={styles.bloodText}>{profile.blood_type}{profile.rh_factor}</Text>
               </View>
               <View style={styles.nameCol}>
-                <Text style={styles.patientName}>{profile.full_name}</Text>
-                <Text style={styles.bloodLabel}>Blood Type {profile.blood_type}  ·  Rh{profile.rh_factor === '+' ? ' Positive' : ' Negative'}</Text>
+                <Text style={styles.patientName} numberOfLines={2}>{profile.full_name}</Text>
+                <Text style={styles.bloodLabel} numberOfLines={1}>Blood Type {profile.blood_type}  ·  Rh{profile.rh_factor === '+' ? ' Positive' : ' Negative'}</Text>
               </View>
             </View>
 
@@ -126,7 +130,7 @@ export default function PassportScreen() {
             <View style={styles.patientIdRow}>
               <View style={styles.patientIdChip}>
                 <Feather name="user" size={12} color={COLORS.white} />
-                <Text style={styles.patientIdText}>{profile.patient_id}</Text>
+                <Text style={styles.patientIdText} numberOfLines={1}>{profile.patient_id}</Text>
               </View>
               <TouchableOpacity
                 style={styles.privacyBtn}
@@ -134,20 +138,19 @@ export default function PassportScreen() {
                 activeOpacity={0.7}
               >
                 <Feather name="lock" size={12} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.privacyBtnText}>{t('privacy.title')}</Text>
+                <Text style={styles.privacyBtnText} numberOfLines={1}>{t('privacy.title')}</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.abRow}>
-              {profile.antibodies.map((ab, i) => (
-                <View key={i} style={styles.abChip}>
-                  <Text style={styles.abChipText}>{ab}</Text>
-                </View>
-              ))}
-              {profile.antibodies.length === 0 && (
-                <Text style={styles.abEmpty}>No antibodies recorded</Text>
-              )}
-            </View>
+            {profile.antibodies.length > 0 && (
+              <View style={styles.abRow}>
+                {profile.antibodies.map((ab, i) => (
+                  <View key={i} style={styles.abChip}>
+                    <Text style={styles.abChipText}>{ab}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
 
           <EmergencySosButton
@@ -159,18 +162,18 @@ export default function PassportScreen() {
           <View style={[styles.statsRow, isDesktop && styles.statsRowDesktop]}>
             <View style={[styles.statCard, styles.statCardFirst]}>
               <Feather name="droplet" size={20} color={COLORS.primary} />
-              <Text style={styles.statNum}>{txCount}</Text>
-              <Text style={styles.statLabel}>Transfusions</Text>
+              <Text style={styles.statNum} numberOfLines={1} adjustsFontSizeToFit>{txCount}</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>{t('passport.stats.transfusions')}</Text>
             </View>
             <View style={styles.statCard}>
               <Feather name="calendar" size={20} color={COLORS.accent} />
-              <Text style={styles.statNum}>{daysSinceLastTx !== null ? `${daysSinceLastTx}d` : '—'}</Text>
-              <Text style={styles.statLabel}>Since Last</Text>
+              <Text style={styles.statNum} numberOfLines={1} adjustsFontSizeToFit>{daysSinceLastTx !== null ? `${daysSinceLastTx}d` : '—'}</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>{t('passport.stats.sinceLast')}</Text>
             </View>
             <View style={[styles.statCard, styles.statCardLast]}>
               <Feather name="clock" size={20} color={COLORS.statusNormal} />
-              <Text style={styles.statNum}>{daysToNextAppt !== null ? `${daysToNextAppt}d` : '—'}</Text>
-              <Text style={styles.statLabel}>Next Appt</Text>
+              <Text style={styles.statNum} numberOfLines={1} adjustsFontSizeToFit>{daysToNextAppt !== null ? `${daysToNextAppt}d` : '—'}</Text>
+              <Text style={styles.statLabel} numberOfLines={1}>{t('passport.stats.nextAppt')}</Text>
             </View>
           </View>
 
@@ -208,15 +211,15 @@ export default function PassportScreen() {
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.primaryBtn} onPress={handleExportPdf} activeOpacity={0.8}>
               <Feather name="share" size={16} color={COLORS.white} />
-              <Text style={styles.primaryBtnText}>{t('common.share')}</Text>
+              <Text style={styles.primaryBtnText} numberOfLines={1}>{t('common.share')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.outlineBtn} onPress={() => setShowQR(!showQR)} activeOpacity={0.7}>
               <Feather name="grid" size={16} color={COLORS.primary} />
-              <Text style={styles.outlineBtnText}>{t('common.qrCode')}</Text>
+              <Text style={styles.outlineBtnText} numberOfLines={1}>{t('common.qrCode')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.ghostBtn} onPress={() => navigation.navigate('EditProfile')} activeOpacity={0.7}>
               <Feather name="edit-2" size={16} color={COLORS.textSecondary} />
-              <Text style={styles.ghostBtnText}>{t('common.edit')}</Text>
+              <Text style={styles.ghostBtnText} numberOfLines={1}>{t('common.edit')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -237,12 +240,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, zIndex: 10,
   },
+  brand: { fontSize: 20, fontWeight: '800', color: COLORS.primary, letterSpacing: -0.3 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: SPACING.xxl },
   // Hero — rich gradient with decorative elements
   hero: {
     overflow: 'hidden',
-    paddingTop: SPACING.lg, paddingBottom: SPACING.xl + 10, paddingHorizontal: SPACING.lg, gap: 16,
+    paddingTop: SPACING.lg, paddingBottom: SPACING.lg, paddingHorizontal: SPACING.lg, gap: 16,
     position: 'relative',
   },
   heroDesktop: {
@@ -289,11 +293,9 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full, paddingVertical: 6, paddingHorizontal: 14,
   },
   abChipText: { fontSize: 12, fontWeight: '700', color: COLORS.white },
-  abEmpty: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
-  // Stats — pulled up with negative margin
   statsRow: {
     flexDirection: 'row', gap: 10, paddingHorizontal: SPACING.md,
-    marginTop: -20,
+    marginTop: SPACING.md,
   },
   statsRowDesktop: { paddingHorizontal: SPACING.md },
   statCard: {

@@ -92,8 +92,8 @@ export default function AppointmentsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ResponsiveContainer>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>{t('appointments.title')}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={styles.title} numberOfLines={1}>{t('appointments.title')}</Text>
+          <View style={styles.headerActions}>
             <TouchableOpacity
               onPress={() => navigation.navigate('ImportAppointments')}
               activeOpacity={0.7}
@@ -135,7 +135,7 @@ export default function AppointmentsScreen() {
               />
               {nextAppt && (
                 <View style={[styles.heroCard, isDesktop && styles.heroCardDesktop]}>
-                  <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+                  <Svg style={StyleSheet.absoluteFill} viewBox="0 0 100 100" preserveAspectRatio="none">
                     <Defs>
                       <SvgLinearGradient id="apptGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                         <Stop offset="0%" stopColor="#074F4F" />
@@ -143,15 +143,15 @@ export default function AppointmentsScreen() {
                         <Stop offset="100%" stopColor="#14A39A" />
                       </SvgLinearGradient>
                     </Defs>
-                    <Rect x="0" y="0" width="100%" height="100%" fill="url(#apptGrad)" rx={22} />
+                    <Rect x="0" y="0" width="100" height="100" fill="url(#apptGrad)" />
                   </Svg>
                   <View style={styles.heroDecoCircle} />
                   <View style={styles.heroIconBg}>
                     <Feather name="calendar" size={24} color={COLORS.white} />
                   </View>
                   <View style={styles.heroTextCol}>
-                    <Text style={styles.heroTitle}>{t('appointments.next', { date: formatDate(nextAppt.scheduled_date, language) })}</Text>
-                    <Text style={styles.heroSub}>
+                    <Text style={styles.heroTitle} numberOfLines={2}>{t('appointments.next', { date: formatDate(nextAppt.scheduled_date, language) })}</Text>
+                    <Text style={styles.heroSub} numberOfLines={1}>
                       {t('appointments.nextVisit')} · {t('appointments.daysAway', { days: nextDays })}
                     </Text>
                   </View>
@@ -203,9 +203,10 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   headerRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, gap: SPACING.sm,
   },
-  title: { ...TYPOGRAPHY.h1, color: COLORS.text },
+  title: { ...TYPOGRAPHY.h1, color: COLORS.text, flex: 1, fontSize: 22 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   importBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: COLORS.primaryLight,

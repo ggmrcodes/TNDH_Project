@@ -60,6 +60,26 @@ export default function PrivacySettingsScreen() {
     setIsExporting(false);
   };
 
+  const handleSignOut = () => {
+    Alert.alert(
+      t('privacy.signOutConfirmTitle'),
+      t('privacy.signOutConfirmBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('auth.logout'),
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (err) {
+              console.error('Sign out failed:', err);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleDeleteAccount = () => {
     Alert.alert(
       t('privacy.deleteConfirmTitle'),
@@ -165,6 +185,27 @@ export default function PrivacySettingsScreen() {
             <Feather name="chevron-right" size={18} color={COLORS.textLight} />
           </TouchableOpacity>
         </View>
+
+        {/* Account Section */}
+        <Text style={styles.sectionLabel}>{t('privacy.sectionAccount')}</Text>
+        <TouchableOpacity
+          style={styles.settingCard}
+          onPress={handleSignOut}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={t('auth.logout')}
+        >
+          <View style={styles.actionRow}>
+            <View style={styles.actionIcon}>
+              <Feather name="log-out" size={16} color={COLORS.primary} />
+            </View>
+            <View style={styles.actionInfo}>
+              <Text style={styles.actionTitle}>{t('auth.logout')}</Text>
+              <Text style={styles.settingDesc}>{t('privacy.signOutDesc')}</Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={COLORS.textLight} />
+          </View>
+        </TouchableOpacity>
 
         {/* Danger Zone */}
         <Text style={[styles.sectionLabel, { color: COLORS.statusUrgent }]}>

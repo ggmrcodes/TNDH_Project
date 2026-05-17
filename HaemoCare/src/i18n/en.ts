@@ -73,6 +73,9 @@ const en = {
   'passport.noAntibodies': 'None recorded',
   'passport.noReactions': 'None recorded',
   'passport.noMedications': 'None recorded',
+  'passport.stats.transfusions': 'Transfusions',
+  'passport.stats.sinceLast': 'Since last',
+  'passport.stats.nextAppt': 'Next visit',
 
   // Overdue Visit
   'overdue.banner.monitor': "You're {days} days past your planned visit. Logged symptoms are being treated as more severe.",
@@ -199,7 +202,11 @@ const en = {
   'privacy.deleteConfirmBody': 'This will permanently delete all your data including transfusion history, symptom logs, and appointments. This cannot be undone.',
   'privacy.sectionAnonymization': 'ANONYMIZATION',
   'privacy.sectionData': 'YOUR DATA',
+  'privacy.sectionAccount': 'ACCOUNT',
   'privacy.sectionDanger': 'DANGER ZONE',
+  'privacy.signOutDesc': 'Sign out of this device. Your data stays safe.',
+  'privacy.signOutConfirmTitle': 'Sign out?',
+  'privacy.signOutConfirmBody': "You'll need to sign in again to access your data.",
 
   // Medication Reminders
   'medications.title': 'Medication Reminders',

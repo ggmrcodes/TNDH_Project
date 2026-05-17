@@ -75,6 +75,9 @@ const th: Record<TranslationKey, string> = {
   'passport.noAntibodies': 'ไม่มีบันทึก',
   'passport.noReactions': 'ไม่มีบันทึก',
   'passport.noMedications': 'ไม่มีบันทึก',
+  'passport.stats.transfusions': 'การรับเลือด',
+  'passport.stats.sinceLast': 'ครั้งล่าสุด',
+  'passport.stats.nextAppt': 'นัดถัดไป',
 
   // Overdue Visit
   'overdue.banner.monitor': 'คุณเลยกำหนดนัดมา {days} วันแล้ว อาการที่บันทึกจะถูกประเมินว่ามีความรุนแรงสูงขึ้น',
@@ -201,7 +204,11 @@ const th: Record<TranslationKey, string> = {
   'privacy.deleteConfirmBody': 'การดำเนินการนี้จะลบข้อมูลทั้งหมดรวมถึงประวัติการรับเลือด บันทึกอาการ และนัดหมาย ไม่สามารถกู้คืนได้',
   'privacy.sectionAnonymization': 'การไม่ระบุตัวตน',
   'privacy.sectionData': 'ข้อมูลของคุณ',
+  'privacy.sectionAccount': 'บัญชี',
   'privacy.sectionDanger': 'โซนอันตราย',
+  'privacy.signOutDesc': 'ออกจากระบบในเครื่องนี้ ข้อมูลของคุณยังคงปลอดภัย',
+  'privacy.signOutConfirmTitle': 'ออกจากระบบ?',
+  'privacy.signOutConfirmBody': 'คุณจะต้องเข้าสู่ระบบใหม่เพื่อเข้าถึงข้อมูลของคุณ',
 
   // Medication Reminders
   'medications.title': 'เตือนทานยา',

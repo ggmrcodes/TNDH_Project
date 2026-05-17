@@ -78,8 +78,8 @@ export default function TransfusionHistoryScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ResponsiveContainer>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>{t('history.title')}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={styles.title} numberOfLines={1}>{t('history.title')}</Text>
+          <View style={styles.headerActions}>
             <TouchableOpacity
               onPress={() => navigation.navigate('ScanTransfusion')}
               activeOpacity={0.7}
@@ -100,7 +100,7 @@ export default function TransfusionHistoryScreen() {
           ListHeaderComponent={
             transfusions.length > 0 ? (
               <View style={[styles.statsCard, isDesktop && styles.statsCardDesktop]}>
-                <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+                <Svg style={StyleSheet.absoluteFill} viewBox="0 0 100 100" preserveAspectRatio="none">
                   <Defs>
                     <SvgLinearGradient id="statsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                       <Stop offset="0%" stopColor="#074F4F" />
@@ -108,7 +108,7 @@ export default function TransfusionHistoryScreen() {
                       <Stop offset="100%" stopColor="#14A39A" />
                     </SvgLinearGradient>
                   </Defs>
-                  <Rect x="0" y="0" width="100%" height="100%" fill="url(#statsGrad)" rx={22} />
+                  <Rect x="0" y="0" width="100" height="100" fill="url(#statsGrad)" />
                 </Svg>
                 {/* Decorative circle */}
                 <View style={styles.statsDecoCircle} />
@@ -144,9 +144,10 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   headerRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, gap: SPACING.sm,
   },
-  title: { ...TYPOGRAPHY.h1, color: COLORS.text },
+  title: { ...TYPOGRAPHY.h1, color: COLORS.text, flex: 1, fontSize: 22 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
   scanBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: COLORS.primaryLight,
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
   },
   statItem: { flex: 1, alignItems: 'center', gap: 4, zIndex: 1 },
   statNumber: { ...TYPOGRAPHY.heroNumber, fontSize: 32, color: COLORS.white },
-  statLabel: { ...TYPOGRAPHY.caption, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
+  statLabel: { ...TYPOGRAPHY.caption, color: 'rgba(255,255,255,0.92)', fontWeight: '700' },
   statDivider: { width: 1, height: 48, backgroundColor: 'rgba(255,255,255,0.15)', zIndex: 1 },
   txCard: {
     backgroundColor: COLORS.surfaceElevated, borderRadius: RADIUS.lg, padding: SPACING.md,

@@ -65,6 +65,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: COLORS.statusUrgent ?? '#DC3B3B',
     marginVertical: SPACING.md,
+    marginHorizontal: SPACING.md,
   },
   textFull: { color: COLORS.white, fontSize: 17, fontWeight: '800', letterSpacing: 1 },
   buttonEmpty: {
@@ -79,6 +80,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.statusUrgent ?? '#DC3B3B',
     backgroundColor: COLORS.statusUrgentBg ?? '#FEF2F2',
     marginVertical: SPACING.md,
+    marginHorizontal: SPACING.md,
   },
   textEmpty: { color: COLORS.statusUrgent ?? '#DC3B3B', fontSize: 13, fontWeight: '700' },
 });
