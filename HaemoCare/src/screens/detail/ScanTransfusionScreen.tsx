@@ -21,6 +21,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import * as mockServices from '../../mock/services';
 import * as realTransfusionService from '../../services/transfusionService';
+import * as realPreLabsService from '../../services/preTransfusionLabsService';
+import type { PreTransfusionLabs } from '../../types/database';
 import {
   extractTransfusionFromImage,
   ExtractedTransfusion,
@@ -39,6 +41,8 @@ interface FormState {
   units: string;
   preHb: string;
   postHb: string;
+  hct: string;
+  ferritin: string;
   reactionNoted: boolean;
   reactionDetail: string;
   notes: string;
@@ -50,6 +54,8 @@ const EMPTY_FORM: FormState = {
   units: '',
   preHb: '',
   postHb: '',
+  hct: '',
+  ferritin: '',
   reactionNoted: false,
   reactionDetail: '',
   notes: '',
@@ -163,6 +169,8 @@ export default function ScanTransfusionScreen() {
       const units = Number(form.units);
       const preHb = form.preHb ? Number(form.preHb) : undefined;
       const postHb = form.postHb ? Number(form.postHb) : undefined;
+      const hctNum = form.hct ? Number(form.hct) : undefined;
+      const ferritinNum = form.ferritin ? Number(form.ferritin) : undefined;
       const data = {
         date: /^\d{4}-\d{2}-\d{2}$/.test(form.date)
           ? `${form.date}T00:00:00+07:00`
@@ -175,11 +183,41 @@ export default function ScanTransfusionScreen() {
         ...(preHb != null && isFinite(preHb) ? { pre_hb_g_dl: preHb } : {}),
         ...(postHb != null && isFinite(postHb) ? { post_hb_g_dl: postHb } : {}),
       };
-      if (isMockMode) {
-        await mockServices.createTransfusion(user.id, data);
-      } else {
-        await realTransfusionService.createTransfusion(user.id, data);
+      const newTx = isMockMode
+        ? await mockServices.createTransfusion(user.id, data)
+        : await realTransfusionService.createTransfusion(user.id, data);
+
+      // Persist pre-transfusion labs (Hb / Hct / Ferritin) into the new
+      // pre_labs JSONB column whenever any of those fields was entered.
+      // Pre-Hb mirrors into pre_labs.hb so trends pick it up. Failure here
+      // is non-fatal — the transfusion record already saved; the patient
+      // can edit labs later via the detail view.
+      const hbForLabs = preHb != null && isFinite(preHb) ? preHb : null;
+      const hctForLabs = hctNum != null && isFinite(hctNum) ? hctNum : null;
+      const ferritinForLabs = ferritinNum != null && isFinite(ferritinNum) ? ferritinNum : null;
+      if (hbForLabs != null || hctForLabs != null || ferritinForLabs != null) {
+        const labs: PreTransfusionLabs = {
+          hb: hbForLabs,
+          hct: hctForLabs,
+          ferritin: ferritinForLabs,
+          recorded_at: new Date().toISOString(),
+          recorded_by_user_id: user.id,
+          verified_by_clinician_id: null,
+          lab_slip_photo_url: null,
+          source: 'manual',
+        };
+        try {
+          if (isMockMode) {
+            await mockServices.savePreLabsForTransfusion(newTx.id, user.id, labs);
+          } else {
+            await realPreLabsService.savePreLabs(newTx.id, user.id, user.id, labs);
+          }
+        } catch (labErr) {
+          console.error('save pre-labs error', labErr);
+          // Continue — main record is saved; surface a soft notice.
+        }
       }
+
       navigation.goBack();
     } catch (e) {
       console.error('save transfusion error', e);
@@ -412,6 +450,28 @@ function ReviewStep(props: {
             onChange={(v) => update('postHb', v)}
             ai={aiFields.has('postHb')}
             placeholder="10.0"
+            keyboardType="numeric"
+            t={t}
+          />
+        </View>
+      </View>
+      <View style={styles.row2}>
+        <View style={{ flex: 1 }}>
+          <Field
+            label={t('preLabs.hct')}
+            value={form.hct}
+            onChange={(v) => update('hct', v)}
+            placeholder="30"
+            keyboardType="numeric"
+            t={t}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Field
+            label={t('preLabs.ferritin')}
+            value={form.ferritin}
+            onChange={(v) => update('ferritin', v)}
+            placeholder="500"
             keyboardType="numeric"
             t={t}
           />
