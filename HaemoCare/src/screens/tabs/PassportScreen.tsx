@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
@@ -48,7 +48,7 @@ function GradientBackground({ borderRadius }: { borderRadius?: number }) {
 
 export default function PassportScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { profile, user, isMockMode } = useAuth();
+  const { profile, user, isMockMode, signOut } = useAuth();
   const { t, language } = useLanguage();
   const { isMobile, isDesktop } = useResponsive();
   const { contacts } = useEmergencyContacts();
@@ -90,6 +90,27 @@ export default function PassportScreen() {
 
   if (!profile) return <LoadingSpinner />;
 
+  const handleSignOut = () => {
+    Alert.alert(
+      t('privacy.signOutConfirmTitle'),
+      t('privacy.signOutConfirmBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('auth.logout'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (err) {
+              console.error('Sign out failed:', err);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleExportPdf = async () => {
     setExporting(true);
     try { await generatePassportPdf(profile, language, allSymptomLogs, allTransfusions); } catch (err) { console.error(err); }
@@ -103,13 +124,13 @@ export default function PassportScreen() {
           <Text style={styles.brand}>HaemoCare</Text>
           <View style={styles.topBarActions}>
             <TouchableOpacity
-              onPress={() => navigation.navigate('PrivacySettings')}
-              style={styles.settingsBtn}
+              onPress={handleSignOut}
+              style={styles.signOutBtn}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel={t('privacy.title')}
+              accessibilityLabel={t('auth.logout')}
             >
-              <Feather name="settings" size={20} color={COLORS.textSecondary} />
+              <Feather name="log-out" size={18} color={COLORS.statusUrgent} />
             </TouchableOpacity>
             <LanguageToggle />
           </View>
@@ -254,9 +275,10 @@ const styles = StyleSheet.create({
   },
   brand: { fontSize: 20, fontWeight: '800', color: COLORS.primary, letterSpacing: -0.3 },
   topBarActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
-  settingsBtn: {
+  signOutBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: COLORS.statusUrgentBg,
+    borderWidth: 1, borderColor: COLORS.statusUrgent,
     justifyContent: 'center', alignItems: 'center',
   },
   scroll: { flex: 1 },

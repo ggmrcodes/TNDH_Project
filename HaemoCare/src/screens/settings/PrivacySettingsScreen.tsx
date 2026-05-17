@@ -68,6 +68,7 @@ export default function PrivacySettingsScreen() {
         { text: t('common.cancel'), style: 'cancel' },
         {
           text: t('auth.logout'),
+          style: 'destructive',
           onPress: async () => {
             try {
               await signOut();
