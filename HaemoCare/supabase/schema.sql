@@ -55,6 +55,10 @@ create table public.symptom_logs (
   severity_scores jsonb not null default '{}',
   outcome text default 'normal' check (outcome in ('normal', 'monitor', 'urgent')),
   notes text default '',
+  urine_color text check (
+    urine_color is null
+    or urine_color in ('clear', 'yellow', 'dark_yellow', 'pink', 'red', 'brown_tea', 'cola')
+  ),
   created_at timestamptz default now()
 );
 
