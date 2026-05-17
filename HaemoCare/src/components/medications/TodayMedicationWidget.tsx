@@ -5,8 +5,9 @@ import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import * as mockServices from '../../mock/services';
+import * as realMedicationsService from '../../services/medicationsService';
 import { MedicationReminder } from '../../types/database';
-import { COLORS, SPACING, RADIUS, SHADOWS } from '../../config/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
 interface Props {
   onPress: () => void;
@@ -19,15 +20,53 @@ export default function TodayMedicationWidget({ onPress }: Props) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!user || !isMockMode) return;
+      if (!user) return;
+      let cancelled = false;
       (async () => {
-        const data = await mockServices.getMedicationReminders(user.id);
-        setMedications(data.filter(m => m.is_active));
+        try {
+          const data = isMockMode
+            ? await mockServices.getMedicationReminders(user.id)
+            : await realMedicationsService.getMedicationReminders(user.id);
+          if (!cancelled) setMedications(data.filter(m => m.is_active));
+        } catch (err) {
+          console.error('TodayMedicationWidget load error', err);
+          if (!cancelled) setMedications([]);
+        }
       })();
+      return () => { cancelled = true; };
     }, [user, isMockMode])
   );
 
-  if (!isMockMode || medications.length === 0) return null;
+  // Empty state — patients with zero active medications previously saw
+  // nothing here, which left them confused about what the widget did.
+  // Render a compact "tap to set up" card so the value of the feature is
+  // visible even before any data exists.
+  if (medications.length === 0) {
+    return (
+      <TouchableOpacity
+        style={[styles.container, styles.emptyContainer]}
+        onPress={onPress}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={t('medications.noMedications')}
+      >
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <View style={styles.emptyIconBg}>
+              <Text style={styles.pillEmoji}>💊</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>{t('medications.noMedications')}</Text>
+              <Text style={styles.emptySubtitle} numberOfLines={2}>
+                {t('medications.noMedicationsDesc')}
+              </Text>
+            </View>
+          </View>
+          <Feather name="plus-circle" size={20} color={COLORS.primary} />
+        </View>
+      </TouchableOpacity>
+    );
+  }
 
   const takenCount = medications.filter(m => m.taken_today.length > 0).length;
   const totalCount = medications.length;
@@ -120,6 +159,25 @@ const styles = StyleSheet.create({
   containerDone: {
     borderColor: COLORS.statusNormal,
     backgroundColor: COLORS.statusNormalBg,
+  },
+  emptyContainer: {
+    borderStyle: 'dashed',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+  },
+  emptyIconBg: {
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptySubtitle: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+    lineHeight: 15,
   },
   headerRow: {
     flexDirection: 'row',
