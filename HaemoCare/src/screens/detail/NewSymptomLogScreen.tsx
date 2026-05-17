@@ -6,7 +6,7 @@ import { RootStackParamList } from '../../types/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
-import { evaluateSymptoms, ThresholdResult } from '../../utils/clinicalThresholds';
+import { evaluateSymptoms, ThresholdResult, getSymptomLabel } from '../../utils/clinicalThresholds';
 import { triageSymptoms, TriageResult } from '../../analytics';
 import * as realSymptomService from '../../services/symptomService';
 import * as realTransfusionService from '../../services/transfusionService';
@@ -182,7 +182,7 @@ export default function NewSymptomLogScreen() {
             {selectedSymptoms.map(key => (
               <SeveritySlider
                 key={key}
-                label={t(`symptom.${key}` as TranslationKey)}
+                label={getSymptomLabel(key, t)}
                 value={severityScores[key] || 3}
                 onChange={(val) => handleSeverityChange(key, val)}
               />

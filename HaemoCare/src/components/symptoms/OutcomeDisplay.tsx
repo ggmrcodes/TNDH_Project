@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ThresholdResult } from '../../utils/clinicalThresholds';
+import { ThresholdResult, getSymptomLabel } from '../../utils/clinicalThresholds';
 import { useLanguage } from '../../contexts/LanguageContext';
 import StatusBadge from '../common/StatusBadge';
 import Card from '../common/Card';
@@ -55,7 +55,7 @@ export default function OutcomeDisplay({ result }: OutcomeDisplayProps) {
           {result.triggeringSymptoms.map((s) => (
             <View key={s} style={styles.triggerChip}>
               <Text style={styles.triggerText}>
-                {t(`symptom.${s}` as TranslationKey)}
+                {getSymptomLabel(s, t)}
               </Text>
             </View>
           ))}

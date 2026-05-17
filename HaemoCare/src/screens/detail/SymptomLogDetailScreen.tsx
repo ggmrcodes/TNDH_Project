@@ -13,7 +13,7 @@ import StatusBadge from '../../components/common/StatusBadge';
 import Card from '../../components/common/Card';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
-import { TranslationKey } from '../../i18n';
+import { getSymptomLabel } from '../../utils/clinicalThresholds';
 
 type RouteProps = RouteProp<RootStackParamList, 'SymptomLogDetail'>;
 
@@ -55,7 +55,7 @@ export default function SymptomLogDetailScreen() {
           {Object.entries(log.severity_scores).map(([key, value]) => (
             <View key={key} style={styles.symptomRow}>
               <View style={styles.symptomInfo}>
-                <Text style={styles.symptomName}>{t(`symptom.${key}` as TranslationKey)}</Text>
+                <Text style={styles.symptomName}>{getSymptomLabel(key, t)}</Text>
                 <Text style={styles.symptomScore}>{value}/10</Text>
               </View>
               <SeverityBar value={value} />

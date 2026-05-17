@@ -12,7 +12,7 @@ import * as realSymptomService from '../../services/symptomService';
 import * as realTransfusionService from '../../services/transfusionService';
 import * as mockServices from '../../mock/services';
 import { hoursRemaining72, isWithin72Hours, daysSince, formatDate } from '../../utils/dateHelpers';
-import { SYMPTOM_ICON_MAP } from '../../utils/clinicalThresholds';
+import { SYMPTOM_ICON_MAP, getSymptomLabel } from '../../utils/clinicalThresholds';
 import { SymptomLog, Transfusion, Outcome } from '../../types/database';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import ResponsiveContainer from '../../components/common/ResponsiveContainer';
@@ -104,7 +104,7 @@ export default function SymptomMonitorScreen() {
   const renderLogItem = ({ item }: { item: SymptomLog }) => {
     const itemCfg = OUTCOME_COLORS[item.outcome];
     const symptoms = item.symptoms as string[];
-    const sympSummary = symptoms.map(s => `${t(`symptom.${s}` as TranslationKey).split(' ')[0]} ${item.severity_scores[s] || 0}`).join(', ');
+    const sympSummary = symptoms.map(s => `${getSymptomLabel(s, t).split(' ')[0]} ${item.severity_scores[s] || 0}`).join(', ');
 
     return (
       <View style={styles.logItem}>

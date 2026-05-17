@@ -93,6 +93,8 @@ const en = {
   'symptoms.hoursRemaining': 'hours remaining in 72hr window',
   'symptoms.logPrompt': 'Log your symptoms after your recent transfusion',
   'symptoms.selectSymptoms': 'Select Symptoms',
+  'symptoms.customPlaceholder': 'Other symptom (e.g. Joint pain)',
+  'symptoms.customAdd': 'Add',
   'symptoms.setSeverity': 'Set Severity',
   'symptoms.result': 'Assessment Result',
   'symptoms.submit': 'Submit Log',

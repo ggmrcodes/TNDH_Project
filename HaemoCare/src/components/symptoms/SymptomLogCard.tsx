@@ -4,10 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { SymptomLog } from '../../types/database';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatDateTime } from '../../utils/dateHelpers';
+import { getSymptomLabel } from '../../utils/clinicalThresholds';
 import StatusBadge from '../common/StatusBadge';
 import Card from '../common/Card';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
-import { TranslationKey } from '../../i18n';
 
 interface SymptomLogCardProps {
   log: SymptomLog;
@@ -28,7 +28,7 @@ export default function SymptomLogCard({ log, onPress }: SymptomLogCardProps) {
         <View style={styles.symptoms}>
           {symptoms.slice(0, 4).map((s) => (
             <Text key={s} style={styles.symptomText}>
-              {t(`symptom.${s}` as TranslationKey)}
+              {getSymptomLabel(s, t)}
               {log.severity_scores[s] ? ` (${log.severity_scores[s]}/10)` : ''}
             </Text>
           ))}

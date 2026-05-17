@@ -21,6 +21,22 @@ export const SYMPTOM_ICON_MAP: Record<string, string> = Object.fromEntries(
   SYMPTOM_CATALOG.map(s => [s.key, s.icon])
 );
 
+export const CUSTOM_SYMPTOM_PREFIX = 'custom:';
+
+export function isCustomSymptom(key: string): boolean {
+  return key.startsWith(CUSTOM_SYMPTOM_PREFIX);
+}
+
+// Accepts any translate function (e.g. the strictly-typed `t` from useLanguage)
+// without creating a hard import dependency on i18n keys from a pure utility.
+export function getSymptomLabel(
+  key: string,
+  translate: (k: any) => string,
+): string {
+  if (isCustomSymptom(key)) return key.slice(CUSTOM_SYMPTOM_PREFIX.length);
+  return translate(`symptom.${key}`);
+}
+
 export interface ThresholdResult {
   outcome: Outcome;
   triggeringSymptoms: string[];

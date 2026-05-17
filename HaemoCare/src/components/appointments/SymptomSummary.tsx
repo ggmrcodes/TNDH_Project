@@ -5,7 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import StatusBadge from '../common/StatusBadge';
 import Card from '../common/Card';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
-import { TranslationKey } from '../../i18n';
+import { getSymptomLabel } from '../../utils/clinicalThresholds';
 
 interface SymptomSummaryProps {
   logs: SymptomLog[];
@@ -50,7 +50,7 @@ export default function SymptomSummary({ logs }: SymptomSummaryProps) {
           <Text style={styles.subtitle}>{t('appointments.flaggedSymptoms')}</Text>
           {Array.from(allSymptoms.entries()).map(([key, maxSeverity]) => (
             <View key={key} style={styles.symptomRow}>
-              <Text style={styles.symptomName}>{t(`symptom.${key}` as TranslationKey)}</Text>
+              <Text style={styles.symptomName}>{getSymptomLabel(key, t)}</Text>
               <Text style={styles.symptomSeverity}>max {maxSeverity}/10</Text>
             </View>
           ))}

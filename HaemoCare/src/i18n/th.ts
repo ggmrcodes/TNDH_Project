@@ -95,6 +95,8 @@ const th: Record<TranslationKey, string> = {
   'symptoms.hoursRemaining': 'ชั่วโมงเหลือในช่วง 72 ชม.',
   'symptoms.logPrompt': 'บันทึกอาการหลังการรับเลือดล่าสุดของคุณ',
   'symptoms.selectSymptoms': 'เลือกอาการ',
+  'symptoms.customPlaceholder': 'อาการอื่น (เช่น ปวดข้อ)',
+  'symptoms.customAdd': 'เพิ่ม',
   'symptoms.setSeverity': 'ระบุความรุนแรง',
   'symptoms.result': 'ผลการประเมิน',
   'symptoms.submit': 'บันทึก',
