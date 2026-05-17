@@ -4,6 +4,7 @@ import { Profile } from '../../types/database';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Button from '../common/Button';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
+import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 
 interface ProfileEditFormProps {
   profile?: Profile | null;
@@ -17,6 +18,7 @@ const RH_FACTORS = ['+', '-'] as const;
 
 export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLabel }: ProfileEditFormProps) {
   const { t } = useLanguage();
+  const { isMobile } = useResponsive();
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [bloodType, setBloodType] = useState(profile?.blood_type || '');
   const [rhFactor, setRhFactor] = useState(profile?.rh_factor || '');
@@ -53,7 +55,14 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.content,
+        !isMobile && { maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' as const, width: '100%' as any },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.label}>{t('profileSetup.fullName')} *</Text>
       <TextInput
         style={styles.input}
@@ -123,7 +132,7 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
         placeholder={t('profileSetup.knownReactions')}
         placeholderTextColor={COLORS.textLight}
         multiline
-        numberOfLines={3}
+        numberOfLines={2}
       />
 
       <Text style={styles.label}>{t('profileSetup.medications')}</Text>
@@ -134,7 +143,7 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
         placeholder={t('profileSetup.medications')}
         placeholderTextColor={COLORS.textLight}
         multiline
-        numberOfLines={3}
+        numberOfLines={2}
       />
 
       <Text style={styles.label}>{t('profileSetup.visitInterval')}</Text>
@@ -166,6 +175,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  content: {
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xxl,
+  },
   label: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
@@ -184,8 +197,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   multiline: {
-    minHeight: 80,
+    minHeight: 64,
     textAlignVertical: 'top',
+    borderColor: COLORS.borderLight,
   },
   hint: {
     ...TYPOGRAPHY.bodySmall,
@@ -194,12 +208,14 @@ const styles = StyleSheet.create({
   },
   segmentRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: SPACING.sm,
     marginBottom: SPACING.sm,
   },
   segment: {
-    flex: 1,
+    minWidth: 56,
     paddingVertical: SPACING.sm + 2,
+    paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.sm,
     borderWidth: 1.5,
     borderColor: COLORS.border,
