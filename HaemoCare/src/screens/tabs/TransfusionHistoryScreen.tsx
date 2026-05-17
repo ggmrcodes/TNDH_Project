@@ -110,10 +110,12 @@ export default function TransfusionHistoryScreen() {
             <TouchableOpacity
               onPress={() => navigation.navigate('ScanTransfusion')}
               activeOpacity={0.7}
-              style={styles.scanBtn}
+              style={styles.addBtn}
+              accessibilityRole="button"
+              accessibilityLabel={t('history.addFirst')}
             >
-              <Feather name="camera" size={14} color={COLORS.primary} />
-              <Text style={styles.scanBtnText}>{t('scan.cta')}</Text>
+              <Feather name="plus" size={16} color={COLORS.white} />
+              <Text style={styles.addBtnText}>{t('history.addCta')}</Text>
             </TouchableOpacity>
             <LanguageToggle />
           </View>
@@ -162,7 +164,34 @@ export default function TransfusionHistoryScreen() {
             ) : null
           }
           renderItem={renderTxCard}
-          ListEmptyComponent={!loading ? <EmptyState icon="water-outline" message={t('history.noRecords')} /> : null}
+          ListEmptyComponent={
+            !loading ? (
+              <EmptyState
+                icon="water-outline"
+                message={t('history.noRecords')}
+                hint={t('history.noRecordsHint')}
+                cta={{
+                  label: t('history.addFirst'),
+                  onPress: () => navigation.navigate('ScanTransfusion'),
+                  icon: 'plus',
+                }}
+              />
+            ) : null
+          }
+          ListFooterComponent={
+            transfusions.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ScanTransfusion')}
+                style={styles.addAnotherBtn}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={t('history.addAnother')}
+              >
+                <Feather name="plus-circle" size={18} color={COLORS.primary} />
+                <Text style={styles.addAnotherText}>{t('history.addAnother')}</Text>
+              </TouchableOpacity>
+            ) : null
+          }
         />
       </ResponsiveContainer>
     </SafeAreaView>
@@ -177,14 +206,25 @@ const styles = StyleSheet.create({
   },
   title: { ...TYPOGRAPHY.h1, color: COLORS.text, flex: 1, fontSize: 22 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 },
-  scanBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: COLORS.primaryLight,
+  addBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: COLORS.primary,
     borderRadius: RADIUS.full,
-    paddingVertical: 6, paddingHorizontal: 12,
+    paddingVertical: 8, paddingHorizontal: 14,
+    ...SHADOWS.glow,
   },
-  scanBtnText: { ...TYPOGRAPHY.caption, fontWeight: '700', color: COLORS.primary },
+  addBtnText: { fontSize: 13, fontWeight: '700', color: COLORS.white, letterSpacing: 0.3 },
   list: { padding: SPACING.md, paddingBottom: SPACING.xxl },
+  addAnotherBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, paddingHorizontal: SPACING.lg,
+    borderRadius: RADIUS.md,
+    borderWidth: 1.5, borderColor: COLORS.primary,
+    backgroundColor: COLORS.white,
+    marginTop: SPACING.sm, marginHorizontal: SPACING.xs,
+    ...SHADOWS.card,
+  },
+  addAnotherText: { fontSize: 14, fontWeight: '700', color: COLORS.primary, letterSpacing: 0.3 },
   statsCard: {
     overflow: 'hidden', borderRadius: 22, padding: SPACING.lg,
     flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.lg,

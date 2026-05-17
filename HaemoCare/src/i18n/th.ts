@@ -177,7 +177,11 @@ const th: Record<TranslationKey, string> = {
 
   // Transfusion History
   'history.title': 'ประวัติการรับเลือด',
-  'history.noRecords': 'ไม่มีประวัติการรับเลือด',
+  'history.noRecords': 'ยังไม่มีประวัติการรับเลือด',
+  'history.noRecordsHint': 'แตะปุ่มด้านล่างเพื่อบันทึกครั้งแรก — สแกนใบรับเลือดจากโรงพยาบาลหรือกรอกข้อมูลเอง',
+  'history.addCta': 'เพิ่ม',
+  'history.addFirst': 'เพิ่มประวัติแรก',
+  'history.addAnother': 'เพิ่มประวัติอื่น',
   'history.date': 'วันที่',
   'history.hospital': 'โรงพยาบาล',
   'history.units': 'จำนวนยูนิต',

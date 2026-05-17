@@ -175,7 +175,11 @@ const en = {
 
   // Transfusion History
   'history.title': 'Transfusion History',
-  'history.noRecords': 'No transfusion records',
+  'history.noRecords': 'No transfusions logged yet',
+  'history.noRecordsHint': "Tap below to log your first transfusion — scan a hospital slip or enter the details manually.",
+  'history.addCta': 'Add',
+  'history.addFirst': 'Add your first transfusion',
+  'history.addAnother': 'Add another transfusion',
   'history.date': 'Date',
   'history.hospital': 'Hospital',
   'history.units': 'Units Received',
