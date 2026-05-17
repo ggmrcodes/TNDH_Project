@@ -1,4 +1,4 @@
-import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, ClinicianProfile, EmergencyContact } from '../types/database';
+import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, ClinicianProfile, EmergencyContact, UrineColor } from '../types/database';
 import {
   MOCK_PROFILE,
   MOCK_TRANSFUSIONS,
@@ -128,6 +128,7 @@ export async function createSymptomLog(
     severity_scores: Record<string, number>;
     outcome: 'normal' | 'monitor' | 'urgent';
     notes?: string;
+    urine_color?: UrineColor | null;
   }
 ): Promise<SymptomLog> {
   const entry: SymptomLog = {
@@ -139,6 +140,7 @@ export async function createSymptomLog(
     severity_scores: log.severity_scores,
     outcome: log.outcome,
     notes: log.notes ?? '',
+    urine_color: log.urine_color ?? null,
     created_at: new Date().toISOString(),
   };
   symptomLogs.unshift(entry);
