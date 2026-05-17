@@ -189,22 +189,20 @@ export default function PrivacySettingsScreen() {
         {/* Account Section */}
         <Text style={styles.sectionLabel}>{t('privacy.sectionAccount')}</Text>
         <TouchableOpacity
-          style={styles.settingCard}
+          style={styles.signOutCard}
           onPress={handleSignOut}
           activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityLabel={t('auth.logout')}
         >
-          <View style={styles.actionRow}>
-            <View style={styles.actionIcon}>
-              <Feather name="log-out" size={16} color={COLORS.primary} />
-            </View>
-            <View style={styles.actionInfo}>
-              <Text style={styles.actionTitle}>{t('auth.logout')}</Text>
-              <Text style={styles.settingDesc}>{t('privacy.signOutDesc')}</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={COLORS.textLight} />
+          <View style={styles.signOutIcon}>
+            <Feather name="log-out" size={20} color={COLORS.primary} />
           </View>
+          <View style={styles.signOutInfo}>
+            <Text style={styles.signOutTitle}>{t('auth.logout')}</Text>
+            <Text style={styles.signOutDesc}>{t('privacy.signOutDesc')}</Text>
+          </View>
+          <Feather name="chevron-right" size={20} color={COLORS.primary} />
         </TouchableOpacity>
 
         {/* Danger Zone */}
@@ -452,6 +450,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.primary,
+  },
+  // Sign Out card
+  signOutCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: RADIUS.lg,
+    padding: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: SPACING.lg,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    ...SHADOWS.card,
+  },
+  signOutIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  signOutInfo: { flex: 1, gap: 2 },
+  signOutTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  signOutDesc: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    lineHeight: 16,
   },
   // Delete card
   deleteCard: {

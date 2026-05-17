@@ -101,7 +101,18 @@ export default function PassportScreen() {
       <ResponsiveContainer>
         <View style={styles.topBar}>
           <Text style={styles.brand}>HaemoCare</Text>
-          <LanguageToggle />
+          <View style={styles.topBarActions}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('PrivacySettings')}
+              style={styles.settingsBtn}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={t('privacy.title')}
+            >
+              <Feather name="settings" size={20} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+            <LanguageToggle />
+          </View>
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <UpdateBanner status={updateStatus} />
@@ -242,6 +253,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, zIndex: 10,
   },
   brand: { fontSize: 20, fontWeight: '800', color: COLORS.primary, letterSpacing: -0.3 },
+  topBarActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  settingsBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: COLORS.primaryLight,
+    justifyContent: 'center', alignItems: 'center',
+  },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: SPACING.xxl },
   // Hero — rich gradient with decorative elements
