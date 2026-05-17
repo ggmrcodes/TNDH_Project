@@ -447,6 +447,29 @@ const th: Record<TranslationKey, string> = {
   'update.settings.lastCheckedAt': 'ตรวจสอบล่าสุดเมื่อ {time}',
   'update.settings.releaseNotesAction': 'บันทึกประจำเวอร์ชัน',
   'update.settings.downloadAction': 'ดาวน์โหลด {version}',
+
+  // ── Lab Trends (Hb / Hct / Ferritin) — added 2026-05-17 ──
+  // Thai translations stubbed via Google Translate — flag for native review.
+  // See docs/superpowers/specs/2026-05-17-lab-trends-graph-brief.md.
+  'labTrends.title': 'แนวโน้มค่าตรวจเลือด',
+  'labTrends.sectionLabel': 'แนวโน้มค่าตรวจเลือด',
+  'labTrends.hb': 'ฮีโมโกลบิน (g/dL)',
+  'labTrends.hct': 'ฮีมาโตคริต (%)',
+  'labTrends.ferritin': 'เฟอร์ริติน (ng/mL)',
+  'labTrends.hb.short': 'Hb',
+  'labTrends.hct.short': 'Hct',
+  'labTrends.ferritin.short': 'เฟอร์ริติน',
+  'labTrends.unit.hb': 'g/dL',
+  'labTrends.unit.hct': '%',
+  'labTrends.unit.ferritin': 'ng/mL',
+  'labTrends.empty': 'ยังไม่มีข้อมูลผลตรวจ — เพิ่มค่าก่อนรับเลือดเพื่อเริ่มติดตาม',
+  'labTrends.sparkline.empty': 'เพิ่มผลตรวจอย่างน้อย 2 ครั้งเพื่อดูแนวโน้ม',
+  'labTrends.markerHint': '| เส้นประ = วันที่รับเลือด',
+  'labTrends.window.1mo': '1 เดือน',
+  'labTrends.window.3mo': '3 เดือน',
+  'labTrends.window.6mo': '6 เดือน',
+  'labTrends.window.1y': '1 ปี',
+  'labTrends.window.all': 'ทั้งหมด',
 };
 
 export default th;

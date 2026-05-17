@@ -445,6 +445,28 @@ const en = {
   'update.settings.lastCheckedAt': 'Last checked {time}',
   'update.settings.releaseNotesAction': 'Release notes',
   'update.settings.downloadAction': 'Download {version}',
+
+  // ── Lab Trends (Hb / Hct / Ferritin) — added 2026-05-17 ──
+  // See docs/superpowers/specs/2026-05-17-lab-trends-graph-brief.md.
+  'labTrends.title': 'Lab Trends',
+  'labTrends.sectionLabel': 'Lab Trends',
+  'labTrends.hb': 'Hemoglobin (g/dL)',
+  'labTrends.hct': 'Hematocrit (%)',
+  'labTrends.ferritin': 'Ferritin (ng/mL)',
+  'labTrends.hb.short': 'Hb',
+  'labTrends.hct.short': 'Hct',
+  'labTrends.ferritin.short': 'Ferritin',
+  'labTrends.unit.hb': 'g/dL',
+  'labTrends.unit.hct': '%',
+  'labTrends.unit.ferritin': 'ng/mL',
+  'labTrends.empty': 'No lab data yet — add pre-transfusion labs to start tracking.',
+  'labTrends.sparkline.empty': 'Add 2+ lab entries to see the trend.',
+  'labTrends.markerHint': '| dashed marks = transfusion dates',
+  'labTrends.window.1mo': '1 mo',
+  'labTrends.window.3mo': '3 mo',
+  'labTrends.window.6mo': '6 mo',
+  'labTrends.window.1y': '1 yr',
+  'labTrends.window.all': 'All',
 } as const;
 
 export default en;
