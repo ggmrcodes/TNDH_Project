@@ -6,6 +6,7 @@ const en = {
   // Common
   'common.save': 'Save',
   'common.cancel': 'Cancel',
+  'common.or': 'or',
   'common.edit': 'Edit',
   'common.delete': 'Delete',
   'common.back': 'Back',
@@ -314,6 +315,8 @@ const en = {
   'scan.title': 'Scan Transfusion Slip',
   'scan.pickPhoto': 'Take Photo',
   'scan.pickLibrary': 'Choose from Library',
+  'scan.enterManually': 'Enter manually',
+  'scan.enterManuallyHint': "Don't have a photo? Type the details yourself.",
   'scan.reading': 'Reading your document…',
   'scan.reviewTitle': 'Review before saving',
   'scan.aiField': 'AI-extracted, please verify',

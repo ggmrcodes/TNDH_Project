@@ -8,6 +8,7 @@ const th: Record<TranslationKey, string> = {
   // Common
   'common.save': 'บันทึก',
   'common.cancel': 'ยกเลิก',
+  'common.or': 'หรือ',
   'common.edit': 'แก้ไข',
   'common.delete': 'ลบ',
   'common.back': 'กลับ',
@@ -318,6 +319,8 @@ const th: Record<TranslationKey, string> = {
   'scan.title': 'สแกนเอกสารการให้เลือด',
   'scan.pickPhoto': 'ถ่ายภาพ',
   'scan.pickLibrary': 'เลือกจากคลังภาพ',
+  'scan.enterManually': 'กรอกข้อมูลเอง',
+  'scan.enterManuallyHint': 'ไม่มีรูป? พิมพ์ข้อมูลด้วยตัวเองได้',
   'scan.reading': 'กำลังอ่านเอกสาร…',
   'scan.reviewTitle': 'ตรวจสอบก่อนบันทึก',
   'scan.aiField': 'AI สกัดข้อมูล กรุณาตรวจสอบ',

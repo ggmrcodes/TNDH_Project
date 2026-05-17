@@ -191,7 +191,21 @@ export default function ScanTransfusionScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {phase === 'capture' && <CaptureStep onPick={pickAndExtract} t={t} />}
+        {phase === 'capture' && (
+          <CaptureStep
+            onPick={pickAndExtract}
+            onEnterManually={() => {
+              setForm(EMPTY_FORM);
+              setAiFields(new Set());
+              setConfidence('medium');
+              setUnreadableReason('');
+              setImageUri(null);
+              setErrorMsg('');
+              setPhase('review');
+            }}
+            t={t}
+          />
+        )}
 
         {phase === 'processing' && (
           <ProcessingStep imageUri={imageUri} t={t} />
@@ -227,9 +241,11 @@ export default function ScanTransfusionScreen() {
 
 function CaptureStep({
   onPick,
+  onEnterManually,
   t,
 }: {
   onPick: (s: 'camera' | 'library') => void;
+  onEnterManually: () => void;
   t: (k: TranslationKey) => string;
 }) {
   return (
@@ -249,6 +265,19 @@ function CaptureStep({
         variant={Platform.OS === 'web' ? 'primary' : 'outline'}
         style={{ marginTop: SPACING.sm }}
       />
+
+      <View style={styles.manualDivider}>
+        <View style={styles.manualDividerLine} />
+        <Text style={styles.manualDividerText}>{t('common.or' as TranslationKey)}</Text>
+        <View style={styles.manualDividerLine} />
+      </View>
+
+      <Button
+        label={t('scan.enterManually')}
+        onPress={onEnterManually}
+        variant="outline"
+      />
+      <Text style={styles.manualHint}>{t('scan.enterManuallyHint')}</Text>
     </View>
   );
 }
@@ -478,6 +507,14 @@ const styles = StyleSheet.create({
   },
   stepTitle: { ...TYPOGRAPHY.h2, color: COLORS.text, textAlign: 'center' },
   stepBody: { ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, textAlign: 'center', paddingHorizontal: SPACING.md },
+  manualDivider: {
+    flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch',
+    gap: SPACING.sm, marginTop: SPACING.lg, marginBottom: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+  },
+  manualDividerLine: { flex: 1, height: 1, backgroundColor: COLORS.borderLight },
+  manualDividerText: { ...TYPOGRAPHY.caption, color: COLORS.textLight, fontWeight: '600' },
+  manualHint: { ...TYPOGRAPHY.caption, color: COLORS.textLight, textAlign: 'center', marginTop: SPACING.xs },
   processWrap: { alignItems: 'center', gap: SPACING.lg, paddingVertical: SPACING.xl },
   previewImage: {
     width: '100%', aspectRatio: 4 / 3, borderRadius: RADIUS.lg,
