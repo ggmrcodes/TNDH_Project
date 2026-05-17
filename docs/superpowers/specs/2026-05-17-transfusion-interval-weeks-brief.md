@@ -20,9 +20,9 @@ The patient profile asks for the **recommended visit/transfusion interval** as a
 
 ## Files to touch
 
-- `src/components/passport/ProfileEditForm.tsx` lines 140-152 — replace the TextInput with a week stepper.
-- `src/screens/auth/ProfileCompletionScreen.tsx` — same control used here too, verify and update.
-- `src/screens/clinician/ClinicianDashboardScreen.tsx` line 212 — display side: render `recommendedIntervalDays / 7` as weeks where shown.
+- `src/components/passport/ProfileEditForm.tsx` — replace the visit-interval `TextInput` with a week stepper. **Line numbers shifted post-brief-#6 (commits 1d36724, 46b7626 on `worktree-agent-a5cf34f9edf8045bf`).** Locate the target by content, not by line number: the `intervalDays` state (initialised from `profile?.recommended_visit_interval_days ?? 28`), the `{t('profileSetup.visitInterval')}` label, and the `Math.min(180, Math.max(7, n))` clamp.
+- `ProfileEditForm` is the **shared** component consumed by both `ProfileCompletionScreen` and `EditProfileScreen` — editing the form once covers both surfaces. **Do NOT edit `ProfileCompletionScreen.tsx` or `EditProfileScreen.tsx` for this brief** (earlier draft incorrectly listed `ProfileCompletionScreen` as a separate consumer).
+- `src/screens/clinician/ClinicianDashboardScreen.tsx` line 212 (approximate — re-locate) — display side: render `recommendedIntervalDays / 7` as weeks where shown.
 - `src/i18n/` — update `profileSetup.visitInterval` + `profileSetup.visitIntervalHint` for EN and TH ("weeks between transfusions", "สัปดาห์ระหว่างการให้เลือด").
 - No changes to `src/utils/cohortHistory.ts`, `src/utils/overdueVisit.ts`, or DB schema.
 
