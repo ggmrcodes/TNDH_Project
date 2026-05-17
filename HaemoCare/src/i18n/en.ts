@@ -244,6 +244,28 @@ const en = {
   'medications.notificationsEnabled': 'Reminders are active',
   'medications.adherence': 'Adherence',
 
+  // === medication reminders (brief #1) — notifications + permission UX ===
+  'reminders.permission.title': 'Turn on medication reminders?',
+  'reminders.permission.body': "HaemoCare will send a quiet notification at each dose time so you don't forget. You can change this anytime in Settings.",
+  'reminders.permission.allow': 'Allow notifications',
+  'reminders.permission.skip': 'Not now',
+  'reminders.permission.denied': 'Notifications are off. Open device settings to enable them.',
+  'reminders.notif.title': 'Time to take {med}',
+  'reminders.notif.body': '{dose} · tap to confirm',
+  'reminders.actionSheet.title': 'Did you take {med}?',
+  'reminders.actionSheet.taken': 'Taken',
+  'reminders.actionSheet.skipped': 'Skipped',
+  'reminders.actionSheet.snooze': 'Snooze 10 min',
+  'reminders.snoozed': 'Reminding you again in 10 minutes',
+
+  // Clinician adherence widget
+  'clinician.adherence.title': 'Medication adherence',
+  'clinician.adherence.takenLabel': 'Taken',
+  'clinician.adherence.missedLabel': 'Missed',
+  'clinician.adherence.windowLabel': 'Last {days} days',
+  'clinician.adherence.empty': 'No medications configured.',
+  // === end medication reminders ===
+
   // Language
   'language.toggle': 'EN/TH',
 

@@ -246,6 +246,30 @@ const th: Record<TranslationKey, string> = {
   'medications.notificationsEnabled': 'การเตือนเปิดอยู่',
   'medications.adherence': 'ความสม่ำเสมอ',
 
+  // === medication reminders (brief #1) — notifications + permission UX ===
+  // NOTE: TH copy below drafted by non-native speaker. Flag for native review
+  // before pilot release (see brief, open questions).
+  'reminders.permission.title': 'เปิดการแจ้งเตือนทานยา?',
+  'reminders.permission.body': 'HaemoCare จะส่งการแจ้งเตือนแบบเงียบเมื่อถึงเวลาทานยาเพื่อไม่ให้คุณลืม คุณสามารถเปลี่ยนค่านี้ได้ในการตั้งค่า',
+  'reminders.permission.allow': 'อนุญาตการแจ้งเตือน',
+  'reminders.permission.skip': 'ยังไม่ตอนนี้',
+  'reminders.permission.denied': 'ปิดการแจ้งเตือนอยู่ เปิดการตั้งค่าอุปกรณ์เพื่อเปิดใช้งาน',
+  'reminders.notif.title': 'ถึงเวลาทาน {med}',
+  'reminders.notif.body': '{dose} · แตะเพื่อยืนยัน',
+  'reminders.actionSheet.title': 'คุณได้ทาน {med} แล้วหรือไม่?',
+  'reminders.actionSheet.taken': 'ทานแล้ว',
+  'reminders.actionSheet.skipped': 'ข้าม',
+  'reminders.actionSheet.snooze': 'เลื่อนไปอีก 10 นาที',
+  'reminders.snoozed': 'จะเตือนคุณอีกครั้งในอีก 10 นาที',
+
+  // Clinician adherence widget
+  'clinician.adherence.title': 'ความสม่ำเสมอในการทานยา',
+  'clinician.adherence.takenLabel': 'ทานแล้ว',
+  'clinician.adherence.missedLabel': 'พลาด',
+  'clinician.adherence.windowLabel': '{days} วันล่าสุด',
+  'clinician.adherence.empty': 'ไม่มีรายการยา',
+  // === end medication reminders ===
+
   // Language
   'language.toggle': 'TH/EN',
 
