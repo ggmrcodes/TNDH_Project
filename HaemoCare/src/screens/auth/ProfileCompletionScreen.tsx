@@ -7,22 +7,29 @@ import { createProfile } from '../../services/profileService';
 import ProfileEditForm from '../../components/passport/ProfileEditForm';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import { Profile } from '../../types/database';
-import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
 
 export default function ProfileCompletionScreen() {
   const { user, refreshProfile } = useAuth();
   const { t } = useLanguage();
   const { isMobile } = useResponsive();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (data: Partial<Profile>) => {
-    if (!user) return;
+    if (!user) {
+      setError('No authenticated user — please sign out and back in.');
+      return;
+    }
+    setError('');
     setIsLoading(true);
     try {
       await createProfile(user.id, data);
       await refreshProfile();
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       console.error('Profile creation error:', err);
+      setError(message);
     }
     setIsLoading(false);
   };
@@ -37,6 +44,11 @@ export default function ProfileCompletionScreen() {
         <LanguageToggle />
       </View>
       <View style={[styles.form, !isMobile && { maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' as const, width: '100%' as any }]}>
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
         <ProfileEditForm
           onSubmit={handleSubmit}
           isLoading={isLoading}
@@ -72,5 +84,15 @@ const styles = StyleSheet.create({
   form: {
     flex: 1,
     paddingHorizontal: SPACING.lg,
+  },
+  errorBox: {
+    backgroundColor: COLORS.statusUrgentBg,
+    padding: SPACING.md,
+    borderRadius: RADIUS.sm,
+    marginTop: SPACING.md,
+  },
+  errorText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.statusUrgent,
   },
 });

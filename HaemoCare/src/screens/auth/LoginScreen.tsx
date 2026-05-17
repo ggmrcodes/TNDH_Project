@@ -29,7 +29,7 @@ export default function LoginScreen({ navigation }: Props) {
     const result = await signIn(email.trim(), password);
     setIsLoading(false);
     if (result.error) {
-      setError(t('auth.loginError'));
+      setError(result.error);
     }
   };
 
