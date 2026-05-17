@@ -14,11 +14,9 @@ import CohortOverviewCard from '../../components/clinician/CohortOverviewCard';
 import FilterChips, { FilterId } from '../../components/clinician/FilterChips';
 import PatientQueueRow from '../../components/clinician/PatientQueueRow';
 import PatientDetailPane from '../../components/clinician/PatientDetailPane';
-// ── Wave-1 brief slot: Pre-transfusion labs panel (2026-05-17). Keep this
-// import + the corresponding render slot isolated so the upcoming
-// medication-reminders brief (#1) can add its own panel without merge
-// conflicts. See docs/superpowers/specs/2026-05-17-pre-transfusion-labs-brief.md.
+// Wave-1 brief slots (2026-05-17). See specs in docs/superpowers/specs/.
 import PreTransfusionLabsPanel from '../../components/clinician/PreTransfusionLabsPanel';
+import MedicationAdherenceCard from '../../components/clinician/MedicationAdherenceCard';
 import QueueSearchBar from '../../components/clinician/QueueSearchBar';
 import QueueSortSelector, { type SortKey } from '../../components/clinician/QueueSortSelector';
 import LanguageToggle from '../../components/common/LanguageToggle';
@@ -377,14 +375,21 @@ export default function ClinicianDashboardScreen() {
         </View>
         <View style={[styles.rightPane, isDesktop && styles.rightPaneDesktop]}>
           {selectedId ? (
-            <>
-              {/* ── Wave-1 brief slot: Pre-transfusion labs panel. ── */}
+            <ScrollView
+              contentContainerStyle={styles.rightPaneScroll}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* === medication adherence widget (brief #1) === */}
+              <View style={styles.adherenceWrap}>
+                <MedicationAdherenceCard patientUserId={selectedId} />
+              </View>
+              {/* === pre-transfusion labs panel (brief #3) === */}
               <PreTransfusionLabsPanel
                 patientUserId={selectedId}
                 clinicianDisplayName={clinicianProfile?.full_name ?? undefined}
               />
               <PatientDetailPane userId={selectedId} isClinicianView />
-            </>
+            </ScrollView>
           ) : (
             <ScrollView contentContainerStyle={styles.emptyDetail}>
               <Text style={styles.empty}>{t('clinician.detail.empty' as TranslationKey)}</Text>
@@ -466,6 +471,8 @@ const styles = StyleSheet.create({
   searchInputWrap: { flex: 1 },
   rightPane: { flex: 1 },
   rightPaneDesktop: { flex: 1 },
+  rightPaneScroll: { paddingBottom: SPACING.xl },
+  adherenceWrap: { paddingHorizontal: SPACING.md, paddingTop: SPACING.sm },
   emptyDetail: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: SPACING.xl },
   empty: { fontSize: 13, color: COLORS.textLight, textAlign: 'center', padding: SPACING.lg },
   noMatchWrap: { alignItems: 'center', padding: SPACING.lg, gap: SPACING.sm },

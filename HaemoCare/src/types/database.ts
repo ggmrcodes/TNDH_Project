@@ -104,6 +104,21 @@ export interface MedicationReminder {
   updated_at: string;
 }
 
+// === medication adherence (brief #1) ===
+export type AdherenceEventSource = 'tap' | 'notification' | 'manual';
+
+export interface MedicationAdherenceEvent {
+  id: string;
+  user_id: string;
+  reminder_id: string;
+  scheduled_at: string; // ISO timestamp of the planned dose
+  taken_at: string | null;
+  skipped_at: string | null;
+  source: AdherenceEventSource;
+  created_at: string;
+}
+// === end medication adherence ===
+
 export interface EmergencyContact {
   id: string;
   user_id: string;

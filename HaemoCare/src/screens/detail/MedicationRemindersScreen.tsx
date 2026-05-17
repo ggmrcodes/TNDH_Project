@@ -16,8 +16,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 import * as mockServices from '../../mock/services';
+import * as medicationsService from '../../services/medicationsService';
+import * as notifications from '../../services/notifications';
 import { MedicationReminder } from '../../types/database';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
+import type { TranslationKey } from '../../i18n';
 
 const FREQUENCY_OPTIONS = [
   { key: 'daily', times: 1 },
@@ -41,6 +44,47 @@ export default function MedicationRemindersScreen() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Picks the right backing impl based on mock/real mode. Defined inline so
+  // the screen stays a single render path with no isMockMode branches sprinkled
+  // through every handler.
+  const svc = useCallback(() => ({
+    list: (uid: string) => isMockMode
+      ? mockServices.getMedicationReminders(uid)
+      : medicationsService.getMedicationReminders(uid),
+    create: (uid: string, data: Parameters<typeof medicationsService.createMedicationReminder>[1]) =>
+      isMockMode
+        ? mockServices.createMedicationReminder(uid, data)
+        : medicationsService.createMedicationReminder(uid, data),
+    update: (uid: string, id: string, patch: Partial<MedicationReminder>) =>
+      isMockMode
+        ? mockServices.updateMedicationReminder(uid, id, patch)
+        : medicationsService.updateMedicationReminder(uid, id, patch),
+    remove: (uid: string, id: string) =>
+      isMockMode
+        ? mockServices.deleteMedicationReminder(uid, id)
+        : medicationsService.deleteMedicationReminder(uid, id),
+    markTaken: (uid: string, id: string) =>
+      isMockMode
+        ? mockServices.markMedicationTakenWithEvent(uid, id, 'tap')
+        : medicationsService.markMedicationTaken(uid, id, 'tap'),
+    unmark: (uid: string, id: string) =>
+      isMockMode
+        ? mockServices.unmarkMedicationTaken(uid, id)
+        : medicationsService.unmarkMedicationTaken(uid, id),
+  }), [isMockMode]);
+
+  // Builds the i18n title/body for a reminder at the time we schedule it.
+  // This is a function (not memoized) because LanguageContext changes
+  // re-rendering this screen will already trigger a reschedule via the
+  // dependency below.
+  const buildReminderStrings = useCallback(
+    (med: MedicationReminder): notifications.ScheduleStrings => ({
+      title: t('reminders.notif.title' as TranslationKey, { med: med.medication_name }),
+      body: t('reminders.notif.body' as TranslationKey, { dose: med.dosage }),
+    }),
+    [t]
+  );
+
   // Add form state
   const [newName, setNewName] = useState('');
   const [newDosage, setNewDosage] = useState('');
@@ -52,13 +96,26 @@ export default function MedicationRemindersScreen() {
   const loadMedications = useCallback(async () => {
     if (!user) return;
     try {
-      const data = await mockServices.getMedicationReminders(user.id);
+      const data = await svc().list(user.id);
       setMedications(data);
     } catch (err) {
       console.error('Failed to load medications:', err);
     }
     setLoading(false);
-  }, [user, isMockMode]);
+  }, [user, svc]);
+
+  // Reschedule local notifications for the given set. Best-effort — failures
+  // log but don't block the user-visible save (e.g. Expo Go iPhone, or no
+  // permission). Patient sees the in-app state regardless.
+  const reschedule = useCallback(async (meds: MedicationReminder[]) => {
+    try {
+      await notifications.rehydrateFromSchedule(meds, {
+        buildStrings: buildReminderStrings,
+      });
+    } catch (err) {
+      console.warn('Failed to reschedule reminders:', err);
+    }
+  }, [buildReminderStrings]);
 
   useFocusEffect(
     useCallback(() => {
@@ -69,7 +126,7 @@ export default function MedicationRemindersScreen() {
   const handleMarkTaken = async (med: MedicationReminder) => {
     if (!user) return;
     try {
-      await mockServices.markMedicationTaken(user.id, med.id);
+      await svc().markTaken(user.id, med.id);
       await loadMedications();
     } catch (err) {
       console.error(err);
@@ -79,7 +136,7 @@ export default function MedicationRemindersScreen() {
   const handleUndoTaken = async (med: MedicationReminder) => {
     if (!user) return;
     try {
-      await mockServices.unmarkMedicationTaken(user.id, med.id);
+      await svc().unmark(user.id, med.id);
       await loadMedications();
     } catch (err) {
       console.error(err);
@@ -97,7 +154,10 @@ export default function MedicationRemindersScreen() {
           style: 'destructive',
           onPress: async () => {
             if (!user) return;
-            await mockServices.deleteMedicationReminder(user.id, med.id);
+            await svc().remove(user.id, med.id);
+            // Cancel any scheduled notifications for this reminder.
+            try { await notifications.cancelReminder(med.id); }
+            catch (err) { console.warn('cancelReminder failed:', err); }
             await loadMedications();
           },
         },
@@ -107,17 +167,22 @@ export default function MedicationRemindersScreen() {
 
   const handleToggleActive = async (med: MedicationReminder) => {
     if (!user) return;
-    await mockServices.updateMedicationReminder(user.id, med.id, {
-      is_active: !med.is_active,
-    });
-    await loadMedications();
+    await svc().update(user.id, med.id, { is_active: !med.is_active });
+    // Pausing → cancel scheduled notifs; resuming → reschedule below via reload.
+    if (med.is_active) {
+      try { await notifications.cancelReminder(med.id); }
+      catch (err) { console.warn('cancelReminder failed:', err); }
+    }
+    const refreshed = await svc().list(user.id);
+    setMedications(refreshed);
+    await reschedule(refreshed);
   };
 
   const handleAddMedication = async () => {
     if (!user || !newName.trim() || !newDosage.trim()) return;
     setSaving(true);
     try {
-      await mockServices.createMedicationReminder(user.id, {
+      await svc().create(user.id, {
         medication_name: newName.trim(),
         dosage: newDosage.trim(),
         frequency: newFrequency,
@@ -131,7 +196,11 @@ export default function MedicationRemindersScreen() {
       setNewTimes(['08:00']);
       setNewInstructions('');
       setShowAddForm(false);
-      await loadMedications();
+      const refreshed = await svc().list(user.id);
+      setMedications(refreshed);
+      // Schedule local notifications for the next 14 days.
+      await reschedule(refreshed);
+      setLoading(false);
     } catch (err) {
       console.error(err);
     }
