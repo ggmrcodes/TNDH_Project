@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
@@ -7,15 +7,20 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import * as realTransfusionService from '../../services/transfusionService';
 import * as realSymptomService from '../../services/symptomService';
+import * as realPreLabsService from '../../services/preTransfusionLabsService';
 import * as mockServices from '../../mock/services';
 import { formatDateTime } from '../../utils/dateHelpers';
-import { Transfusion, SymptomLog } from '../../types/database';
+import { Transfusion, SymptomLog, PreTransfusionLabs } from '../../types/database';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import SymptomLogCard from '../../components/symptoms/SymptomLogCard';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
-import { Ionicons } from '@expo/vector-icons';
+import PreTransfusionLabsForm from '../../components/transfusions/PreTransfusionLabsForm';
+import PreTransfusionLabsDisplay from '../../components/transfusions/PreTransfusionLabsDisplay';
+import { isEmptyLabs } from '../../utils/preTransfusionLabs';
+import { TranslationKey } from '../../i18n';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
 
 type RouteProps = RouteProp<RootStackParamList, 'TransfusionDetail'>;
@@ -23,11 +28,12 @@ type RouteProps = RouteProp<RootStackParamList, 'TransfusionDetail'>;
 export default function TransfusionDetailScreen() {
   const route = useRoute<RouteProps>();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { isMockMode } = useAuth();
+  const { isMockMode, user } = useAuth();
   const { t, language } = useLanguage();
   const { isMobile } = useResponsive();
   const [transfusion, setTransfusion] = useState<Transfusion | null>(null);
   const [logs, setLogs] = useState<SymptomLog[]>([]);
+  const [editingLabs, setEditingLabs] = useState(false);
 
   useEffect(() => {
     const id = route.params.transfusionId;
@@ -39,6 +45,54 @@ export default function TransfusionDetailScreen() {
       realSymptomService.getSymptomLogsByTransfusion(id).then(setLogs);
     }
   }, [route.params.transfusionId, isMockMode]);
+
+  const handleSubmitLabs = async (values: {
+    hb: number | null;
+    hct: number | null;
+    ferritin: number | null;
+    lab_slip_photo_url: string | null;
+  }) => {
+    if (!transfusion) return;
+    const actorId = user?.id ?? transfusion.user_id;
+    const payload: PreTransfusionLabs = {
+      hb: values.hb,
+      hct: values.hct,
+      ferritin: values.ferritin,
+      recorded_at: new Date().toISOString(),
+      recorded_by_user_id: actorId,
+      // Patient-entered values are unverified; clinician edits flip this
+      // upstream in the clinician dashboard surface.
+      verified_by_clinician_id: transfusion.pre_labs?.verified_by_clinician_id ?? null,
+      lab_slip_photo_url: values.lab_slip_photo_url,
+      source: 'manual',
+    };
+    try {
+      if (isMockMode) {
+        const updated = await mockServices.savePreLabsForTransfusion(
+          transfusion.id,
+          actorId,
+          payload
+        );
+        setTransfusion(updated);
+      } else {
+        const updated = await realPreLabsService.savePreLabs(
+          transfusion.id,
+          transfusion.user_id,
+          actorId,
+          payload
+        );
+        setTransfusion(updated);
+      }
+      setEditingLabs(false);
+    } catch (err: any) {
+      Alert.alert(
+        t('common.error' as TranslationKey),
+        err?.message || t('preLabs.error.save' as TranslationKey)
+      );
+      // Re-throw so the form's saving state clears via its own catch.
+      throw err;
+    }
+  };
 
   if (!transfusion) return <LoadingSpinner />;
 
@@ -58,6 +112,47 @@ export default function TransfusionDetailScreen() {
             <Ionicons name="water" size={20} color={COLORS.primary} />
             <Text style={styles.value}>{transfusion.units_received} {t('history.units')}</Text>
           </View>
+        </Card>
+
+        {/* Pre-transfusion labs section — patient-side surface. */}
+        <Card style={styles.card}>
+          <View style={styles.labsHeader}>
+            <View style={styles.labsHeaderLeft}>
+              <Feather name="activity" size={18} color={COLORS.primary} />
+              <Text style={styles.labsHeaderTitle}>{t('preLabs.title' as TranslationKey)}</Text>
+            </View>
+            {!editingLabs && (
+              <TouchableOpacity onPress={() => setEditingLabs(true)} activeOpacity={0.7}>
+                <Text style={styles.labsHeaderCta}>
+                  {isEmptyLabs(transfusion.pre_labs)
+                    ? t('preLabs.addCta' as TranslationKey)
+                    : t('preLabs.editCta' as TranslationKey)}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {editingLabs ? (
+            <PreTransfusionLabsForm
+              initial={transfusion.pre_labs ?? null}
+              onSubmit={handleSubmitLabs}
+              onCancel={() => setEditingLabs(false)}
+            />
+          ) : (
+            <PreTransfusionLabsDisplay
+              labs={transfusion.pre_labs ?? null}
+              photoDisplayUri={
+                // In mock mode the URL is a local URI; in real mode the
+                // caller (clinician dashboard) is responsible for fetching
+                // a signed URL — this patient-side view skips the photo
+                // unless it's already a renderable URI (mock case).
+                transfusion.pre_labs?.lab_slip_photo_url?.startsWith('http') ||
+                transfusion.pre_labs?.lab_slip_photo_url?.startsWith('file:') ||
+                transfusion.pre_labs?.lab_slip_photo_url?.startsWith('data:')
+                  ? transfusion.pre_labs.lab_slip_photo_url
+                  : null
+              }
+            />
+          )}
         </Card>
 
         {transfusion.reaction_noted && (
@@ -158,4 +253,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     marginTop: SPACING.md,
   },
+  labsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+  },
+  labsHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  labsHeaderTitle: { ...TYPOGRAPHY.h3, color: COLORS.text },
+  labsHeaderCta: { ...TYPOGRAPHY.bodySmall, color: COLORS.primary, fontWeight: '700' },
 });
