@@ -62,7 +62,7 @@ The tester's "เตือนกินยา" almost certainly means "the app di
 ## Out of scope
 
 - Refill alerts ("3 days of pills left").
-- Med-interaction warnings (e.g., flagging NSAIDs for hemophilia patients).
+- Med-interaction warnings (e.g., flagging contraindicated drugs for transfusion-dependent patients).
 - Clinician-prescribed schedules (clinician pushes a regimen to the patient).
 - Per-medication custom notification sounds.
 - Apple Watch / wearables.

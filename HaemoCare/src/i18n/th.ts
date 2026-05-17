@@ -132,7 +132,7 @@ const th: Record<TranslationKey, string> = {
   // TODO(th-review): translations stubbed via Google Translate / dictionary;
   // need native review before clinician sign-off.
   'symptom.urineColor.label': 'สีของปัสสาวะ',
-  'symptom.urineColor.help': 'ปัสสาวะสีชมพู แดง น้ำตาล หรือสีโคล่า อาจเป็นสัญญาณเตือนของโรคฮีโมฟีเลีย',
+  'symptom.urineColor.help': 'สีที่ผิดปกติของปัสสาวะอาจบ่งบอกถึงความผิดปกติหรืออันตราย',
   'symptom.urineColor.optional': 'ไม่บังคับ — ข้ามได้หากยังไม่ได้ปัสสาวะ',
   'symptom.urineColor.notLogged': 'ไม่ได้บันทึก',
   'symptom.urineColor.clear': 'ใส',

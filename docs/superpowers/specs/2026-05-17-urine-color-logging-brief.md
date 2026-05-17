@@ -8,12 +8,12 @@
 
 ## Problem
 
-The current symptom catalog has `dark_urine` as a binary symptom with a 1-10 severity slider. Hemophilia clinical relevance demands more nuance: pink/red/brown urine signals hematuria (a hemophilia red flag), while yellow/dark-yellow is just hydration. A binary "dark or not" loses this entire dimension. Replace with a color picker that drives clinically meaningful escalation.
+The current symptom catalog has `dark_urine` as a binary symptom with a 1-10 severity slider. Transfusion-safety clinical relevance demands more nuance: pink/red/brown urine signals hematuria or post-transfusion hemolysis (acute red-flag), while yellow/dark-yellow is just hydration. A binary "dark or not" loses this entire dimension. Replace with a color picker that drives clinically meaningful escalation.
 
 ## Decisions already made (do not re-ask)
 
 - **Replace `dark_urine` with a new `urine_color` field.** Retire `dark_urine` from `SYMPTOM_CATALOG` for *new* entries. Historical logs with `dark_urine` stay untouched — display them as "dark urine (legacy)" in history views.
-- **Custom hemophilia-relevant scale** (not the 8-step hydration chart):
+- **Custom clinically-relevant scale** (not the 8-step hydration chart):
   - `clear` — no color
   - `yellow` — pale to normal
   - `dark_yellow` — concentrated (dehydration hint)

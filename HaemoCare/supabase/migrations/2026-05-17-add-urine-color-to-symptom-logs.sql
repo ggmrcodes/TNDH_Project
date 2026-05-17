@@ -1,7 +1,7 @@
 -- Adds the structured `urine_color` field to symptom_logs.
 -- See docs/superpowers/specs/2026-05-17-urine-color-logging-brief.md.
 --
--- The seven-color hemophilia-relevant scale is enforced at the database
+-- The seven-color clinically-relevant scale is enforced at the database
 -- level so a typo in the client can never sneak past Supabase. The
 -- column is nullable: historical logs (which carry the legacy
 -- `dark_urine` key inside `severity_scores`) are not backfilled and

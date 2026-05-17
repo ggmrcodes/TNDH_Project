@@ -130,7 +130,7 @@ const en = {
 
   // Urine color picker (hematuria red-flag tracking)
   'symptom.urineColor.label': 'Urine color',
-  'symptom.urineColor.help': 'Pink, red, brown or cola-colored urine can be a hemophilia warning sign.',
+  'symptom.urineColor.help': 'Unusual urine colors may indicate something abnormal or dangerous.',
   'symptom.urineColor.optional': 'Optional — skip if you have not urinated recently.',
   'symptom.urineColor.notLogged': 'Not logged',
   'symptom.urineColor.clear': 'Clear',

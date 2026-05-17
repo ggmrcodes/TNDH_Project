@@ -47,7 +47,7 @@ export interface UrineColorOption {
   labelKey: string;
   /** CSS hex used for the picker swatch. */
   hex: string;
-  /** True when this color is a hemophilia red flag → urgent outcome. */
+  /** True when this color is a clinical red flag → urgent outcome. */
   isRedFlag: boolean;
 }
 

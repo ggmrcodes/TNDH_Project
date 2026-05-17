@@ -61,9 +61,10 @@ export interface SymptomLog {
   outcome: 'normal' | 'monitor' | 'urgent';
   notes: string;
   /**
-   * Hemophilia red-flag tracker (see URINE_COLOR_OPTIONS). Null or absent
-   * on legacy logs that were written before the urine-color field existed;
-   * those logs may instead carry `dark_urine` inside `severity_scores`.
+   * Clinical red-flag urine color (see URINE_COLOR_OPTIONS) — pink/red/brown/
+   * cola hues can indicate hematuria or post-transfusion hemolysis. Null or
+   * absent on legacy logs that predate the urine-color field; those logs may
+   * instead carry `dark_urine` inside `severity_scores`.
    */
   urine_color?: UrineColor | null;
   created_at: string;
