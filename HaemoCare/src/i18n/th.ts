@@ -135,6 +135,12 @@ const th: Record<TranslationKey, string> = {
   'symptom.urineColor.help': 'สีที่ผิดปกติของปัสสาวะอาจบ่งบอกถึงความผิดปกติหรืออันตราย',
   'symptom.urineColor.optional': 'ไม่บังคับ — ข้ามได้หากยังไม่ได้ปัสสาวะ',
   'symptom.urineColor.notLogged': 'ไม่ได้บันทึก',
+  // หมวดในตัวเลือก (ผิดปกติทางคลินิกเท่านั้น)
+  'symptom.urineColor.red_pink': 'สีชมพูหรือสีแดง',
+  'symptom.urineColor.cola_dark': 'สีโค้กหรือสีดำเข้ม',
+  'symptom.urineColor.cloudy_white': 'สีขาวขุ่น คล้ายน้ำนม',
+  'symptom.urineColor.green_blue': 'สีเขียวหรือสีน้ำเงิน',
+  // ป้ายข้อมูลเก่า (เก็บไว้แสดงผลบันทึกย้อนหลังเท่านั้น)
   'symptom.urineColor.clear': 'ใส',
   'symptom.urineColor.yellow': 'สีเหลือง',
   'symptom.urineColor.dark_yellow': 'สีเหลืองเข้ม',

@@ -21,21 +21,22 @@ describe('SYMPTOM_CATALOG', () => {
 });
 
 describe('URINE_COLOR_OPTIONS', () => {
-  it('exposes exactly the seven colors from the brief, in clinical order', () => {
+  it('exposes exactly the four clinically-abnormal categories (picker pruned)', () => {
+    // Picker was pruned to only show abnormal colors. Legacy values
+    // (clear/yellow/dark_yellow/pink/red/brown_tea/cola) intentionally
+    // dropped from the picker — they remain readable in history via
+    // URINE_COLOR_HEX + i18n but cannot be picked for new logs.
     expect(URINE_COLOR_OPTIONS.map(o => o.key)).toEqual([
-      'clear',
-      'yellow',
-      'dark_yellow',
-      'pink',
-      'red',
-      'brown_tea',
-      'cola',
+      'red_pink',
+      'cola_dark',
+      'cloudy_white',
+      'green_blue',
     ]);
   });
 
-  it('marks exactly pink, red, brown_tea, cola as hematuria red flags', () => {
+  it('marks every picker option as a red flag (only abnormal colors remain)', () => {
     const flagged = URINE_COLOR_OPTIONS.filter(o => o.isRedFlag).map(o => o.key);
-    expect(flagged.sort()).toEqual(['brown_tea', 'cola', 'pink', 'red']);
+    expect(flagged.sort()).toEqual(['cloudy_white', 'cola_dark', 'green_blue', 'red_pink']);
   });
 
   it('exposes a hex value for every color', () => {
@@ -46,14 +47,21 @@ describe('URINE_COLOR_OPTIONS', () => {
 });
 
 describe('isHematuriaColor', () => {
-  it('returns true for the four red-flag colors', () => {
+  it('returns true for the new picker abnormal categories', () => {
+    expect(isHematuriaColor('red_pink')).toBe(true);
+    expect(isHematuriaColor('cola_dark')).toBe(true);
+    expect(isHematuriaColor('cloudy_white')).toBe(true);
+    expect(isHematuriaColor('green_blue')).toBe(true);
+  });
+
+  it('still returns true for legacy abnormal colors (backward compat)', () => {
     expect(isHematuriaColor('pink')).toBe(true);
     expect(isHematuriaColor('red')).toBe(true);
     expect(isHematuriaColor('brown_tea')).toBe(true);
     expect(isHematuriaColor('cola')).toBe(true);
   });
 
-  it('returns false for hydration-range colors', () => {
+  it('returns false for legacy hydration-range colors', () => {
     expect(isHematuriaColor('clear')).toBe(false);
     expect(isHematuriaColor('yellow')).toBe(false);
     expect(isHematuriaColor('dark_yellow')).toBe(false);
@@ -67,9 +75,14 @@ describe('isHematuriaColor', () => {
 
 describe('evaluateSymptoms — urine color mapping', () => {
   const NON_HEMATURIA: UrineColor[] = ['clear', 'yellow', 'dark_yellow'];
-  const HEMATURIA: UrineColor[] = ['pink', 'red', 'brown_tea', 'cola'];
+  // Includes both the new picker categories AND legacy abnormal colors,
+  // since old logs must still escalate the same way they did when stored.
+  const HEMATURIA: UrineColor[] = [
+    'red_pink', 'cola_dark', 'cloudy_white', 'green_blue',
+    'pink', 'red', 'brown_tea', 'cola',
+  ];
 
-  describe.each(HEMATURIA)('hematuria color: %s', color => {
+  describe.each(HEMATURIA)('abnormal color: %s', color => {
     it('produces urgent outcome even with no other symptoms', () => {
       const r = evaluateSymptoms({}, color);
       expect(r.outcome).toBe('urgent');

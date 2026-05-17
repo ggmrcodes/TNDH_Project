@@ -42,7 +42,18 @@ export interface Transfusion {
 // and `evaluateSymptoms()` for the outcome mapping.
 // Historical logs use `dark_urine` inside `severity_scores`; new logs
 // populate `urine_color` and leave `dark_urine` out of `severity_scores`.
+// Picker now shows only the four clinically-abnormal categories
+// (`red_pink`, `cola_dark`, `cloudy_white`, `green_blue`). The legacy
+// seven-color values are kept in the union for backward compatibility
+// with logs written before the picker was pruned — they still display
+// correctly via URINE_COLOR_HEX and isHematuriaColor.
 export type UrineColor =
+  // New picker values — clinically abnormal only
+  | 'red_pink'
+  | 'cola_dark'
+  | 'cloudy_white'
+  | 'green_blue'
+  // Legacy values (kept for historical-log compatibility, not pickable)
   | 'clear'
   | 'yellow'
   | 'dark_yellow'

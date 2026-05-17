@@ -133,6 +133,12 @@ const en = {
   'symptom.urineColor.help': 'Unusual urine colors may indicate something abnormal or dangerous.',
   'symptom.urineColor.optional': 'Optional — skip if you have not urinated recently.',
   'symptom.urineColor.notLogged': 'Not logged',
+  // Picker categories (clinically abnormal only)
+  'symptom.urineColor.red_pink': 'Pink or red',
+  'symptom.urineColor.cola_dark': 'Cola / very dark',
+  'symptom.urineColor.cloudy_white': 'Cloudy / milky white',
+  'symptom.urineColor.green_blue': 'Green or blue',
+  // Legacy labels (kept for displaying old logs only)
   'symptom.urineColor.clear': 'Clear',
   'symptom.urineColor.yellow': 'Yellow',
   'symptom.urineColor.dark_yellow': 'Dark yellow',

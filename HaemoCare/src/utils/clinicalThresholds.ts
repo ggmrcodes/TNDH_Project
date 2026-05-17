@@ -51,21 +51,48 @@ export interface UrineColorOption {
   isRedFlag: boolean;
 }
 
+// Picker shows only clinically-abnormal categories now. Each is treated as
+// a red flag and feeds into the urine_color escalation in evaluateSymptoms.
+// Legacy values (clear/yellow/dark_yellow/pink/red/brown_tea/cola) are NOT
+// shown here — only displayed via URINE_COLOR_HEX when reading old logs.
 export const URINE_COLOR_OPTIONS: UrineColorOption[] = [
-  { key: 'clear',       labelKey: 'symptom.urineColor.clear',       hex: '#F7F7F2', isRedFlag: false },
-  { key: 'yellow',      labelKey: 'symptom.urineColor.yellow',      hex: '#F5E663', isRedFlag: false },
-  { key: 'dark_yellow', labelKey: 'symptom.urineColor.dark_yellow', hex: '#D4A017', isRedFlag: false },
-  { key: 'pink',        labelKey: 'symptom.urineColor.pink',        hex: '#E89AAE', isRedFlag: true  },
-  { key: 'red',         labelKey: 'symptom.urineColor.red',         hex: '#B22222', isRedFlag: true  },
-  { key: 'brown_tea',   labelKey: 'symptom.urineColor.brown_tea',   hex: '#6B3410', isRedFlag: true  },
-  { key: 'cola',        labelKey: 'symptom.urineColor.cola',        hex: '#2A1505', isRedFlag: true  },
+  { key: 'red_pink',     labelKey: 'symptom.urineColor.red_pink',     hex: '#DC3B5B', isRedFlag: true },
+  { key: 'cola_dark',    labelKey: 'symptom.urineColor.cola_dark',    hex: '#2A1505', isRedFlag: true },
+  { key: 'cloudy_white', labelKey: 'symptom.urineColor.cloudy_white', hex: '#ECE7DA', isRedFlag: true },
+  { key: 'green_blue',   labelKey: 'symptom.urineColor.green_blue',   hex: '#1FA8B4', isRedFlag: true },
 ];
 
-export const URINE_COLOR_HEX: Record<UrineColor, string> = Object.fromEntries(
-  URINE_COLOR_OPTIONS.map(o => [o.key, o.hex])
-) as Record<UrineColor, string>;
+// Full hex map covering BOTH the new picker values AND legacy values so
+// historical logs render with their original swatch color.
+export const URINE_COLOR_HEX: Record<UrineColor, string> = {
+  // New picker values
+  red_pink: '#DC3B5B',
+  cola_dark: '#2A1505',
+  cloudy_white: '#ECE7DA',
+  green_blue: '#1FA8B4',
+  // Legacy values (for displaying old logs only)
+  clear: '#F7F7F2',
+  yellow: '#F5E663',
+  dark_yellow: '#D4A017',
+  pink: '#E89AAE',
+  red: '#B22222',
+  brown_tea: '#6B3410',
+  cola: '#2A1505',
+};
 
+// Set of every urine color that warrants clinical escalation. Includes
+// both the new picker categories AND the legacy abnormal subset so that
+// historical logs continue to surface the correct urgency. Name kept as
+// `HEMATURIA_COLORS` for callsite stability; semantically these are
+// "abnormal urine colors" — cloudy_white (UTI) and green_blue (bacterial/
+// drug effect) are abnormal even though they're not literally hematuria.
 const HEMATURIA_COLORS: ReadonlySet<UrineColor> = new Set<UrineColor>([
+  // New picker values — all flagged
+  'red_pink',
+  'cola_dark',
+  'cloudy_white',
+  'green_blue',
+  // Legacy abnormal values (for old logs)
   'pink',
   'red',
   'brown_tea',
