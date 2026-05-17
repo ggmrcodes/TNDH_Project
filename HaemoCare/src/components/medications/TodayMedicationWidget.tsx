@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import * as mockServices from '../../mock/services';
@@ -53,7 +53,7 @@ export default function TodayMedicationWidget({ onPress }: Props) {
         <View style={styles.headerRow}>
           <View style={styles.headerLeft}>
             <View style={styles.emptyIconBg}>
-              <Text style={styles.pillEmoji}>💊</Text>
+              <Ionicons name="medical-outline" size={20} color={COLORS.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>{t('medications.noMedications')}</Text>
@@ -62,7 +62,7 @@ export default function TodayMedicationWidget({ onPress }: Props) {
               </Text>
             </View>
           </View>
-          <Feather name="plus-circle" size={20} color={COLORS.primary} />
+          <Feather name="plus-circle" size={20} color={COLORS.primary} style={styles.headerTrailingIcon} />
         </View>
       </TouchableOpacity>
     );
@@ -95,7 +95,11 @@ export default function TodayMedicationWidget({ onPress }: Props) {
             {allTaken ? (
               <Feather name="check-circle" size={18} color={COLORS.white} />
             ) : (
-              <Text style={styles.pillEmoji}>💊</Text>
+              <Ionicons
+                name="medical-outline"
+                size={20}
+                color={hasOverdue ? COLORS.accent : COLORS.primary}
+              />
             )}
           </View>
           <View>
@@ -110,7 +114,7 @@ export default function TodayMedicationWidget({ onPress }: Props) {
             </Text>
           </View>
         </View>
-        <Feather name="chevron-right" size={18} color={COLORS.textLight} />
+        <Feather name="chevron-right" size={18} color={COLORS.textLight} style={styles.headerTrailingIcon} />
       </View>
 
       {/* Pill progress dots */}
@@ -182,9 +186,12 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: SPACING.sm,
   },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  // flex: 1 so the title/subtitle column flex-shrinks within the row instead
+  // of pushing the trailing chevron/plus icon outside the card on long text.
+  headerLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  headerTrailingIcon: { flexShrink: 0 },
   iconBg: {
     width: 38,
     height: 38,
@@ -195,7 +202,6 @@ const styles = StyleSheet.create({
   },
   iconBgDone: { backgroundColor: COLORS.statusNormal },
   iconBgOverdue: { backgroundColor: COLORS.accentLight },
-  pillEmoji: { fontSize: 18 },
   title: { fontSize: 14, fontWeight: '700', color: COLORS.text },
   status: { fontSize: 12, color: COLORS.textSecondary, marginTop: 1 },
   statusDone: { color: COLORS.statusNormal, fontWeight: '700' },
