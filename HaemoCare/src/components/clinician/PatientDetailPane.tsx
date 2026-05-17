@@ -40,6 +40,7 @@ import LoadingSpinner from '../common/LoadingSpinner';
 import HbTrendChart from '../charts/HbTrendChart';
 import SymptomDotPlot from '../charts/SymptomDotPlot';
 import AdherenceRing from '../charts/AdherenceRing';
+import LabTrendsChart from '../charts/LabTrendsChart';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
 const SYMPTOM_LABELS: Record<string, string> = {
@@ -390,6 +391,32 @@ export default function PatientDetailPane({
               </View>
             </>
           )}
+        </Section>
+
+        {/* ── Lab Trends (Hb / Hct / Ferritin) — added 2026-05-17 ──
+            Self-contained block so sibling agent #1's MedicationAdherenceCard
+            and any other concurrent additions to this file can merge
+            mechanically. Do not interleave with neighbouring sections.
+            See docs/superpowers/specs/2026-05-17-lab-trends-graph-brief.md. */}
+        <Section label={t('labTrends.sectionLabel' as TranslationKey)} icon="activity">
+          <LabTrendsChart
+            transfusions={transfusions}
+            labels={{
+              title: t('labTrends.title' as TranslationKey),
+              hb: t('labTrends.hb' as TranslationKey),
+              hct: t('labTrends.hct' as TranslationKey),
+              ferritin: t('labTrends.ferritin' as TranslationKey),
+              empty: t('labTrends.empty' as TranslationKey),
+              windows: {
+                '1mo': t('labTrends.window.1mo' as TranslationKey),
+                '3mo': t('labTrends.window.3mo' as TranslationKey),
+                '6mo': t('labTrends.window.6mo' as TranslationKey),
+                '1y': t('labTrends.window.1y' as TranslationKey),
+                all: t('labTrends.window.all' as TranslationKey),
+              },
+              markerHint: t('labTrends.markerHint' as TranslationKey),
+            }}
+          />
         </Section>
 
         {/* Symptom patterns */}
