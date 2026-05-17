@@ -11,8 +11,9 @@ import { triageSymptoms, TriageResult } from '../../analytics';
 import * as realSymptomService from '../../services/symptomService';
 import * as realTransfusionService from '../../services/transfusionService';
 import * as mockServices from '../../mock/services';
-import { Outcome, SymptomLog, Transfusion } from '../../types/database';
+import { Outcome, SymptomLog, Transfusion, UrineColor } from '../../types/database';
 import SymptomChecklist from '../../components/symptoms/SymptomChecklist';
+import UrineColorPicker from '../../components/symptoms/UrineColorPicker';
 import SeveritySlider from '../../components/common/SeveritySlider';
 import OutcomeDisplay from '../../components/symptoms/OutcomeDisplay';
 import Button from '../../components/common/Button';
@@ -48,6 +49,7 @@ export default function NewSymptomLogScreen() {
   const [step, setStep] = useState<Step>('select');
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [severityScores, setSeverityScores] = useState<Record<string, number>>({});
+  const [urineColor, setUrineColor] = useState<UrineColor | null>(null);
   const [notes, setNotes] = useState('');
   const [result, setResult] = useState<ThresholdResult | null>(null);
   // Outcome the patient has selected (or accepted) on the review step.
@@ -81,13 +83,15 @@ export default function NewSymptomLogScreen() {
   }, [user, isMockMode]);
 
   const triage: TriageResult | null = useMemo(() => {
-    if (step !== 'severity' || Object.keys(severityScores).length === 0) return null;
+    if (step !== 'severity') return null;
+    if (Object.keys(severityScores).length === 0 && !urineColor) return null;
     return triageSymptoms(severityScores, {
       loggedAt: new Date().toISOString(),
       recentLogs,
       recentTransfusion: latestTx,
+      urineColor,
     });
-  }, [severityScores, step, recentLogs, latestTx]);
+  }, [severityScores, step, recentLogs, latestTx, urineColor]);
 
   const handleToggle = (key: string) => {
     setSelectedSymptoms(prev =>
@@ -115,7 +119,7 @@ export default function NewSymptomLogScreen() {
    * anything is saved. No createSymptomLog call happens here.
    */
   const handlePreview = () => {
-    const evaluation = evaluateSymptoms(severityScores);
+    const evaluation = evaluateSymptoms(severityScores, urineColor);
 
     // Record the AI-suggested outcome before any overdue bump.
     // This is the stable "from" value used in the bump explanation copy.
@@ -147,6 +151,7 @@ export default function NewSymptomLogScreen() {
         severity_scores: severityScores,
         outcome: confirmedOutcome,
         notes,
+        urine_color: urineColor,
       };
       if (isMockMode) {
         await mockServices.createSymptomLog(user.id, logData);
@@ -167,10 +172,11 @@ export default function NewSymptomLogScreen() {
           <>
             <Text style={styles.stepTitle}>{t('symptoms.selectSymptoms')}</Text>
             <SymptomChecklist selected={selectedSymptoms} onToggle={handleToggle} />
+            <UrineColorPicker value={urineColor} onChange={setUrineColor} />
             <Button
               label={t('common.next')}
               onPress={initSeverity}
-              disabled={selectedSymptoms.length === 0}
+              disabled={selectedSymptoms.length === 0 && urineColor === null}
               style={{ marginTop: SPACING.lg }}
             />
           </>

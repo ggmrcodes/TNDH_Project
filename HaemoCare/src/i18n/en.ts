@@ -118,11 +118,27 @@ const en = {
   'symptom.fever': 'Fever',
   'symptom.chills': 'Chills',
   'symptom.fatigue': 'Unusual Fatigue',
-  'symptom.dark_urine': 'Dark Urine',
+  // `symptom.dark_urine` retired from the picker on 2026-05-17 in favor of
+  // the structured `symptom.urineColor.*` scale below; key is retained so
+  // historical logs still render a human-readable label.
+  'symptom.dark_urine': 'Dark Urine (legacy)',
   'symptom.jaundice': 'Jaundice (Yellowing)',
   'symptom.back_pain': 'Back Pain',
   'symptom.shortness_of_breath': 'Shortness of Breath',
   'symptom.skin_rash': 'Skin Rash',
+
+  // Urine color picker (hematuria red-flag tracking)
+  'symptom.urineColor.label': 'Urine color',
+  'symptom.urineColor.help': 'Pink, red, brown or cola-colored urine can be a hemophilia warning sign.',
+  'symptom.urineColor.optional': 'Optional — skip if you have not urinated recently.',
+  'symptom.urineColor.notLogged': 'Not logged',
+  'symptom.urineColor.clear': 'Clear',
+  'symptom.urineColor.yellow': 'Yellow',
+  'symptom.urineColor.dark_yellow': 'Dark yellow',
+  'symptom.urineColor.pink': 'Pink',
+  'symptom.urineColor.red': 'Red',
+  'symptom.urineColor.brown_tea': 'Brown / tea',
+  'symptom.urineColor.cola': 'Cola',
 
   // Outcome statuses
   'status.normal': 'Normal',

@@ -120,11 +120,27 @@ const th: Record<TranslationKey, string> = {
   'symptom.fever': 'มีไข้',
   'symptom.chills': 'หนาวสั่น',
   'symptom.fatigue': 'อ่อนเพลียผิดปกติ',
-  'symptom.dark_urine': 'ปัสสาวะสีเข้ม',
+  // TODO(th-review): historical label, retained for legacy logs only.
+  'symptom.dark_urine': 'ปัสสาวะสีเข้ม (เดิม)',
   'symptom.jaundice': 'ตัวเหลือง ตาเหลือง',
   'symptom.back_pain': 'ปวดหลัง',
   'symptom.shortness_of_breath': 'หายใจลำบาก',
   'symptom.skin_rash': 'ผื่นที่ผิวหนัง',
+
+  // Urine color picker (hematuria red-flag tracking)
+  // TODO(th-review): translations stubbed via Google Translate / dictionary;
+  // need native review before clinician sign-off.
+  'symptom.urineColor.label': 'สีของปัสสาวะ',
+  'symptom.urineColor.help': 'ปัสสาวะสีชมพู แดง น้ำตาล หรือสีโคล่า อาจเป็นสัญญาณเตือนของโรคฮีโมฟีเลีย',
+  'symptom.urineColor.optional': 'ไม่บังคับ — ข้ามได้หากยังไม่ได้ปัสสาวะ',
+  'symptom.urineColor.notLogged': 'ไม่ได้บันทึก',
+  'symptom.urineColor.clear': 'ใส',
+  'symptom.urineColor.yellow': 'สีเหลือง',
+  'symptom.urineColor.dark_yellow': 'สีเหลืองเข้ม',
+  'symptom.urineColor.pink': 'สีชมพู',
+  'symptom.urineColor.red': 'สีแดง',
+  'symptom.urineColor.brown_tea': 'สีน้ำตาล / สีชา',
+  'symptom.urineColor.cola': 'สีโคล่า',
 
   // Outcome statuses
   'status.normal': 'ปกติ',

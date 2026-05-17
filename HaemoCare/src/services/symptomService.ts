@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase';
-import { SymptomLog } from '../types/database';
+import { SymptomLog, UrineColor } from '../types/database';
 
 export async function getSymptomLogs(userId: string, limit?: number): Promise<SymptomLog[]> {
   let query = supabase
@@ -57,6 +57,7 @@ export async function createSymptomLog(
     severity_scores: Record<string, number>;
     outcome: 'normal' | 'monitor' | 'urgent';
     notes?: string;
+    urine_color?: UrineColor | null;
   }
 ): Promise<SymptomLog> {
   const { data, error } = await supabase
@@ -68,6 +69,7 @@ export async function createSymptomLog(
       severity_scores: log.severity_scores,
       outcome: log.outcome,
       notes: log.notes ?? '',
+      urine_color: log.urine_color ?? null,
     })
     .select()
     .single();

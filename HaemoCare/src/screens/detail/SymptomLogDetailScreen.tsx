@@ -13,7 +13,8 @@ import StatusBadge from '../../components/common/StatusBadge';
 import Card from '../../components/common/Card';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
-import { getSymptomLabel } from '../../utils/clinicalThresholds';
+import { getSymptomLabel, URINE_COLOR_HEX, isHematuriaColor } from '../../utils/clinicalThresholds';
+import { TranslationKey } from '../../i18n';
 
 type RouteProps = RouteProp<RootStackParamList, 'SymptomLogDetail'>;
 
@@ -61,6 +62,29 @@ export default function SymptomLogDetailScreen() {
               <SeverityBar value={value} />
             </View>
           ))}
+          {log.urine_color ? (
+            <View style={styles.urineRow}>
+              <View
+                style={[
+                  styles.urineSwatch,
+                  { backgroundColor: URINE_COLOR_HEX[log.urine_color] },
+                ]}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.symptomName}>
+                  {t('symptom.urineColor.label')}
+                </Text>
+                <Text
+                  style={[
+                    styles.symptomScore,
+                    isHematuriaColor(log.urine_color) && { color: COLORS.statusUrgent },
+                  ]}
+                >
+                  {t(`symptom.urineColor.${log.urine_color}` as TranslationKey)}
+                </Text>
+              </View>
+            </View>
+          ) : null}
         </Card>
 
         {log.notes ? (
@@ -122,6 +146,22 @@ const styles = StyleSheet.create({
   barFill: {
     height: 8,
     borderRadius: 4,
+  },
+  urineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingTop: SPACING.sm,
+    marginTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
+  },
+  urineSwatch: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   notesLabel: {
     ...TYPOGRAPHY.bodySmall,
