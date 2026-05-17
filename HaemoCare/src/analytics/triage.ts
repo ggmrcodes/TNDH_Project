@@ -1,5 +1,5 @@
 import { evaluateSymptoms, ThresholdResult } from '../utils/clinicalThresholds';
-import { Outcome, SymptomLog, Transfusion } from '../types/database';
+import { Outcome, SymptomLog, Transfusion, UrineColor } from '../types/database';
 
 export type TriageTier = 'self_monitor' | 'contact_clinic' | 'seek_urgent_care';
 
@@ -26,9 +26,10 @@ export function triageSymptoms(
     loggedAt?: string;
     recentLogs?: SymptomLog[];
     recentTransfusion?: Transfusion | null;
+    urineColor?: UrineColor | null;
   } = {}
 ): TriageResult {
-  const base: ThresholdResult = evaluateSymptoms(severityScores);
+  const base: ThresholdResult = evaluateSymptoms(severityScores, context.urineColor ?? null);
   const observations: string[] = [];
 
   const loggedAt = context.loggedAt ? new Date(context.loggedAt) : new Date();

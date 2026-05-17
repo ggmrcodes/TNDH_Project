@@ -31,6 +31,22 @@ export interface Transfusion {
   created_at: string;
 }
 
+// ── Urine color logging (hematuria tracking) ───────────────────────────
+// Added 2026-05-17. Replaces the binary `dark_urine` symptom with a
+// 7-color clinically-meaningful picker. See URINE_COLOR_OPTIONS in
+// src/utils/clinicalThresholds.ts for the source-of-truth swatch list
+// and `evaluateSymptoms()` for the outcome mapping.
+// Historical logs use `dark_urine` inside `severity_scores`; new logs
+// populate `urine_color` and leave `dark_urine` out of `severity_scores`.
+export type UrineColor =
+  | 'clear'
+  | 'yellow'
+  | 'dark_yellow'
+  | 'pink'
+  | 'red'
+  | 'brown_tea'
+  | 'cola';
+
 export interface SymptomLog {
   id: string;
   user_id: string;
@@ -40,6 +56,12 @@ export interface SymptomLog {
   severity_scores: Record<string, number>;
   outcome: 'normal' | 'monitor' | 'urgent';
   notes: string;
+  /**
+   * Hemophilia red-flag tracker (see URINE_COLOR_OPTIONS). Null or absent
+   * on legacy logs that were written before the urine-color field existed;
+   * those logs may instead carry `dark_urine` inside `severity_scores`.
+   */
+  urine_color?: UrineColor | null;
   created_at: string;
 }
 
