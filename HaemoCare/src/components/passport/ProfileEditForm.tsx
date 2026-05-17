@@ -4,6 +4,13 @@ import { Profile } from '../../types/database';
 import { useLanguage } from '../../contexts/LanguageContext';
 import Button from '../common/Button';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
+import {
+  MAX_INTERVAL_WEEKS,
+  MIN_INTERVAL_WEEKS,
+  clampWeeks,
+  daysToWeeks,
+  weeksToDays,
+} from '../../utils/visitInterval';
 
 interface ProfileEditFormProps {
   profile?: Profile | null;
@@ -24,8 +31,11 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
   const [newAntibody, setNewAntibody] = useState('');
   const [knownReactions, setKnownReactions] = useState(profile?.known_reactions || '');
   const [medications, setMedications] = useState(profile?.medications || '');
-  const [intervalDays, setIntervalDays] = useState<number>(
-    profile?.recommended_visit_interval_days ?? 28
+  // Visit cadence is stored in days in the DB but presented in weeks in the UI —
+  // testers think in weeks ("every 4 weeks"), not days. Helpers in
+  // utils/visitInterval handle the boundary conversion + rounding/clamping.
+  const [intervalWeeks, setIntervalWeeks] = useState<number>(() =>
+    daysToWeeks(profile?.recommended_visit_interval_days ?? null)
   );
 
   const addAntibody = () => {
@@ -48,9 +58,17 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
       antibodies,
       known_reactions: knownReactions.trim(),
       medications: medications.trim(),
-      recommended_visit_interval_days: intervalDays,
+      recommended_visit_interval_days: weeksToDays(intervalWeeks),
     });
   };
+
+  const decreaseInterval = () => setIntervalWeeks((w) => clampWeeks(w - 1));
+  const increaseInterval = () => setIntervalWeeks((w) => clampWeeks(w + 1));
+  const atMin = intervalWeeks <= MIN_INTERVAL_WEEKS;
+  const atMax = intervalWeeks >= MAX_INTERVAL_WEEKS;
+  const unitLabel = intervalWeeks === 1
+    ? t('profileSetup.visitIntervalUnit.one')
+    : t('profileSetup.visitIntervalUnit.other');
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -138,17 +156,32 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
       />
 
       <Text style={styles.label}>{t('profileSetup.visitInterval')}</Text>
-      <TextInput
-        style={styles.input}
-        keyboardType="number-pad"
-        value={String(intervalDays)}
-        onChangeText={(s) => {
-          const n = parseInt(s.replace(/[^0-9]/g, ''), 10);
-          setIntervalDays(Number.isFinite(n) ? Math.min(180, Math.max(7, n)) : 28);
-        }}
-        placeholder="28"
-        placeholderTextColor={COLORS.textLight}
-      />
+      <View style={styles.stepperRow}>
+        <TouchableOpacity
+          onPress={decreaseInterval}
+          disabled={atMin}
+          style={[styles.stepperBtn, atMin && styles.stepperBtnDisabled]}
+          accessibilityRole="button"
+          accessibilityLabel={t('profileSetup.visitIntervalDecrease')}
+          accessibilityState={{ disabled: atMin }}
+        >
+          <Text style={[styles.stepperBtnText, atMin && styles.stepperBtnTextDisabled]}>−</Text>
+        </TouchableOpacity>
+        <View style={styles.stepperValueWrap}>
+          <Text style={styles.stepperValue}>{intervalWeeks}</Text>
+          <Text style={styles.stepperUnit}>{unitLabel}</Text>
+        </View>
+        <TouchableOpacity
+          onPress={increaseInterval}
+          disabled={atMax}
+          style={[styles.stepperBtn, atMax && styles.stepperBtnDisabled]}
+          accessibilityRole="button"
+          accessibilityLabel={t('profileSetup.visitIntervalIncrease')}
+          accessibilityState={{ disabled: atMax }}
+        >
+          <Text style={[styles.stepperBtnText, atMax && styles.stepperBtnTextDisabled]}>+</Text>
+        </TouchableOpacity>
+      </View>
       <Text style={styles.hint}>{t('profileSetup.visitIntervalHint')}</Text>
 
       <Button
@@ -253,5 +286,57 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     lineHeight: 26,
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+  stepperBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepperBtnDisabled: {
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+  },
+  stepperBtnText: {
+    color: COLORS.primary,
+    fontSize: 22,
+    fontWeight: '700',
+    lineHeight: 24,
+  },
+  stepperBtnTextDisabled: {
+    color: COLORS.textLight,
+  },
+  stepperValueWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.white,
+  },
+  stepperValue: {
+    ...TYPOGRAPHY.body,
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  stepperUnit: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
   },
 });
