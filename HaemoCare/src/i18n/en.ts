@@ -364,6 +364,10 @@ const en = {
 
   // Clinician dashboard
   'clinician.dashboard.title': 'Clinician Dashboard',
+  'clinician.dashboard.assignedPatients': 'patients assigned',
+  'clinician.dashboard.cohortOverview': 'Cohort Overview',
+  'clinician.dashboard.statusSnapshot': 'Status snapshot',
+  'clinician.dashboard.last7days': 'Last 7 days',
   'clinician.cohort.overdue': 'OVERDUE',
   'clinician.cohort.monitor': 'MONITOR',
   'clinician.cohort.stable': 'STABLE',

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useResponsive } from '../../utils/responsive';
@@ -9,16 +10,17 @@ import { sortTriageDescending, type TriageInput } from '../../utils/triageQueue'
 import * as mockServices from '../../mock/services';
 import * as realClinicianService from '../../services/clinicianService';
 import AlertsStrip from '../../components/clinician/AlertsStrip';
-import ClinicianIdentityChip from '../../components/clinician/ClinicianIdentityChip';
 import CohortOverviewCard from '../../components/clinician/CohortOverviewCard';
 import FilterChips, { FilterId } from '../../components/clinician/FilterChips';
 import PatientQueueRow from '../../components/clinician/PatientQueueRow';
 import PatientDetailPane from '../../components/clinician/PatientDetailPane';
 import QueueSearchBar from '../../components/clinician/QueueSearchBar';
 import QueueSortSelector, { type SortKey } from '../../components/clinician/QueueSortSelector';
+import LanguageToggle from '../../components/common/LanguageToggle';
+import HeroGradient from '../../components/common/HeroGradient';
 import { computeCohortAlerts, type AlertSlice } from '../../utils/cohortAlerts';
 import { computeOverdueHistory14d, type OverdueHistorySlice } from '../../utils/cohortHistory';
-import { COLORS, SPACING } from '../../config/theme';
+import { COLORS, SPACING, RADIUS } from '../../config/theme';
 import { TranslationKey } from '../../i18n';
 import type { Profile, Outcome, Transfusion, SymptomLog, Appointment, ClinicianProfile } from '../../types/database';
 
@@ -233,6 +235,23 @@ export default function ClinicianDashboardScreen() {
     );
   }, [selectedId]);
 
+  const handleSignOut = () => {
+    Alert.alert(
+      t('privacy.signOutConfirmTitle' as TranslationKey),
+      t('privacy.signOutConfirmBody' as TranslationKey),
+      [
+        { text: t('common.cancel' as TranslationKey), style: 'cancel' },
+        {
+          text: t('auth.logout' as TranslationKey),
+          style: 'destructive',
+          onPress: async () => {
+            try { await signOut(); } catch (err) { console.error('Sign out failed:', err); }
+          },
+        },
+      ]
+    );
+  };
+
   const hasActiveQuery = searchQuery.trim() !== '' || filter !== null;
   let queueEmpty: React.ReactElement | null = null;
   if (!loading) {
@@ -253,18 +272,54 @@ export default function ClinicianDashboardScreen() {
       : <Text style={styles.empty}>{t('clinician.queue.empty' as TranslationKey)}</Text>;
   }
 
+  const clinicianName = clinicianProfile?.full_name?.trim() || (t('clinician.signOut' as TranslationKey) && 'Clinician');
+  const hospitalLabel = clinicianProfile?.hospital_affiliation?.trim() || '—';
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('clinician.dashboard.title' as TranslationKey)}</Text>
-        <View style={styles.headerRight}>
-          <ClinicianIdentityChip
-            name={clinicianProfile?.full_name ?? 'Clinician'}
-            hospital={clinicianProfile?.hospital_affiliation ?? null}
-          />
-          <TouchableOpacity onPress={signOut} accessibilityRole="button">
-            <Text style={styles.signOut}>{t('clinician.signOut' as TranslationKey)}</Text>
+      <View style={styles.topBar}>
+        <Text style={styles.brand}>HaemoCare</Text>
+        <View style={styles.topBarActions}>
+          <TouchableOpacity
+            onPress={handleSignOut}
+            style={styles.signOutBtn}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.logout' as TranslationKey)}
+          >
+            <Feather name="log-out" size={18} color={COLORS.statusUrgent} />
           </TouchableOpacity>
+          <LanguageToggle />
+        </View>
+      </View>
+
+      <View style={[styles.hero, isDesktop && styles.heroDesktop]}>
+        <HeroGradient borderRadius={isDesktop ? 24 : 0} gradientId="clinicianHeroGrad" />
+        <View style={styles.heroDecoCircle1} />
+        <View style={styles.heroDecoCircle2} />
+
+        <View style={styles.heroTop}>
+          <Text style={styles.heroLabel}>{t('clinician.dashboard.title' as TranslationKey).toUpperCase()}</Text>
+          <Feather name="activity" size={18} color="rgba(255,255,255,0.45)" />
+        </View>
+
+        <View style={styles.heroMain}>
+          <View style={styles.avatarBadge}>
+            <Feather name="user" size={32} color="rgba(255,255,255,0.92)" />
+          </View>
+          <View style={styles.heroNameCol}>
+            <Text style={styles.heroName} numberOfLines={1}>{clinicianName}</Text>
+            <Text style={styles.heroHospital} numberOfLines={1}>{hospitalLabel}</Text>
+          </View>
+        </View>
+
+        <View style={styles.heroChipRow}>
+          <View style={styles.heroChip}>
+            <Feather name="users" size={12} color={COLORS.white} />
+            <Text style={styles.heroChipText}>
+              {cohortSummary.cohortSize} {t('clinician.dashboard.assignedPatients' as TranslationKey)}
+            </Text>
+          </View>
         </View>
       </View>
       <View style={[styles.body, isDesktop && styles.bodyDesktop]}>
@@ -331,15 +386,60 @@ export default function ClinicianDashboardScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
-  header: {
+
+  // Brand top bar — mirrors PassportScreen
+  topBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md,
-    borderBottomWidth: 1, borderBottomColor: COLORS.borderLight ?? '#E4E4E4',
-    gap: SPACING.md,
+    paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, zIndex: 10,
   },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  title: { fontSize: 20, fontWeight: '800', color: COLORS.text },
-  signOut: { fontSize: 13, color: COLORS.primary ?? '#0B6E6E', fontWeight: '600' },
+  brand: { fontSize: 20, fontWeight: '800', color: COLORS.primary, letterSpacing: -0.3 },
+  topBarActions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
+  signOutBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: COLORS.statusUrgentBg,
+    borderWidth: 1, borderColor: COLORS.statusUrgent,
+    justifyContent: 'center', alignItems: 'center',
+  },
+
+  // Teal-gradient hero — parallel to patient PassportScreen hero
+  hero: {
+    overflow: 'hidden',
+    paddingTop: SPACING.lg, paddingBottom: SPACING.lg, paddingHorizontal: SPACING.lg, gap: 14,
+    position: 'relative',
+    marginBottom: SPACING.sm,
+  },
+  heroDesktop: {
+    borderRadius: 24, marginHorizontal: SPACING.md, marginTop: SPACING.sm,
+  },
+  heroDecoCircle1: {
+    position: 'absolute', top: -30, right: -30,
+    width: 140, height: 140, borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  heroDecoCircle2: {
+    position: 'absolute', bottom: -20, left: 40,
+    width: 100, height: 100, borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 1 },
+  heroLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.55)', letterSpacing: 1.5 },
+  heroMain: { flexDirection: 'row', alignItems: 'center', gap: 14, zIndex: 1 },
+  avatarBadge: {
+    width: 64, height: 64, borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.28)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  heroNameCol: { flex: 1, gap: 4, zIndex: 1 },
+  heroName: { fontSize: 20, fontWeight: '800', color: COLORS.white, letterSpacing: -0.3 },
+  heroHospital: { fontSize: 13, color: 'rgba(255,255,255,0.78)' },
+  heroChipRow: { flexDirection: 'row', alignItems: 'center', zIndex: 1 },
+  heroChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.22)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)',
+    borderRadius: RADIUS.full, paddingVertical: 6, paddingHorizontal: 12,
+  },
+  heroChipText: { fontSize: 12, fontWeight: '700', color: COLORS.white, letterSpacing: 0.3 },
+
   body: { flex: 1 },
   bodyDesktop: { flexDirection: 'row' },
   leftRail: { flex: 1 },
