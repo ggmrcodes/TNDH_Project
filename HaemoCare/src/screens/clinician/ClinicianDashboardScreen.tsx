@@ -14,6 +14,11 @@ import CohortOverviewCard from '../../components/clinician/CohortOverviewCard';
 import FilterChips, { FilterId } from '../../components/clinician/FilterChips';
 import PatientQueueRow from '../../components/clinician/PatientQueueRow';
 import PatientDetailPane from '../../components/clinician/PatientDetailPane';
+// ── Wave-1 brief slot: Pre-transfusion labs panel (2026-05-17). Keep this
+// import + the corresponding render slot isolated so the upcoming
+// medication-reminders brief (#1) can add its own panel without merge
+// conflicts. See docs/superpowers/specs/2026-05-17-pre-transfusion-labs-brief.md.
+import PreTransfusionLabsPanel from '../../components/clinician/PreTransfusionLabsPanel';
 import QueueSearchBar from '../../components/clinician/QueueSearchBar';
 import QueueSortSelector, { type SortKey } from '../../components/clinician/QueueSortSelector';
 import LanguageToggle from '../../components/common/LanguageToggle';
@@ -372,7 +377,14 @@ export default function ClinicianDashboardScreen() {
         </View>
         <View style={[styles.rightPane, isDesktop && styles.rightPaneDesktop]}>
           {selectedId ? (
-            <PatientDetailPane userId={selectedId} isClinicianView />
+            <>
+              {/* ── Wave-1 brief slot: Pre-transfusion labs panel. ── */}
+              <PreTransfusionLabsPanel
+                patientUserId={selectedId}
+                clinicianDisplayName={clinicianProfile?.full_name ?? undefined}
+              />
+              <PatientDetailPane userId={selectedId} isClinicianView />
+            </>
           ) : (
             <ScrollView contentContainerStyle={styles.emptyDetail}>
               <Text style={styles.empty}>{t('clinician.detail.empty' as TranslationKey)}</Text>
