@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from '../types/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useResponsive } from '../utils/responsive';
@@ -35,6 +36,7 @@ const SCREENS: Record<string, React.ComponentType<any>> = {
 export default function MainTabNavigator() {
   const { t } = useLanguage();
   const { isMobile } = useResponsive();
+  const insets = useSafeAreaInsets();
 
   const tabLabels: Record<string, string> = {
     Passport: t('tab.passport'),
@@ -48,6 +50,17 @@ export default function MainTabNavigator() {
     return <DesktopTabLayout tabLabels={tabLabels} />;
   }
 
+  // Honour the system gesture/home-indicator inset so taps in the bottom
+  // row of each tab don't fall inside the OS swipe-home zone (Android 10+
+  // gesture nav) or under the iOS home indicator. Floor of 6 keeps the
+  // bar from hugging the screen edge on devices without an inset (older
+  // Android 3-button nav, older iPhones).
+  const bottomInset = Math.max(6, insets.bottom);
+  // 56dp is the Material bottom-nav body height; adding the inset gives an
+  // overall hit-target column ≥48dp for each tab button while leaving the
+  // bottom safe zone untouched.
+  const tabBarHeight = 56 + bottomInset;
+
   // Mobile: standard bottom tabs
   return (
     <Tab.Navigator
@@ -57,7 +70,7 @@ export default function MainTabNavigator() {
           const iconName = TAB_ICONS[route.name] as keyof typeof Feather.glyphMap;
           return (
             <View style={tabStyles.iconWrapper}>
-              <Feather name={iconName} size={22} color={color} />
+              <Feather name={iconName} size={24} color={color} />
               {focused && <View style={tabStyles.activeDot} />}
             </View>
           );
@@ -68,13 +81,16 @@ export default function MainTabNavigator() {
           backgroundColor: COLORS.surfaceElevated,
           borderTopColor: COLORS.borderLight,
           borderTopWidth: 1,
-          paddingBottom: 6,
-          height: 68,
+          paddingBottom: bottomInset,
+          height: tabBarHeight,
           elevation: 0,
           shadowOpacity: 0,
         },
+        tabBarItemStyle: {
+          paddingVertical: 6,
+        },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: '700',
           marginTop: -2,
           letterSpacing: 0.2,
