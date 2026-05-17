@@ -101,6 +101,10 @@ export interface Appointment {
   created_at: string;
 }
 
+// ISO weekday codes used by `MedicationReminder.days_of_week`.
+export type WeekdayCode = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+export const ALL_WEEKDAYS: WeekdayCode[] = ['mon','tue','wed','thu','fri','sat','sun'];
+
 export interface MedicationReminder {
   id: string;
   user_id: string;
@@ -108,6 +112,8 @@ export interface MedicationReminder {
   dosage: string;
   frequency: 'daily' | 'twice_daily' | 'three_times' | 'weekly' | 'as_needed';
   reminder_times: string[]; // ["08:00", "20:00"]
+  /** Days the medication is taken. `null` or empty = every day (legacy default). */
+  days_of_week: WeekdayCode[] | null;
   instructions: string; // "Take on empty stomach", "Take with food"
   is_active: boolean;
   taken_today: string[]; // timestamps of when taken today

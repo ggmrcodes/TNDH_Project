@@ -26,6 +26,9 @@ export interface MedicationReminderInput {
   dosage: string;
   frequency: MedicationReminder['frequency'];
   reminder_times: string[];
+  /** Subset of weekdays this medication is taken on. Omit or pass null
+   *  to mean "every day" (legacy default). */
+  days_of_week?: MedicationReminder['days_of_week'];
   instructions?: string;
 }
 
@@ -79,6 +82,7 @@ export async function createMedicationReminder(
       dosage: data.dosage,
       frequency: data.frequency,
       reminder_times: data.reminder_times,
+      days_of_week: data.days_of_week ?? null,
       instructions: data.instructions ?? '',
       is_active: true,
       taken_today: [],

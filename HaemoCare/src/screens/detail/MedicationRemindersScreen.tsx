@@ -18,9 +18,11 @@ import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 import * as mockServices from '../../mock/services';
 import * as medicationsService from '../../services/medicationsService';
 import * as notifications from '../../services/notifications';
-import { MedicationReminder } from '../../types/database';
+import { MedicationReminder, ALL_WEEKDAYS, WeekdayCode } from '../../types/database';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 import type { TranslationKey } from '../../i18n';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Platform } from 'react-native';
 
 const FREQUENCY_OPTIONS = [
   { key: 'daily', times: 1 },
@@ -30,11 +32,23 @@ const FREQUENCY_OPTIONS = [
   { key: 'as_needed', times: 0 },
 ] as const;
 
-const TIME_PRESETS = [
-  '06:00', '07:00', '08:00', '09:00', '10:00',
-  '12:00', '13:00', '14:00',
-  '18:00', '19:00', '20:00', '21:00',
-];
+const MEAL_TIMING_OPTIONS = [
+  { key: 'beforeMeal',   labelKey: 'medications.mealTiming.beforeMeal' as const },
+  { key: 'withMeal',     labelKey: 'medications.mealTiming.withMeal' as const },
+  { key: 'afterMeal',    labelKey: 'medications.mealTiming.afterMeal' as const },
+  { key: 'emptyStomach', labelKey: 'medications.mealTiming.emptyStomach' as const },
+] as const;
+
+// JS getDay() is 0=Sun..6=Sat — map to our weekday codes for default-today picks.
+const JS_DAY_TO_CODE: Record<number, WeekdayCode> = {
+  0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat',
+};
+
+function formatTimeFromDate(d: Date): string {
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  return `${hh}:${mm}`;
+}
 
 export default function MedicationRemindersScreen() {
   const { user, isMockMode } = useAuth();
@@ -90,8 +104,10 @@ export default function MedicationRemindersScreen() {
   const [newDosage, setNewDosage] = useState('');
   const [newFrequency, setNewFrequency] = useState<MedicationReminder['frequency']>('daily');
   const [newTimes, setNewTimes] = useState<string[]>(['08:00']);
+  const [newDays, setNewDays] = useState<WeekdayCode[]>([...ALL_WEEKDAYS]);
   const [newInstructions, setNewInstructions] = useState('');
   const [saving, setSaving] = useState(false);
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
 
   const loadMedications = useCallback(async () => {
     if (!user) return;
@@ -182,11 +198,16 @@ export default function MedicationRemindersScreen() {
     if (!user || !newName.trim() || !newDosage.trim()) return;
     setSaving(true);
     try {
+      // Treat "every day" as null in storage (legacy semantic + saves space).
+      const daysToPersist = (newFrequency === 'as_needed' || newDays.length === 7)
+        ? null
+        : newDays;
       await svc().create(user.id, {
         medication_name: newName.trim(),
         dosage: newDosage.trim(),
         frequency: newFrequency,
         reminder_times: newTimes,
+        days_of_week: daysToPersist,
         instructions: newInstructions.trim(),
       });
       // Reset form
@@ -194,6 +215,7 @@ export default function MedicationRemindersScreen() {
       setNewDosage('');
       setNewFrequency('daily');
       setNewTimes(['08:00']);
+      setNewDays([...ALL_WEEKDAYS]);
       setNewInstructions('');
       setShowAddForm(false);
       const refreshed = await svc().list(user.id);
@@ -212,6 +234,34 @@ export default function MedicationRemindersScreen() {
       prev.includes(time) ? prev.filter(t => t !== time) : [...prev, time].sort()
     );
   };
+
+  const removeTime = (time: string) => {
+    setNewTimes(prev => prev.filter(t => t !== time));
+  };
+
+  const onTimePicked = (event: DateTimePickerEvent, selected?: Date) => {
+    // Android closes on first select; iOS spinner stays mounted.
+    if (Platform.OS !== 'ios') setTimePickerVisible(false);
+    if (event.type === 'dismissed' || !selected) return;
+    const hhmm = formatTimeFromDate(selected);
+    setNewTimes(prev => prev.includes(hhmm) ? prev : [...prev, hhmm].sort());
+  };
+
+  const toggleDay = (day: WeekdayCode) => {
+    setNewDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
+
+  const applyMealTiming = (labelKey: typeof MEAL_TIMING_OPTIONS[number]['labelKey']) => {
+    setNewInstructions(t(labelKey));
+  };
+
+  const clearMealTiming = () => {
+    setNewInstructions('');
+  };
+
+  const targetTimeCount = FREQUENCY_OPTIONS.find(o => o.key === newFrequency)?.times ?? 1;
 
   const getFrequencyLabel = (freq: string) => {
     const map: Record<string, string> = {
@@ -507,28 +557,115 @@ export default function MedicationRemindersScreen() {
               ))}
             </View>
 
-            <Text style={styles.fieldLabel}>{t('medications.reminderTime')}</Text>
-            <View style={styles.timeGrid}>
-              {TIME_PRESETS.map(time => (
-                <TouchableOpacity
-                  key={time}
-                  style={[
-                    styles.timeChip,
-                    newTimes.includes(time) && styles.timeChipActive,
-                  ]}
-                  onPress={() => toggleTime(time)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.timeChipText,
-                      newTimes.includes(time) && styles.timeChipTextActive,
-                    ]}
+            {newFrequency !== 'as_needed' && (
+              <>
+                <Text style={styles.fieldLabel}>{t('medications.daysOfWeek')}</Text>
+                <View style={styles.daysRow}>
+                  {ALL_WEEKDAYS.map(day => {
+                    const isOn = newDays.includes(day);
+                    return (
+                      <TouchableOpacity
+                        key={day}
+                        style={[styles.dayChip, isOn && styles.dayChipActive]}
+                        onPress={() => toggleDay(day)}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isOn }}
+                      >
+                        <Text style={[styles.dayChipText, isOn && styles.dayChipTextActive]}>
+                          {t(`medications.day.${day}` as TranslationKey)}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {newDays.length === 7 && (
+                  <Text style={styles.hintText}>{t('medications.daysAllWeek')}</Text>
+                )}
+              </>
+            )}
+
+            {newFrequency !== 'as_needed' && (
+              <>
+                <Text style={styles.fieldLabel}>{t('medications.reminderTime')}</Text>
+                <Text style={styles.hintText}>
+                  {t('medications.reminderTimeHint', {
+                    count: targetTimeCount,
+                    label: getFrequencyLabel(newFrequency),
+                  })}
+                </Text>
+                <View style={styles.timeChipRow}>
+                  {newTimes.map(time => (
+                    <View key={time} style={styles.timeChipSelected}>
+                      <Feather name="clock" size={12} color={COLORS.white} />
+                      <Text style={styles.timeChipSelectedText}>{time}</Text>
+                      <TouchableOpacity
+                        onPress={() => removeTime(time)}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('medications.removeTime')}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Feather name="x" size={12} color={COLORS.white} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  <TouchableOpacity
+                    style={styles.addTimeBtn}
+                    onPress={() => setTimePickerVisible(true)}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('medications.addCustomTime')}
                   >
-                    {time}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Feather name="plus" size={14} color={COLORS.primary} />
+                    <Text style={styles.addTimeBtnText}>{t('medications.addCustomTime')}</Text>
+                  </TouchableOpacity>
+                </View>
+                {timePickerVisible && (
+                  <DateTimePicker
+                    value={new Date()}
+                    mode="time"
+                    is24Hour
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onTimePicked}
+                  />
+                )}
+                {Platform.OS === 'ios' && timePickerVisible && (
+                  <TouchableOpacity
+                    style={styles.iosPickerDone}
+                    onPress={() => setTimePickerVisible(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.iosPickerDoneText}>{t('common.done')}</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+
+            <Text style={styles.fieldLabel}>{t('medications.mealTiming')}</Text>
+            <View style={styles.mealRow}>
+              {MEAL_TIMING_OPTIONS.map(opt => {
+                const isActive = newInstructions === t(opt.labelKey);
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[styles.mealChip, isActive && styles.mealChipActive]}
+                    onPress={() => applyMealTiming(opt.labelKey)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.mealChipText, isActive && styles.mealChipTextActive]}>
+                      {t(opt.labelKey)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity
+                style={styles.mealChipClear}
+                onPress={clearMealTiming}
+                activeOpacity={0.7}
+              >
+                <Feather name="x" size={12} color={COLORS.textLight} />
+                <Text style={styles.mealChipClearText}>{t('medications.mealTiming.clear')}</Text>
+              </TouchableOpacity>
             </View>
 
             <Text style={styles.fieldLabel}>{t('medications.instructions')}</Text>
@@ -832,6 +969,92 @@ const styles = StyleSheet.create({
   },
   timeChipText: { fontSize: 13, fontWeight: '500', color: COLORS.textSecondary },
   timeChipTextActive: { color: COLORS.primary, fontWeight: '700' },
+
+  // --- New: days-of-week toggles ---
+  daysRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
+  dayChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+    minWidth: 44,
+    alignItems: 'center',
+  },
+  dayChipActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+  },
+  dayChipText: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
+  dayChipTextActive: { color: COLORS.primary, fontWeight: '700' },
+
+  // --- New: flexible time picker ---
+  hintText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textLight,
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  timeChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
+  timeChipSelected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.primary,
+  },
+  timeChipSelectedText: { fontSize: 13, fontWeight: '700', color: COLORS.white },
+  addTimeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: RADIUS.full,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+  },
+  addTimeBtnText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
+  iosPickerDone: {
+    alignSelf: 'flex-end',
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.primary,
+    marginTop: 4,
+  },
+  iosPickerDoneText: { fontSize: 13, fontWeight: '700', color: COLORS.white },
+
+  // --- New: meal-timing chips above instructions ---
+  mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
+  mealChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: RADIUS.full,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+  },
+  mealChipActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+  },
+  mealChipText: { fontSize: 12, fontWeight: '500', color: COLORS.textSecondary },
+  mealChipTextActive: { color: COLORS.primary, fontWeight: '700' },
+  mealChipClear: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: RADIUS.full,
+  },
+  mealChipClearText: { fontSize: 11, fontWeight: '600', color: COLORS.textLight },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',

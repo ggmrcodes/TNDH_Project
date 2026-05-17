@@ -42,6 +42,7 @@ jest.mock('expo-notifications', () => {
 });
 
 import {
+  isOnActiveDay,
   nextDailyFireDates,
   nextWeeklyFireDates,
   rehydrateFromSchedule,
@@ -60,6 +61,7 @@ function med(partial: Partial<MedicationReminder>): MedicationReminder {
     frequency: 'daily',
     reminder_times: ['08:00'],
     instructions: '',
+    days_of_week: null,
     is_active: true,
     taken_today: [],
     streak_days: 0,
@@ -203,5 +205,65 @@ describe('cancelReminder', () => {
 describe('REHYDRATE_DAYS', () => {
   it('is 14 days per brief', () => {
     expect(REHYDRATE_DAYS).toBe(14);
+  });
+});
+
+describe('isOnActiveDay', () => {
+  // 2026-05-18 was a Monday. Sequence the next 7 days for clarity.
+  const mon = new Date(2026, 4, 18);
+  const tue = new Date(2026, 4, 19);
+  const wed = new Date(2026, 4, 20);
+  const sun = new Date(2026, 4, 24);
+
+  it('returns true for any day when days_of_week is null (every-day default)', () => {
+    expect(isOnActiveDay(mon, null)).toBe(true);
+    expect(isOnActiveDay(sun, null)).toBe(true);
+  });
+
+  it('returns true for any day when days_of_week is empty (same as null)', () => {
+    expect(isOnActiveDay(mon, [])).toBe(true);
+  });
+
+  it('matches only the selected weekdays', () => {
+    const mwf = ['mon', 'wed', 'fri'] as const;
+    expect(isOnActiveDay(mon, [...mwf])).toBe(true);
+    expect(isOnActiveDay(tue, [...mwf])).toBe(false);
+    expect(isOnActiveDay(wed, [...mwf])).toBe(true);
+    expect(isOnActiveDay(sun, [...mwf])).toBe(false);
+  });
+});
+
+describe('scheduleReminder with days_of_week filter', () => {
+  beforeEach(() => { mockScheduled.length = 0; });
+
+  it('only schedules notifications on the patient-selected weekdays', async () => {
+    // Start on a Monday so the next 7 days are predictable. days_of_week
+    // restricts the schedule to Mon + Wed + Fri.
+    const now = new Date(2026, 4, 18, 6, 0, 0); // Mon 06:00
+    await scheduleReminder({
+      reminder: med({ days_of_week: ['mon', 'wed', 'fri'] }),
+      strings: strings(),
+      now,
+      days: 7,
+    });
+    // Of the 7 daily slots we'd otherwise produce, only 3 should survive
+    // (Mon/Wed/Fri inside the 7-day window).
+    expect(mockScheduled).toHaveLength(3);
+    const days = mockScheduled
+      .map(s => new Date(s.content.data.scheduledAt).getDay())
+      .sort();
+    // 1=Mon, 3=Wed, 5=Fri
+    expect(days).toEqual([1, 3, 5]);
+  });
+
+  it('schedules every day when days_of_week is null (legacy behavior)', async () => {
+    const now = new Date(2026, 4, 18, 6, 0, 0);
+    await scheduleReminder({
+      reminder: med({ days_of_week: null }),
+      strings: strings(),
+      now,
+      days: 7,
+    });
+    expect(mockScheduled).toHaveLength(7);
   });
 });

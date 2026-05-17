@@ -24,7 +24,7 @@ import {
   AndroidImportance,
   SchedulableTriggerInputTypes,
 } from 'expo-notifications';
-import type { MedicationReminder } from '../types/database';
+import type { MedicationReminder, WeekdayCode } from '../types/database';
 
 export const MED_CHANNEL_ID = 'medication-reminders';
 export const REHYDRATE_DAYS = 14;
@@ -181,6 +181,22 @@ export interface ScheduleReminderInput {
   days?: number;
 }
 
+// JS getDay() codes (Sunday=0) mapped to our ISO-style weekday strings.
+const WEEKDAY_FROM_JS_DAY: Record<number, WeekdayCode> = {
+  0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat',
+};
+
+/** True when the given date's weekday is in `days_of_week` (or `days_of_week`
+ *  is null/empty, meaning "every day" by convention). */
+export function isOnActiveDay(
+  date: Date,
+  daysOfWeek: WeekdayCode[] | null | undefined
+): boolean {
+  if (!daysOfWeek || daysOfWeek.length === 0) return true;
+  const code = WEEKDAY_FROM_JS_DAY[date.getDay()];
+  return daysOfWeek.includes(code);
+}
+
 /**
  * Schedules one-shot DATE notifications for the next ~14 days for this
  * reminder. Skips the 'as_needed' frequency (no fixed schedule). Returns the
@@ -207,10 +223,17 @@ export async function scheduleReminder(
     : reminder.reminder_times;
 
   const ids: string[] = [];
+  const hasExplicitDays = !!(reminder.days_of_week && reminder.days_of_week.length > 0);
   for (const time of times) {
-    const dates = isWeekly
+    // If the patient picked specific days_of_week, compute daily candidates
+    // and filter — works for both daily and weekly frequency. Without
+    // days_of_week, weekly retains its "same weekday as creation" behavior.
+    const rawDates = (isWeekly && !hasExplicitDays)
       ? nextWeeklyFireDates(time, now, days)
       : nextDailyFireDates(time, now, days);
+    const dates = hasExplicitDays
+      ? rawDates.filter(d => isOnActiveDay(d, reminder.days_of_week))
+      : rawDates;
     for (const date of dates) {
       const data: MedicationNotificationData = {
         kind: 'medication-reminder',

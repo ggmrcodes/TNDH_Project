@@ -10,6 +10,7 @@ function med(partial: Partial<MedicationReminder>): MedicationReminder {
     frequency: 'daily',
     reminder_times: ['08:00'],
     instructions: '',
+    days_of_week: null,
     is_active: true,
     taken_today: [],
     streak_days: 0,
