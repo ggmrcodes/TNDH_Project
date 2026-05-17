@@ -28,6 +28,10 @@ export interface Transfusion {
   notes: string;
   pre_hb_g_dl?: number;
   post_hb_g_dl?: number;
+  // ── Pre-transfusion lab values (Hb / Hct / Ferritin). Added 2026-05-17.
+  // See docs/superpowers/specs/2026-05-17-pre-transfusion-labs-brief.md and
+  // the PreTransfusionLabs section near the bottom of this file.
+  pre_labs?: PreTransfusionLabs | null;
   created_at: string;
 }
 
@@ -114,4 +118,49 @@ export interface ClinicianPatientLink {
   consented_at: string | null;
   revoked_at: string | null;
   share_full_name: boolean;
+}
+
+// ============================================================================
+// PRE-TRANSFUSION LABS (added 2026-05-17)
+// ----------------------------------------------------------------------------
+// New section: keep self-contained so concurrent wave-1 briefs that also
+// touch this file (e.g. agent #4's `urine_color` enum on SymptomLog) can
+// be merged mechanically. Do not interleave with existing exports.
+// See docs/superpowers/specs/2026-05-17-pre-transfusion-labs-brief.md.
+// ============================================================================
+
+/** Where the lab values came from. Future hospital integrations will
+ * populate `health_link` / `hosxp`; v1 is always `manual`. */
+export type PreTransfusionLabsSource = 'manual' | 'health_link' | 'hosxp';
+
+/** Pre-transfusion blood + iron labs attached to a transfusion record.
+ *
+ * Units are fixed by Thai lab convention and not user-pickable:
+ *   - hb       — Hemoglobin in g/dL  (valid range 0.1–25)
+ *   - hct      — Hematocrit in %     (valid range 1–75)
+ *   - ferritin — Ferritin in ng/mL   (valid range 0–10000)
+ *
+ * Any of `hb` / `hct` / `ferritin` may be null — the patient might only
+ * have one or two values to enter at a time.
+ */
+export interface PreTransfusionLabs {
+  hb: number | null;
+  hct: number | null;
+  ferritin: number | null;
+  recorded_at: string;            // ISO timestamp
+  recorded_by_user_id: string;    // patient or clinician user_id
+  verified_by_clinician_id: string | null;
+  lab_slip_photo_url: string | null;
+  source?: PreTransfusionLabsSource;
+}
+
+/** Append-only audit row written every time `Transfusion.pre_labs` changes.
+ * Persisted in the `transfusion_lab_audit_log` table. */
+export interface TransfusionLabAuditEntry {
+  id: string;
+  transfusion_id: string;
+  previous_value: PreTransfusionLabs | null;
+  new_value: PreTransfusionLabs | null;
+  changed_by_user_id: string;
+  changed_at: string;
 }
