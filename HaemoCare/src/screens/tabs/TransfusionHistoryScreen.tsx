@@ -100,16 +100,18 @@ export default function TransfusionHistoryScreen() {
           ListHeaderComponent={
             transfusions.length > 0 ? (
               <View style={[styles.statsCard, isDesktop && styles.statsCardDesktop]}>
-                <Svg style={StyleSheet.absoluteFill} viewBox="0 0 100 100" preserveAspectRatio="none">
-                  <Defs>
-                    <SvgLinearGradient id="statsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <Stop offset="0%" stopColor="#074F4F" />
-                      <Stop offset="50%" stopColor="#0B6E6E" />
-                      <Stop offset="100%" stopColor="#14A39A" />
-                    </SvgLinearGradient>
-                  </Defs>
-                  <Rect x="0" y="0" width="100" height="100" fill="url(#statsGrad)" />
-                </Svg>
+                <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                  <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <Defs>
+                      <SvgLinearGradient id="statsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <Stop offset="0%" stopColor="#074F4F" />
+                        <Stop offset="50%" stopColor="#0B6E6E" />
+                        <Stop offset="100%" stopColor="#14A39A" />
+                      </SvgLinearGradient>
+                    </Defs>
+                    <Rect x="0" y="0" width="100" height="100" fill="url(#statsGrad)" />
+                  </Svg>
+                </View>
                 {/* Decorative circle */}
                 <View style={styles.statsDecoCircle} />
                 <View style={styles.statItem}>

@@ -135,16 +135,18 @@ export default function AppointmentsScreen() {
               />
               {nextAppt && (
                 <View style={[styles.heroCard, isDesktop && styles.heroCardDesktop]}>
-                  <Svg style={StyleSheet.absoluteFill} viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <Defs>
-                      <SvgLinearGradient id="apptGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <Stop offset="0%" stopColor="#074F4F" />
-                        <Stop offset="50%" stopColor="#0B6E6E" />
-                        <Stop offset="100%" stopColor="#14A39A" />
-                      </SvgLinearGradient>
-                    </Defs>
-                    <Rect x="0" y="0" width="100" height="100" fill="url(#apptGrad)" />
-                  </Svg>
+                  <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                    <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <Defs>
+                        <SvgLinearGradient id="apptGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <Stop offset="0%" stopColor="#074F4F" />
+                          <Stop offset="50%" stopColor="#0B6E6E" />
+                          <Stop offset="100%" stopColor="#14A39A" />
+                        </SvgLinearGradient>
+                      </Defs>
+                      <Rect x="0" y="0" width="100" height="100" fill="url(#apptGrad)" />
+                    </Svg>
+                  </View>
                   <View style={styles.heroDecoCircle} />
                   <View style={styles.heroIconBg}>
                     <Feather name="calendar" size={24} color={COLORS.white} />

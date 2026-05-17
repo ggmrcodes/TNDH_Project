@@ -28,20 +28,21 @@ import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme
 
 function GradientBackground({ borderRadius }: { borderRadius?: number }) {
   return (
-    <Svg
-      style={[StyleSheet.absoluteFill, borderRadius ? { borderRadius } : undefined]}
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
+    <View
+      pointerEvents="none"
+      style={[StyleSheet.absoluteFill, borderRadius ? { borderRadius, overflow: 'hidden' } : undefined]}
     >
-      <Defs>
-        <SvgLinearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <Stop offset="0%" stopColor="#074F4F" />
-          <Stop offset="45%" stopColor="#0B6E6E" />
-          <Stop offset="100%" stopColor="#14A39A" />
-        </SvgLinearGradient>
-      </Defs>
-      <Rect x="0" y="0" width="100" height="100" fill="url(#heroGrad)" />
-    </Svg>
+      <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <Defs>
+          <SvgLinearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor="#074F4F" />
+            <Stop offset="45%" stopColor="#0B6E6E" />
+            <Stop offset="100%" stopColor="#14A39A" />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100" height="100" fill="url(#heroGrad)" />
+      </Svg>
+    </View>
   );
 }
 
@@ -277,16 +278,17 @@ const styles = StyleSheet.create({
   patientIdRow: { flexDirection: 'row', alignItems: 'center', gap: 10, zIndex: 1 },
   patientIdChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(0,0,0,0.22)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)',
     borderRadius: RADIUS.full, paddingVertical: 6, paddingHorizontal: 14,
   },
   patientIdText: { fontSize: 14, fontWeight: '700', color: COLORS.white, letterSpacing: 0.5 },
   privacyBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(0,0,0,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
+    borderRadius: RADIUS.full,
     paddingVertical: 6, paddingHorizontal: 12,
   },
-  privacyBtnText: { fontSize: 11, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
+  privacyBtnText: { fontSize: 11, fontWeight: '600', color: COLORS.white },
   abRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, zIndex: 1 },
   abChip: {
     backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',
