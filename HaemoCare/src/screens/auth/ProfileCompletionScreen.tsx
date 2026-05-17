@@ -43,9 +43,14 @@ export default function ProfileCompletionScreen() {
         </View>
         <LanguageToggle />
       </View>
-      <View style={[styles.form, !isMobile && { maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' as const, width: '100%' as any }]}>
+      <View style={styles.form}>
         {error ? (
-          <View style={styles.errorBox}>
+          <View
+            style={[
+              styles.errorBox,
+              !isMobile && { maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' as const, width: '100%' as any },
+            ]}
+          >
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
@@ -83,13 +88,13 @@ const styles = StyleSheet.create({
   },
   form: {
     flex: 1,
-    paddingHorizontal: SPACING.lg,
   },
   errorBox: {
     backgroundColor: COLORS.statusUrgentBg,
     padding: SPACING.md,
     borderRadius: RADIUS.sm,
     marginTop: SPACING.md,
+    marginHorizontal: SPACING.lg,
   },
   errorText: {
     ...TYPOGRAPHY.bodySmall,
