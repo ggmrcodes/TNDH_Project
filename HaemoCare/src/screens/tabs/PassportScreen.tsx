@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   infoLabel: { ...TYPOGRAPHY.label, color: COLORS.textLight },
   infoText: { ...TYPOGRAPHY.body, color: COLORS.text, lineHeight: 22 },
   // Sparkline row for lab trends (Hb / Hct / Ferritin).
-  sparkRow: { flexDirection: 'row', gap: 8, alignItems: 'stretch' },
+  sparkRow: { flexDirection: 'column', gap: SPACING.sm },
   // Actions
   actionRow: { flexDirection: 'row', gap: 10, marginHorizontal: SPACING.md, marginTop: SPACING.lg },
   primaryBtn: {
