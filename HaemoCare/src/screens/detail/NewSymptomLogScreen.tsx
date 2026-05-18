@@ -108,6 +108,10 @@ export default function NewSymptomLogScreen() {
   const initSeverity = () => {
     const initial: Record<string, number> = {};
     selectedSymptoms.forEach(k => { initial[k] = severityScores[k] || 3; });
+    // Urine color, when set, also gets a severity rating (intensity of the
+    // selected color — e.g. light pink vs deep red). Same 1-10 scale as
+    // every other symptom for UI consistency.
+    if (urineColor) initial['urine_color'] = severityScores['urine_color'] || 3;
     setSeverityScores(initial);
     setStep('severity');
   };
@@ -193,6 +197,14 @@ export default function NewSymptomLogScreen() {
                 onChange={(val) => handleSeverityChange(key, val)}
               />
             ))}
+            {urineColor && (
+              <SeveritySlider
+                key="urine_color"
+                label={`${t('symptom.urine_color' as TranslationKey)}: ${t(`symptom.urineColor.${urineColor}` as TranslationKey)}`}
+                value={severityScores['urine_color'] || 3}
+                onChange={(val) => handleSeverityChange('urine_color', val)}
+              />
+            )}
 
             <Text style={styles.notesLabel}>{t('symptoms.notes')}</Text>
             <TextInput

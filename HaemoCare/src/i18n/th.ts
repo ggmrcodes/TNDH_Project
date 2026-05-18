@@ -127,6 +127,7 @@ const th: Record<TranslationKey, string> = {
   'symptom.back_pain': 'ปวดหลัง',
   'symptom.shortness_of_breath': 'หายใจลำบาก',
   'symptom.skin_rash': 'ผื่นที่ผิวหนัง',
+  'symptom.urine_color': 'สีของปัสสาวะ',
 
   // Urine color picker (hematuria red-flag tracking)
   // TODO(th-review): translations stubbed via Google Translate / dictionary;

@@ -127,6 +127,10 @@ const en = {
   'symptom.back_pain': 'Back Pain',
   'symptom.shortness_of_breath': 'Shortness of Breath',
   'symptom.skin_rash': 'Skin Rash',
+  // Label for the urine_color severity rating shown alongside other
+  // symptom sliders. The categorical color itself comes from the
+  // symptom.urineColor.* keys below.
+  'symptom.urine_color': 'Urine color',
 
   // Urine color picker (hematuria red-flag tracking)
   'symptom.urineColor.label': 'Urine color',
