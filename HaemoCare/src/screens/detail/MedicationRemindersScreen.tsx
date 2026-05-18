@@ -108,6 +108,10 @@ export default function MedicationRemindersScreen() {
   const [newInstructions, setNewInstructions] = useState('');
   const [saving, setSaving] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
+  // iOS spinner fires onChange continuously as the wheel moves AND on mount,
+  // so we must NOT commit to newTimes on every onChange — instead we hold
+  // the latest spinner value here and only commit when the user taps Done.
+  const [pendingTime, setPendingTime] = useState<Date | null>(null);
 
   const loadMedications = useCallback(async () => {
     if (!user) return;
@@ -239,12 +243,36 @@ export default function MedicationRemindersScreen() {
     setNewTimes(prev => prev.filter(t => t !== time));
   };
 
-  const onTimePicked = (event: DateTimePickerEvent, selected?: Date) => {
-    // Android closes on first select; iOS spinner stays mounted.
-    if (Platform.OS !== 'ios') setTimePickerVisible(false);
-    if (event.type === 'dismissed' || !selected) return;
-    const hhmm = formatTimeFromDate(selected);
+  const addTimeFromDate = (date: Date) => {
+    const hhmm = formatTimeFromDate(date);
     setNewTimes(prev => prev.includes(hhmm) ? prev : [...prev, hhmm].sort());
+  };
+
+  const onTimePicked = (event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS === 'ios') {
+      // iOS spinner: every wheel tick fires onChange. DO NOT commit — just
+      // remember the latest value. Commit happens in onIosTimeDone below.
+      if (selected) setPendingTime(selected);
+      return;
+    }
+    // Android default dialog: onChange fires once with OK ('set') or
+    // Cancel ('dismissed'). Picker closes automatically either way.
+    setTimePickerVisible(false);
+    if (event.type === 'dismissed' || !selected) return;
+    addTimeFromDate(selected);
+  };
+
+  const onIosTimeDone = () => {
+    // Use the latest spinner value if the user moved it; otherwise commit
+    // the time the picker was first shown at (the default = now).
+    addTimeFromDate(pendingTime ?? new Date());
+    setPendingTime(null);
+    setTimePickerVisible(false);
+  };
+
+  const onIosTimeCancel = () => {
+    setPendingTime(null);
+    setTimePickerVisible(false);
   };
 
   const toggleDay = (day: WeekdayCode) => {
@@ -622,7 +650,7 @@ export default function MedicationRemindersScreen() {
                 </View>
                 {timePickerVisible && (
                   <DateTimePicker
-                    value={new Date()}
+                    value={pendingTime ?? new Date()}
                     mode="time"
                     is24Hour
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
@@ -630,13 +658,26 @@ export default function MedicationRemindersScreen() {
                   />
                 )}
                 {Platform.OS === 'ios' && timePickerVisible && (
-                  <TouchableOpacity
-                    style={styles.iosPickerDone}
-                    onPress={() => setTimePickerVisible(false)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.iosPickerDoneText}>{t('common.done')}</Text>
-                  </TouchableOpacity>
+                  <View style={styles.iosPickerActions}>
+                    <TouchableOpacity
+                      style={styles.iosPickerCancel}
+                      onPress={onIosTimeCancel}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('common.cancel')}
+                    >
+                      <Text style={styles.iosPickerCancelText}>{t('common.cancel')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.iosPickerDone}
+                      onPress={onIosTimeDone}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('common.done')}
+                    >
+                      <Text style={styles.iosPickerDoneText}>{t('common.done')}</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </>
             )}
@@ -1020,15 +1061,28 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primaryLight,
   },
   addTimeBtnText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
+  iosPickerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: SPACING.sm,
+    marginTop: 4,
+  },
   iosPickerDone: {
-    alignSelf: 'flex-end',
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: RADIUS.sm,
     backgroundColor: COLORS.primary,
-    marginTop: 4,
   },
   iosPickerDoneText: { fontSize: 13, fontWeight: '700', color: COLORS.white },
+  iosPickerCancel: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.white,
+  },
+  iosPickerCancelText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
 
   // --- New: meal-timing chips above instructions ---
   mealRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
