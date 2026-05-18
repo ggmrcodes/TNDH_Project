@@ -407,7 +407,7 @@ function ReviewStep(props: {
       <Disclaimer message={t('scan.disclaimer')} />
 
       <Field
-        label="Date (YYYY-MM-DD)"
+        label={t('scan.field.date')}
         value={form.date}
         onChange={(v) => update('date', v)}
         ai={aiFields.has('date')}
@@ -415,7 +415,7 @@ function ReviewStep(props: {
         t={t}
       />
       <Field
-        label="Hospital"
+        label={t('history.hospital')}
         value={form.hospital}
         onChange={(v) => update('hospital', v)}
         ai={aiFields.has('hospital')}
@@ -423,7 +423,7 @@ function ReviewStep(props: {
         t={t}
       />
       <Field
-        label="Units received"
+        label={t('history.units')}
         value={form.units}
         onChange={(v) => update('units', v)}
         ai={aiFields.has('units')}
@@ -434,7 +434,7 @@ function ReviewStep(props: {
       <View style={styles.row2}>
         <View style={{ flex: 1 }}>
           <Field
-            label="Pre-Hb (g/dL)"
+            label={t('scan.field.preHb')}
             value={form.preHb}
             onChange={(v) => update('preHb', v)}
             ai={aiFields.has('preHb')}
@@ -445,7 +445,7 @@ function ReviewStep(props: {
         </View>
         <View style={{ flex: 1 }}>
           <Field
-            label="Post-Hb (g/dL)"
+            label={t('scan.field.postHb')}
             value={form.postHb}
             onChange={(v) => update('postHb', v)}
             ai={aiFields.has('postHb')}
@@ -480,7 +480,7 @@ function ReviewStep(props: {
 
       <View style={styles.switchRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.fieldLabel}>Reaction noted</Text>
+          <Text style={styles.fieldLabel}>{t('history.reactionYes')}</Text>
           {aiFields.has('reactionNoted') && (
             <Text style={styles.aiHint}>{t('scan.aiField')}</Text>
           )}
@@ -495,7 +495,7 @@ function ReviewStep(props: {
 
       {form.reactionNoted && (
         <Field
-          label="Reaction detail"
+          label={t('scan.field.reactionDetail')}
           value={form.reactionDetail}
           onChange={(v) => update('reactionDetail', v)}
           ai={aiFields.has('reactionDetail')}

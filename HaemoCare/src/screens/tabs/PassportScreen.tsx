@@ -148,7 +148,7 @@ export default function PassportScreen() {
             <View style={styles.decoCircle2} />
 
             <View style={styles.heroTop}>
-              <Text style={styles.heroLabel}>TRANSFUSION PASSPORT</Text>
+              <Text style={styles.heroLabel}>{t('passport.title').toUpperCase()}</Text>
               <Feather name="shield" size={18} color="rgba(255,255,255,0.35)" />
             </View>
             <View style={styles.heroMain}>
@@ -157,7 +157,14 @@ export default function PassportScreen() {
               </View>
               <View style={styles.nameCol}>
                 <Text style={styles.patientName} numberOfLines={2}>{profile.full_name}</Text>
-                <Text style={styles.bloodLabel} numberOfLines={1}>Blood Type {profile.blood_type}  ·  Rh{profile.rh_factor === '+' ? ' Positive' : ' Negative'}</Text>
+                <Text style={styles.bloodLabel} numberOfLines={1}>
+                  {t('passport.bloodTypeLine', {
+                    type: profile.blood_type,
+                    sign: profile.rh_factor === '+'
+                      ? t('passport.rhPositive')
+                      : t('passport.rhNegative'),
+                  })}
+                </Text>
               </View>
             </View>
 

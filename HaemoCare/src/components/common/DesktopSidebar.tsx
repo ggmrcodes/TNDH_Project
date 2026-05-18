@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { COLORS, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
 interface DesktopSidebarProps {
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
 ];
 
 export default function DesktopSidebar({ activeTab, onTabPress, tabLabels }: DesktopSidebarProps) {
+  const { t } = useLanguage();
   return (
     <View style={styles.sidebar}>
       {/* App branding */}
@@ -26,7 +28,7 @@ export default function DesktopSidebar({ activeTab, onTabPress, tabLabels }: Des
         </View>
         <View>
           <Text style={styles.brandName}>HaemoCare</Text>
-          <Text style={styles.brandTag}>Transfusion Companion</Text>
+          <Text style={styles.brandTag}>{t('app.tagline')}</Text>
         </View>
       </View>
 
