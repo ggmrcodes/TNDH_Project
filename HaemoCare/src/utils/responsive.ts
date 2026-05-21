@@ -1,4 +1,5 @@
-import { useWindowDimensions } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, useWindowDimensions } from 'react-native';
 
 export const BREAKPOINTS = {
   mobile: 0,
@@ -24,8 +25,34 @@ export interface ResponsiveInfo {
   contentMaxWidth: number;
 }
 
+/**
+ * On web, React Native's `useWindowDimensions` returns stale/0 values during
+ * Expo's static pre-render and doesn't reliably re-update after hydration,
+ * leaving `isDesktop` permanently false even on wide windows. Use the
+ * native `window` directly with a resize listener on web; defer to RN's
+ * hook elsewhere.
+ */
+function useWebSafeDimensions(): { width: number; height: number } {
+  const native = useWindowDimensions();
+  const [web, setWeb] = useState(() =>
+    typeof window !== 'undefined'
+      ? { width: window.innerWidth, height: window.innerHeight }
+      : { width: 0, height: 0 }
+  );
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    // Sync once on mount (covers the SSR→hydration gap) then track resizes.
+    setWeb({ width: window.innerWidth, height: window.innerHeight });
+    const onResize = () =>
+      setWeb({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return Platform.OS === 'web' ? web : native;
+}
+
 export function useResponsive(): ResponsiveInfo {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useWebSafeDimensions();
 
   const deviceSize: DeviceSize =
     width >= BREAKPOINTS.desktop
