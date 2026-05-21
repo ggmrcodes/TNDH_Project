@@ -465,15 +465,21 @@ const styles = StyleSheet.create({
   bodyDesktop: { flexDirection: 'row' },
   leftRail: { flex: 1, ...(Platform.OS === 'web' ? { minHeight: 0 } : null) },
   leftRailDesktop: {
-    width: 360,
-    flex: 0,
+    // RN's `flex: 0` translates to CSS `flex: 0 1 0%` on web, which sets
+    // flex-basis to 0 and OVERRIDES `width: 360` → the rail collapses to
+    // width 0 and disappears. Spell out the individual longhand props
+    // (flexBasis is what actually sizes a flex item along the main axis)
+    // so the 360px sticks across both platforms.
+    flexBasis: 360,
+    flexGrow: 0,
+    flexShrink: 0,
     borderRightWidth: 1,
     borderRightColor: COLORS.borderLight ?? '#E4E4E4',
-    // Native-stack on web doesn't reliably propagate flex height; pin the
-    // rail to fill the body container so it actually shows.
+    // Stack-navigator wrapper on web doesn't reliably propagate flex
+    // height; pin the rail to fill the body container so it actually shows.
     ...(Platform.OS === 'web' ? { height: '100%' as unknown as number } : null),
   },
-  leftRailWide: { width: 400 },
+  leftRailWide: { flexBasis: 400 },
   leftRailScroll: { gap: SPACING.sm, paddingTop: SPACING.sm, paddingBottom: SPACING.xl },
   alertsWrap: { paddingHorizontal: SPACING.md },
   searchRow: {
