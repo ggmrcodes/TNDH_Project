@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -457,10 +457,22 @@ const styles = StyleSheet.create({
   },
   heroChipText: { fontSize: 12, fontWeight: '700', color: COLORS.white, letterSpacing: 0.3 },
 
-  body: { flex: 1 },
+  // Web-only: minHeight:0 lets the row layout's flex children shrink
+  // properly so each side gets its own scroll context. Without it, the
+  // ScrollViews inside both panes can collectively expand the body
+  // vertically, leaving zero usable space for the row layout to render.
+  body: { flex: 1, ...(Platform.OS === 'web' ? { minHeight: 0 } : null) },
   bodyDesktop: { flexDirection: 'row' },
-  leftRail: { flex: 1 },
-  leftRailDesktop: { width: 360, flex: 0, borderRightWidth: 1, borderRightColor: COLORS.borderLight ?? '#E4E4E4' },
+  leftRail: { flex: 1, ...(Platform.OS === 'web' ? { minHeight: 0 } : null) },
+  leftRailDesktop: {
+    width: 360,
+    flex: 0,
+    borderRightWidth: 1,
+    borderRightColor: COLORS.borderLight ?? '#E4E4E4',
+    // Native-stack on web doesn't reliably propagate flex height; pin the
+    // rail to fill the body container so it actually shows.
+    ...(Platform.OS === 'web' ? { height: '100%' as unknown as number } : null),
+  },
   leftRailWide: { width: 400 },
   leftRailScroll: { gap: SPACING.sm, paddingTop: SPACING.sm, paddingBottom: SPACING.xl },
   alertsWrap: { paddingHorizontal: SPACING.md },
@@ -469,7 +481,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,
   },
   searchInputWrap: { flex: 1 },
-  rightPane: { flex: 1 },
+  rightPane: { flex: 1, ...(Platform.OS === 'web' ? { minWidth: 0, minHeight: 0 } : null) },
   rightPaneDesktop: { flex: 1 },
   rightPaneScroll: { paddingBottom: SPACING.xl },
   adherenceWrap: { paddingHorizontal: SPACING.md, paddingTop: SPACING.sm },
