@@ -114,7 +114,7 @@ export default function LoginScreen({ navigation }: Props) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => navigation.navigate('Signup')}
+          onPress={() => navigation.navigate('RoleSelect')}
           style={styles.signupRow}
         >
           <Text style={styles.signupText}>{t('auth.noAccount')} </Text>

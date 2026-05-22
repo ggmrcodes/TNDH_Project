@@ -22,13 +22,14 @@ import ImportAppointmentsScreen from '../screens/detail/ImportAppointmentsScreen
 import IcsImportScreen from '../screens/detail/IcsImportScreen';
 import FhirImportScreen from '../screens/detail/FhirImportScreen';
 import ClinicianStackNavigator from './ClinicianStackNavigator';
+import PendingVerificationScreen from '../screens/auth/PendingVerificationScreen';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { COLORS } from '../config/theme';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { user, isLoading, isProfileComplete, isPdpaConsented, role } = useAuth();
+  const { user, isLoading, isProfileComplete, isPdpaConsented, role, clinicianProfile } = useAuth();
   const { t } = useLanguage();
 
   if (isLoading) {
@@ -40,6 +41,9 @@ export default function AppNavigator() {
   }
 
   if (role === 'clinician') {
+    if (!clinicianProfile?.verified) {
+      return <PendingVerificationScreen />;
+    }
     return <ClinicianStackNavigator />;
   }
 

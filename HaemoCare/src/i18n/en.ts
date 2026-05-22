@@ -39,6 +39,42 @@ const en = {
   'auth.signupSuccess': 'Account created! Please sign in.',
   'auth.passwordMismatch': 'Passwords do not match',
 
+  // Role select (pre-signup gate)
+  'auth.roleSelect.title': 'Create your account',
+  'auth.roleSelect.subtitle': 'How will you use HaemoCare?',
+  'auth.roleSelect.patient.title': "I'm a patient",
+  'auth.roleSelect.patient.desc': 'Track transfusions, symptoms, medications',
+  'auth.roleSelect.clinician.title': "I'm a healthcare provider",
+  'auth.roleSelect.clinician.desc': "Monitor your patients' transfusion data",
+  'auth.roleSelect.backToLogin': '← Back to log in',
+
+  // Clinician signup
+  'auth.clinicianSignup.title': 'Create clinician account',
+  'auth.clinicianSignup.subtitle': 'Reviewed by the HaemoCare team within 1–2 business days',
+  'auth.clinicianSignup.requiredHeader': 'Required',
+  'auth.clinicianSignup.optionalHeader': 'Speeds up verification',
+  'auth.clinicianSignup.optionalHint': 'Optional — you can add these later',
+  'auth.clinicianSignup.fullName': 'Full name',
+  'auth.clinicianSignup.licenseNumber': 'License number',
+  'auth.clinicianSignup.hospital': 'Hospital affiliation',
+  'auth.clinicianSignup.submit': 'Create account',
+  'auth.clinicianSignup.success': 'Account created. Please check your email to confirm, then sign in.',
+  'auth.clinicianSignup.profileSaveFailed': 'Account created, but we could not save your clinician details. Please contact support.',
+
+  // Pending verification (clinician post-signup)
+  'auth.pendingVerification.title': 'Pending verification',
+  'auth.pendingVerification.body': "Thanks for signing up. Our team is reviewing your credentials. You'll get full access once approved (usually 1–2 business days).",
+  'auth.pendingVerification.submissionHeader': 'Your submission',
+  'auth.pendingVerification.licenseLabel': 'License',
+  'auth.pendingVerification.hospitalLabel': 'Hospital',
+  'auth.pendingVerification.notProvided': 'not provided',
+  'auth.pendingVerification.addDetails': '+ Add license & hospital',
+  'auth.pendingVerification.cancelAdd': 'Cancel',
+  'auth.pendingVerification.saveDetails': 'Save details',
+  'auth.pendingVerification.saved': 'Details saved.',
+  'auth.pendingVerification.saveFailed': 'Could not save details. Please try again.',
+  'auth.pendingVerification.signOut': 'Sign out',
+
   // Profile Completion
   'profileSetup.title': 'Complete Your Profile',
   'profileSetup.subtitle': 'This information helps medical staff provide safe transfusions.',

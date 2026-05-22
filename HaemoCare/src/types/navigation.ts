@@ -2,6 +2,8 @@ export type AuthStackParamList = {
   Splash: undefined;
   Login: undefined;
   Signup: undefined;
+  RoleSelect: undefined;
+  ClinicianSignup: undefined;
   ProfileCompletion: undefined;
 };
 

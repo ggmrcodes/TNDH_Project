@@ -24,6 +24,13 @@ interface AuthContextType {
   clinicianProfile: ClinicianProfile | null;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string) => Promise<{ error?: string }>;
+  signUpClinician: (input: {
+    email: string;
+    password: string;
+    fullName: string;
+    licenseNumber: string;
+    hospitalAffiliation: string;
+  }) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setPdpaConsent: () => Promise<void>;
@@ -69,12 +76,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setClinicianProfile(null);
       return;
     }
-    // Only treat as a clinician if admin has flipped verified=true.
-    if ((data as ClinicianProfile).verified) {
-      setClinicianProfile(data as ClinicianProfile);
-    } else {
-      setClinicianProfile(null);
-    }
+    // Keep unverified rows in state so AppNavigator can route them to the
+    // pending-verification screen. Consumers that need verified-only behavior
+    // must check `clinicianProfile.verified` themselves.
+    setClinicianProfile(data as ClinicianProfile);
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -207,6 +212,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return {};
   };
 
+  const signUpClinician = async (input: {
+    email: string;
+    password: string;
+    fullName: string;
+    licenseNumber: string;
+    hospitalAffiliation: string;
+  }): Promise<{ error?: string }> => {
+    const { data, error } = await supabase.auth.signUp({
+      email: input.email,
+      password: input.password,
+    });
+    if (error) return { error: error.message };
+
+    // signUp only returns a session when Supabase autoconfirm is enabled.
+    // If it's disabled, we cannot insert under RLS (auth.uid() is null until
+    // the user confirms and signs in). In that case the profile row is created
+    // on first authenticated session via a fallback path — but the simple
+    // path (autoconfirm on) is the current production state, so we insert here.
+    const newUserId = data.user?.id;
+    if (!newUserId) {
+      // No user returned — surface a generic error.
+      return { error: 'Account created, but we could not save your clinician details. Please contact support.' };
+    }
+
+    const { error: insertError } = await supabase.from('clinician_profiles').insert({
+      user_id: newUserId,
+      full_name: input.fullName,
+      license_number: input.licenseNumber,
+      hospital_affiliation: input.hospitalAffiliation,
+      verified: false,
+    });
+    if (insertError) {
+      return { error: 'Account created, but we could not save your clinician details. Please contact support.' };
+    }
+    return {};
+  };
+
   const signOut = async () => {
     if (isMockMode) {
       setIsMockMode(false);
@@ -236,6 +278,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         clinicianProfile,
         signIn,
         signUp,
+        signUpClinician,
         signOut,
         refreshProfile,
         setPdpaConsent,

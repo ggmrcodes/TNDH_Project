@@ -41,6 +41,42 @@ const th: Record<TranslationKey, string> = {
   'auth.signupSuccess': 'สร้างบัญชีสำเร็จ! กรุณาเข้าสู่ระบบ',
   'auth.passwordMismatch': 'รหัสผ่านไม่ตรงกัน',
 
+  // Role select (pre-signup gate)
+  'auth.roleSelect.title': 'สร้างบัญชีของคุณ',
+  'auth.roleSelect.subtitle': 'คุณจะใช้ HaemoCare อย่างไร?',
+  'auth.roleSelect.patient.title': 'ฉันเป็นผู้ป่วย',
+  'auth.roleSelect.patient.desc': 'ติดตามการให้เลือด อาการ และการใช้ยา',
+  'auth.roleSelect.clinician.title': 'ฉันเป็นบุคลากรทางการแพทย์',
+  'auth.roleSelect.clinician.desc': 'ติดตามข้อมูลการให้เลือดของผู้ป่วยของคุณ',
+  'auth.roleSelect.backToLogin': '← กลับไปเข้าสู่ระบบ',
+
+  // Clinician signup
+  'auth.clinicianSignup.title': 'สร้างบัญชีบุคลากรทางการแพทย์',
+  'auth.clinicianSignup.subtitle': 'ทีมงาน HaemoCare จะตรวจสอบภายใน 1–2 วันทำการ',
+  'auth.clinicianSignup.requiredHeader': 'จำเป็น',
+  'auth.clinicianSignup.optionalHeader': 'ช่วยให้ตรวจสอบได้รวดเร็วขึ้น',
+  'auth.clinicianSignup.optionalHint': 'ไม่บังคับ — คุณสามารถเพิ่มภายหลังได้',
+  'auth.clinicianSignup.fullName': 'ชื่อ-นามสกุล',
+  'auth.clinicianSignup.licenseNumber': 'เลขใบประกอบวิชาชีพ',
+  'auth.clinicianSignup.hospital': 'โรงพยาบาลที่สังกัด',
+  'auth.clinicianSignup.submit': 'สร้างบัญชี',
+  'auth.clinicianSignup.success': 'สร้างบัญชีสำเร็จ กรุณาตรวจสอบอีเมลเพื่อยืนยัน จากนั้นเข้าสู่ระบบ',
+  'auth.clinicianSignup.profileSaveFailed': 'สร้างบัญชีแล้ว แต่ไม่สามารถบันทึกข้อมูลบุคลากรของคุณได้ กรุณาติดต่อฝ่ายสนับสนุน',
+
+  // Pending verification (clinician post-signup)
+  'auth.pendingVerification.title': 'รอการตรวจสอบ',
+  'auth.pendingVerification.body': 'ขอบคุณที่สมัครใช้งาน ทีมงานกำลังตรวจสอบข้อมูลของคุณ คุณจะได้รับสิทธิ์เข้าใช้งานเต็มรูปแบบเมื่อได้รับการอนุมัติ (โดยปกติ 1–2 วันทำการ)',
+  'auth.pendingVerification.submissionHeader': 'ข้อมูลที่ส่ง',
+  'auth.pendingVerification.licenseLabel': 'ใบประกอบวิชาชีพ',
+  'auth.pendingVerification.hospitalLabel': 'โรงพยาบาล',
+  'auth.pendingVerification.notProvided': 'ยังไม่ได้ระบุ',
+  'auth.pendingVerification.addDetails': '+ เพิ่มเลขใบประกอบวิชาชีพและโรงพยาบาล',
+  'auth.pendingVerification.cancelAdd': 'ยกเลิก',
+  'auth.pendingVerification.saveDetails': 'บันทึกข้อมูล',
+  'auth.pendingVerification.saved': 'บันทึกข้อมูลแล้ว',
+  'auth.pendingVerification.saveFailed': 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองอีกครั้ง',
+  'auth.pendingVerification.signOut': 'ออกจากระบบ',
+
   // Profile Completion
   'profileSetup.title': 'กรอกข้อมูลโปรไฟล์',
   'profileSetup.subtitle': 'ข้อมูลนี้ช่วยให้ทีมแพทย์สามารถให้เลือดได้อย่างปลอดภัย',
