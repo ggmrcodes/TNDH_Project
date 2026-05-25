@@ -560,6 +560,7 @@ const en = {
 
   // Patient — find a clinician (patient-initiated link flow)
   'patient.findClinician.entryButton': 'Find my doctor',
+  'patient.findClinician.tileSubtitle': 'Connect with a clinician to share your transfusion data',
   'patient.findClinician.title': 'Connect with a clinician',
   'patient.findClinician.step1Title': 'Which hospital?',
   'patient.findClinician.step2Title': 'Pick your doctor',

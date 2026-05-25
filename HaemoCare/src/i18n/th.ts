@@ -563,6 +563,7 @@ const th: Record<TranslationKey, string> = {
 
   // Patient — find a clinician (Thai polish later if needed)
   'patient.findClinician.entryButton': 'ค้นหาแพทย์ของฉัน',
+  'patient.findClinician.tileSubtitle': 'เชื่อมต่อกับแพทย์เพื่อแบ่งปันข้อมูลการรับเลือดของคุณ',
   'patient.findClinician.title': 'เชื่อมต่อกับแพทย์',
   'patient.findClinician.step1Title': 'โรงพยาบาลใด',
   'patient.findClinician.step2Title': 'เลือกแพทย์ของคุณ',

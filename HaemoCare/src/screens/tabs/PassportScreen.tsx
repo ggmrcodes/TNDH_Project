@@ -21,6 +21,8 @@ import UpdateBanner from '../../components/common/UpdateBanner';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import EmergencySosButton from '../../components/emergency/EmergencySosButton';
 import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
+import { useConnectedClinicians } from '../../hooks/useConnectedClinicians';
+import { TranslationKey } from '../../i18n';
 import ResponsiveContainer from '../../components/common/ResponsiveContainer';
 import TodayMedicationWidget from '../../components/medications/TodayMedicationWidget';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
@@ -55,6 +57,7 @@ export default function PassportScreen() {
   const { t, language } = useLanguage();
   const { isMobile, isDesktop } = useResponsive();
   const { contacts } = useEmergencyContacts();
+  const { connected } = useConnectedClinicians();
   const { status: updateStatus } = useUpdateContext();
   const [showQR, setShowQR] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -207,6 +210,29 @@ export default function PassportScreen() {
             contacts={contacts}
             patientName={profile.full_name?.trim() || profile.patient_id || ''}
           />
+
+          {connected.length === 0 && (
+            <TouchableOpacity
+              style={styles.findDoctorCta}
+              onPress={() => navigation.navigate('PatientFindClinician')}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={t('patient.findClinician.entryButton' as TranslationKey)}
+            >
+              <View style={styles.findDoctorIcon}>
+                <Feather name="user-plus" size={20} color={COLORS.primary} />
+              </View>
+              <View style={styles.findDoctorTextCol}>
+                <Text style={styles.findDoctorTitle}>
+                  {t('patient.findClinician.entryButton' as TranslationKey)}
+                </Text>
+                <Text style={styles.findDoctorSubtitle}>
+                  {t('patient.findClinician.tileSubtitle' as TranslationKey)}
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={20} color={COLORS.primary} />
+            </TouchableOpacity>
+          )}
 
           {/* Health Stats — overlapping the hero slightly */}
           <View style={[styles.statsRow, isDesktop && styles.statsRowDesktop]}>
@@ -461,4 +487,27 @@ const styles = StyleSheet.create({
   ghostBtnText: { fontSize: 15, fontWeight: '700', color: COLORS.textSecondary },
   pdpaBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: SPACING.lg, marginBottom: SPACING.md },
   pdpaBadgeText: { ...TYPOGRAPHY.caption, color: COLORS.textLight },
+  findDoctorCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: RADIUS.lg,
+    borderWidth: 1,
+    borderColor: COLORS.primaryMuted,
+    padding: SPACING.md,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.md,
+  },
+  findDoctorIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  findDoctorTextCol: { flex: 1, gap: 2 },
+  findDoctorTitle: { fontSize: 15, fontWeight: '700', color: COLORS.primary },
+  findDoctorSubtitle: { fontSize: 12, color: COLORS.textSecondary, lineHeight: 16 },
 });
