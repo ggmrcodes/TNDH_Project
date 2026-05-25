@@ -735,8 +735,21 @@ export async function getPendingLinkRequests(
   return [...mockPatientPending];
 }
 
-export async function acceptLinkRequest(linkId: string, _shareFullName: boolean): Promise<ClinicianPatientLink> {
+let mockPatientConnected: import('../services/patientService').ConnectedClinician[] = [];
+
+export async function acceptLinkRequest(linkId: string, shareFullName: boolean): Promise<ClinicianPatientLink> {
+  const request = mockPatientPending.find(l => l.linkId === linkId);
   mockPatientPending = mockPatientPending.filter(l => l.linkId !== linkId);
+  if (request) {
+    mockPatientConnected.push({
+      linkId,
+      clinicianUserId: request.clinicianUserId,
+      clinicianFullName: request.clinicianFullName,
+      clinicianHospital: request.clinicianHospital,
+      shareFullName,
+      consentedAt: new Date().toISOString(),
+    });
+  }
   return {
     id: linkId,
     clinician_id: MOCK_CLINICIAN_PROFILE.user_id,
@@ -745,10 +758,20 @@ export async function acceptLinkRequest(linkId: string, _shareFullName: boolean)
     requested_at: new Date().toISOString(),
     consented_at: new Date().toISOString(),
     revoked_at: null,
-    share_full_name: _shareFullName,
+    share_full_name: shareFullName,
   };
 }
 
 export async function declineLinkRequest(linkId: string): Promise<void> {
   mockPatientPending = mockPatientPending.filter(l => l.linkId !== linkId);
+}
+
+export async function getConnectedClinicians(
+  _userId: string
+): Promise<import('../services/patientService').ConnectedClinician[]> {
+  return [...mockPatientConnected];
+}
+
+export async function revokeClinicianLink(linkId: string): Promise<void> {
+  mockPatientConnected = mockPatientConnected.filter(l => l.linkId !== linkId);
 }

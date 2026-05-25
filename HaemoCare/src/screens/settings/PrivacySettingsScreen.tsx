@@ -22,6 +22,7 @@ import { formatDate, formatDateTime } from '../../utils/dateHelpers';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 import { useUpdateContext } from '../../contexts/UpdateContext';
 import { confirm } from '../../utils/confirm';
+import ConnectedCliniciansSection from '../../components/patient/ConnectedCliniciansSection';
 
 export default function PrivacySettingsScreen() {
   const navigation = useNavigation();
@@ -148,6 +149,9 @@ export default function PrivacySettingsScreen() {
             />
           </View>
         </View>
+
+        {/* Connected clinicians */}
+        <ConnectedCliniciansSection />
 
         {/* Data Section */}
         <Text style={styles.sectionLabel}>{t('privacy.sectionData')}</Text>

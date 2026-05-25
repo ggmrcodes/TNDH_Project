@@ -78,3 +78,62 @@ export async function declineLinkRequest(linkId: string): Promise<void> {
     .eq('id', linkId);
   if (error) throw new Error(error.message);
 }
+
+export interface ConnectedClinician {
+  linkId: string;
+  clinicianUserId: string;
+  clinicianFullName: string;
+  clinicianHospital: string | null;
+  shareFullName: boolean;
+  consentedAt: string | null;
+}
+
+// Active clinicians the patient has approved. Same two-query pattern as
+// getPendingLinkRequests — the link FK is to auth.users, not
+// clinician_profiles, so we batch-fetch the profiles.
+export async function getConnectedClinicians(userId: string): Promise<ConnectedClinician[]> {
+  const { data: linkRows, error: linkErr } = await supabase
+    .from('clinician_patient_links')
+    .select('id, clinician_id, share_full_name, consented_at')
+    .eq('patient_user_id', userId)
+    .eq('status', 'active')
+    .order('consented_at', { ascending: false });
+  if (linkErr) throw new Error(linkErr.message);
+  const links = linkRows ?? [];
+  if (links.length === 0) return [];
+
+  const clinicianIds = Array.from(new Set(links.map((l) => l.clinician_id)));
+  const { data: profileRows, error: profileErr } = await supabase
+    .from('clinician_profiles')
+    .select('user_id, full_name, hospital_affiliation')
+    .in('user_id', clinicianIds);
+  if (profileErr) throw new Error(profileErr.message);
+
+  const profileMap = new Map<string, { full_name: string; hospital_affiliation: string }>();
+  (profileRows ?? []).forEach((p) => {
+    profileMap.set(p.user_id as string, {
+      full_name: (p.full_name as string) || '',
+      hospital_affiliation: (p.hospital_affiliation as string) || '',
+    });
+  });
+
+  return links.map((l) => {
+    const profile = profileMap.get(l.clinician_id as string);
+    return {
+      linkId: l.id as string,
+      clinicianUserId: l.clinician_id as string,
+      clinicianFullName: profile?.full_name?.trim() || 'Clinician',
+      clinicianHospital: profile?.hospital_affiliation?.trim() || null,
+      shareFullName: Boolean(l.share_full_name),
+      consentedAt: (l.consented_at as string | null) ?? null,
+    };
+  });
+}
+
+export async function revokeClinicianLink(linkId: string): Promise<void> {
+  const { error } = await supabase
+    .from('clinician_patient_links')
+    .update({ status: 'revoked', revoked_at: new Date().toISOString() })
+    .eq('id', linkId);
+  if (error) throw new Error(error.message);
+}
