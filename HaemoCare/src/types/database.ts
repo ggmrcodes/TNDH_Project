@@ -1,3 +1,17 @@
+export type PrimaryDiagnosis = 'thalassemia' | 'hemophilia' | 'other';
+
+export type ThalassemiaSubtype =
+  | 'alpha_silent_carrier'
+  | 'alpha_trait'
+  | 'hb_h_disease'
+  | 'alpha_major_hb_barts'
+  | 'beta_minor'
+  | 'beta_intermedia'
+  | 'beta_major_cooleys'
+  | 'hb_e_beta_thal'
+  | 'delta_beta_thal'
+  | 'hb_lepore_syndrome';
+
 export interface Profile {
   id: string;
   user_id: string;
@@ -13,6 +27,8 @@ export interface Profile {
   pdpa_consented_at: string | null;
   share_full_name: boolean;
   recommended_visit_interval_days: number;
+  primary_diagnosis: PrimaryDiagnosis | null;
+  thalassemia_subtype: ThalassemiaSubtype | null;
   created_at: string;
   updated_at: string;
 }

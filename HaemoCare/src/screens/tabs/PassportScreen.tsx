@@ -16,6 +16,7 @@ import * as realApptService from '../../services/appointmentService';
 import * as realSymptomService from '../../services/symptomService';
 import { Transfusion, SymptomLog } from '../../types/database';
 import QRCodeView from '../../components/passport/QRCodeView';
+import DiagnosisChip from '../../components/passport/DiagnosisChip';
 import UpdateBanner from '../../components/common/UpdateBanner';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import EmergencySosButton from '../../components/emergency/EmergencySosButton';
@@ -182,6 +183,13 @@ export default function PassportScreen() {
                 <Feather name="lock" size={12} color="rgba(255,255,255,0.8)" />
                 <Text style={styles.privacyBtnText} numberOfLines={1}>{t('privacy.title')}</Text>
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.chipRow}>
+              <DiagnosisChip
+                diagnosis={profile.primary_diagnosis}
+                subtype={profile.thalassemia_subtype}
+              />
             </View>
 
             {profile.antibodies.length > 0 && (
@@ -389,6 +397,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6, paddingHorizontal: 12,
   },
   privacyBtnText: { fontSize: 11, fontWeight: '600', color: COLORS.white },
+  chipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    flexWrap: 'wrap',
+    zIndex: 1,
+  },
   abRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, zIndex: 1 },
   abChip: {
     backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)',

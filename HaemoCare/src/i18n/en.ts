@@ -55,6 +55,23 @@ const en = {
   'auth.signupSuccess': 'Account created! Please sign in.',
   'auth.passwordMismatch': 'Passwords do not match',
 
+  // Profile — primary diagnosis + thalassemia subtype
+  'profile.diagnosis.label': 'Diagnosis',
+  'profile.diagnosis.thalassemia': 'Thalassemia',
+  'profile.diagnosis.hemophilia': 'Hemophilia',
+  'profile.diagnosis.other': 'Other',
+  'profile.subtype.label': 'Type of thalassemia',
+  'profile.subtype.alpha_silent_carrier': 'α-thal silent carrier',
+  'profile.subtype.alpha_trait': 'α-thal trait',
+  'profile.subtype.hb_h_disease': 'Hb H disease',
+  'profile.subtype.alpha_major_hb_barts': "α-thal major / Hb Bart's",
+  'profile.subtype.beta_minor': 'β-thal minor / trait',
+  'profile.subtype.beta_intermedia': 'β-thal intermedia',
+  'profile.subtype.beta_major_cooleys': "β-thal major / Cooley's",
+  'profile.subtype.hb_e_beta_thal': 'Hb E/β-thal',
+  'profile.subtype.delta_beta_thal': 'δβ-thal',
+  'profile.subtype.hb_lepore_syndrome': 'Hb Lepore syndrome',
+
   // Role select (pre-signup gate)
   'auth.roleSelect.title': 'Create your account',
   'auth.roleSelect.subtitle': 'How will you use HaemoCare?',

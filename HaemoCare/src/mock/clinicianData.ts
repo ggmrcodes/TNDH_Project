@@ -5,6 +5,8 @@ import type {
   SymptomLog,
   Appointment,
   EmergencyContact,
+  PrimaryDiagnosis,
+  ThalassemiaSubtype,
 } from '../types/database';
 
 export const MOCK_CLINICIAN_USER_ID = 'mock-clinician-001';
@@ -34,7 +36,14 @@ const today = new Date('2026-05-13T08:00:00+07:00');
 const daysAgo = (n: number) =>
   new Date(today.getTime() - n * 24 * 60 * 60 * 1000).toISOString();
 
-const baseProfile = (id: string, name: string, patientId: string, intervalDays = 28): Profile => ({
+const baseProfile = (
+  id: string,
+  name: string,
+  patientId: string,
+  intervalDays = 28,
+  primaryDiagnosis: PrimaryDiagnosis | null = 'thalassemia',
+  thalassemiaSubtype: ThalassemiaSubtype | null = 'beta_intermedia',
+): Profile => ({
   id: `p-${id}`,
   user_id: id,
   patient_id: patientId,
@@ -49,6 +58,8 @@ const baseProfile = (id: string, name: string, patientId: string, intervalDays =
   pdpa_consented_at: '2026-01-15T09:00:00+07:00',
   share_full_name: true,
   recommended_visit_interval_days: intervalDays,
+  primary_diagnosis: primaryDiagnosis,
+  thalassemia_subtype: thalassemiaSubtype,
   created_at: '2026-01-15T09:00:00+07:00',
   updated_at: '2026-01-15T09:00:00+07:00',
 });
@@ -56,7 +67,7 @@ const baseProfile = (id: string, name: string, patientId: string, intervalDays =
 export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
   // Patient 1: tier-2 overdue (28+ days), recent monitor log
   {
-    profile: baseProfile('mock-pt-001', 'Somchai Panyawong', 'HC-100001', 28),
+    profile: baseProfile('mock-pt-001', 'Somchai Panyawong', 'HC-100001', 28, 'thalassemia', 'beta_major_cooleys'),
     transfusions: [
       { id: 't1a', user_id: 'mock-pt-001', date: daysAgo(56), hospital: 'Songklanagarind', units_received: 2, reaction_noted: false, reaction_detail: '', notes: '', pre_hb_g_dl: 6.8, post_hb_g_dl: 9.4, created_at: daysAgo(56) },
       { id: 't1b', user_id: 'mock-pt-001', date: daysAgo(84), hospital: 'Songklanagarind', units_received: 2, reaction_noted: false, reaction_detail: '', notes: '', pre_hb_g_dl: 7.1, post_hb_g_dl: 9.6, created_at: daysAgo(84) },
@@ -72,7 +83,7 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
   },
   // Patient 2: tier-1 overdue (14 days), urgent log in last 7d
   {
-    profile: baseProfile('mock-pt-002', 'Niran Tonsuk', 'HC-100002', 28),
+    profile: baseProfile('mock-pt-002', 'Niran Tonsuk', 'HC-100002', 28, 'thalassemia', 'hb_e_beta_thal'),
     transfusions: [
       { id: 't2a', user_id: 'mock-pt-002', date: daysAgo(42), hospital: 'Siriraj', units_received: 2, reaction_noted: false, reaction_detail: '', notes: '', pre_hb_g_dl: 6.5, post_hb_g_dl: 9.1, created_at: daysAgo(42) },
     ],
@@ -86,7 +97,7 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
   },
   // Patient 3: stable, recent appointment scheduled
   {
-    profile: baseProfile('mock-pt-003', 'Areeya Kraisri', 'HC-100003', 28),
+    profile: baseProfile('mock-pt-003', 'Areeya Kraisri', 'HC-100003', 28, 'thalassemia', 'beta_intermedia'),
     transfusions: [
       { id: 't3a', user_id: 'mock-pt-003', date: daysAgo(10), hospital: 'Songklanagarind', units_received: 2, reaction_noted: false, reaction_detail: '', notes: '', pre_hb_g_dl: 7.0, post_hb_g_dl: 9.5, created_at: daysAgo(10) },
     ],
@@ -98,7 +109,7 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
   },
   // Patient 4: had a recent transfusion reaction
   {
-    profile: baseProfile('mock-pt-004', 'Kraisorn Vichaikun', 'HC-100004', 28),
+    profile: baseProfile('mock-pt-004', 'Kraisorn Vichaikun', 'HC-100004', 28, 'hemophilia', null),
     transfusions: [
       { id: 't4a', user_id: 'mock-pt-004', date: daysAgo(20), hospital: 'Songklanagarind', units_received: 2, reaction_noted: true, reaction_detail: 'Mild febrile reaction during infusion. Premedicated with acetaminophen on next visit.', notes: '', pre_hb_g_dl: 6.7, post_hb_g_dl: 9.3, created_at: daysAgo(20) },
     ],
@@ -108,7 +119,7 @@ export const MOCK_LINKED_PATIENTS: MockLinkedPatient[] = [
   },
   // Patient 5: stable, fully on cadence
   {
-    profile: baseProfile('mock-pt-005', 'Pim Jaroon', 'HC-100005', 28),
+    profile: baseProfile('mock-pt-005', 'Pim Jaroon', 'HC-100005', 28, 'thalassemia', 'hb_h_disease'),
     transfusions: [
       { id: 't5a', user_id: 'mock-pt-005', date: daysAgo(7), hospital: 'Siriraj', units_received: 2, reaction_noted: false, reaction_detail: '', notes: '', pre_hb_g_dl: 7.2, post_hb_g_dl: 9.7, created_at: daysAgo(7) },
     ],

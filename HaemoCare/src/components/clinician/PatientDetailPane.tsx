@@ -35,6 +35,7 @@ import {
   AdherenceSummary,
 } from '../../analytics';
 import ResponsiveContainer from '../common/ResponsiveContainer';
+import DiagnosisChip from '../passport/DiagnosisChip';
 import Disclaimer from '../common/Disclaimer';
 import LoadingSpinner from '../common/LoadingSpinner';
 import HbTrendChart from '../charts/HbTrendChart';
@@ -284,6 +285,10 @@ export default function PatientDetailPane({
               {patientProfile.patient_id} · {patientProfile.blood_type || '?'}{patientProfile.rh_factor || ''}
               {patientProfile.antibodies.length > 0 ? `  ·  Antibodies: ${patientProfile.antibodies.join(', ')}` : ''}
             </Text>
+            <DiagnosisChip
+              diagnosis={patientProfile.primary_diagnosis}
+              subtype={patientProfile.thalassemia_subtype}
+            />
             {patientProfile.known_reactions.trim().length > 0 && (
               <Text style={styles.patientReactions}>⚠ {patientProfile.known_reactions}</Text>
             )}

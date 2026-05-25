@@ -12,6 +12,10 @@ import {
   weeksToDays,
 } from '../../utils/visitInterval';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
+import DiagnosisPicker from './DiagnosisPicker';
+import ThalassemiaSubtypePicker from './ThalassemiaSubtypePicker';
+import type { PrimaryDiagnosis, ThalassemiaSubtype } from '../../types/database';
+import { TranslationKey } from '../../i18n';
 
 interface ProfileEditFormProps {
   profile?: Profile | null;
@@ -39,6 +43,20 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
   const [intervalWeeks, setIntervalWeeks] = useState<number>(() =>
     daysToWeeks(profile?.recommended_visit_interval_days ?? null)
   );
+  const [primaryDiagnosis, setPrimaryDiagnosis] = useState<PrimaryDiagnosis | null>(
+    profile?.primary_diagnosis ?? null
+  );
+  const [thalassemiaSubtype, setThalassemiaSubtype] = useState<ThalassemiaSubtype | null>(
+    profile?.thalassemia_subtype ?? null
+  );
+
+  const handleDiagnosisChange = (next: PrimaryDiagnosis | null) => {
+    setPrimaryDiagnosis(next);
+    // Clear subtype if diagnosis is not thalassemia
+    if (next !== 'thalassemia') {
+      setThalassemiaSubtype(null);
+    }
+  };
 
   const addAntibody = () => {
     const trimmed = newAntibody.trim();
@@ -61,6 +79,8 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
       known_reactions: knownReactions.trim(),
       medications: medications.trim(),
       recommended_visit_interval_days: weeksToDays(intervalWeeks),
+      primary_diagnosis: primaryDiagnosis,
+      thalassemia_subtype: thalassemiaSubtype,
     });
   };
 
@@ -89,6 +109,17 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
         placeholder={t('profileSetup.fullName')}
         placeholderTextColor={COLORS.textLight}
       />
+
+      <View style={styles.section}>
+        <Text style={styles.sectionLabel}>{t('profile.diagnosis.label' as TranslationKey)}</Text>
+        <DiagnosisPicker value={primaryDiagnosis} onChange={handleDiagnosisChange} />
+        {primaryDiagnosis === 'thalassemia' && (
+          <View style={{ marginTop: SPACING.md }}>
+            <Text style={styles.sectionLabel}>{t('profile.subtype.label' as TranslationKey)}</Text>
+            <ThalassemiaSubtypePicker value={thalassemiaSubtype} onChange={setThalassemiaSubtype} />
+          </View>
+        )}
+      </View>
 
       <Text style={styles.label}>{t('profileSetup.bloodType')} *</Text>
       <View style={styles.segmentRow}>
@@ -211,6 +242,15 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.xxl,
+  },
+  section: {
+    marginBottom: SPACING.lg,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
   },
   label: {
     ...TYPOGRAPHY.bodySmall,

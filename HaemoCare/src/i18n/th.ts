@@ -57,6 +57,23 @@ const th: Record<TranslationKey, string> = {
   'auth.signupSuccess': 'สร้างบัญชีสำเร็จ! กรุณาเข้าสู่ระบบ',
   'auth.passwordMismatch': 'รหัสผ่านไม่ตรงกัน',
 
+  // Profile — primary diagnosis + thalassemia subtype
+  'profile.diagnosis.label': 'การวินิจฉัย',
+  'profile.diagnosis.thalassemia': 'ธาลัสซีเมีย',
+  'profile.diagnosis.hemophilia': 'ฮีโมฟีเลีย',
+  'profile.diagnosis.other': 'อื่น ๆ',
+  'profile.subtype.label': 'ชนิดของธาลัสซีเมีย',
+  'profile.subtype.alpha_silent_carrier': 'อัลฟาธาลัสซีเมียชนิดพาหะเงียบ',
+  'profile.subtype.alpha_trait': 'อัลฟาธาลัสซีเมียเทรต',
+  'profile.subtype.hb_h_disease': 'โรคฮีโมโกลบินเอช',
+  'profile.subtype.alpha_major_hb_barts': 'อัลฟาธาลัสซีเมียเมเจอร์',
+  'profile.subtype.beta_minor': 'เบต้าธาลัสซีเมียไมเนอร์',
+  'profile.subtype.beta_intermedia': 'เบต้าธาลัสซีเมียอินเตอร์มีเดีย',
+  'profile.subtype.beta_major_cooleys': 'เบต้าธาลัสซีเมียเมเจอร์ / โรคคูลีย์',
+  'profile.subtype.hb_e_beta_thal': 'ฮีโมโกลบินอี/เบต้าธาลัสซีเมีย',
+  'profile.subtype.delta_beta_thal': 'เดลตา-เบต้าธาลัสซีเมีย',
+  'profile.subtype.hb_lepore_syndrome': 'ฮีโมโกลบินเลพอร์ซินโดรม',
+
   // Role select (pre-signup gate)
   'auth.roleSelect.title': 'สร้างบัญชีของคุณ',
   'auth.roleSelect.subtitle': 'คุณจะใช้ HaemoCare อย่างไร?',
