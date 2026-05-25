@@ -7,7 +7,23 @@ import type {
   Appointment,
   EmergencyContact,
   MedicationAdherenceEvent,
+  ClinicianPatientLink,
 } from '../types/database';
+
+export type RequestLinkError =
+  | { kind: 'NOT_FOUND' }
+  | { kind: 'ALREADY_ACTIVE' }
+  | { kind: 'ALREADY_PENDING' }
+  | { kind: 'UNKNOWN'; message: string };
+
+export type RequestLinkResult =
+  | { ok: true; link: ClinicianPatientLink }
+  | { ok: false; error: RequestLinkError };
+
+export interface PendingPatientLinkRow {
+  link: ClinicianPatientLink;
+  patientDisplayId: string | null;
+}
 
 export async function getClinicianProfile(userId: string): Promise<ClinicianProfile | null> {
   const { data, error } = await supabase
@@ -130,6 +146,99 @@ export async function getMedicationRemindersForPatient(
     .order('created_at', { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as import('../types/database').MedicationReminder[];
+}
+
+// ── Clinician-patient linking ────────────────────────────────
+
+// Resolve the publicly-shareable patient_id (HC-XXXXXX) to a user_id and
+// upsert a link row. Treats existing declined/revoked/expired rows as
+// "re-request" — UPDATEs the row back to pending. Existing active rows
+// return ALREADY_ACTIVE; existing pending rows return ALREADY_PENDING.
+export async function requestPatientLink(
+  clinicianId: string,
+  patientId: string
+): Promise<RequestLinkResult> {
+  const trimmed = patientId.trim();
+  if (!trimmed) return { ok: false, error: { kind: 'NOT_FOUND' } };
+
+  const { data: userId, error: rpcError } = await supabase.rpc(
+    'find_user_by_patient_id',
+    { p_patient_id: trimmed }
+  );
+  if (rpcError) return { ok: false, error: { kind: 'UNKNOWN', message: rpcError.message } };
+  if (!userId) return { ok: false, error: { kind: 'NOT_FOUND' } };
+
+  const { data: existing } = await supabase
+    .from('clinician_patient_links')
+    .select('*')
+    .eq('clinician_id', clinicianId)
+    .eq('patient_user_id', userId)
+    .maybeSingle();
+
+  if (existing) {
+    const link = existing as ClinicianPatientLink;
+    if (link.status === 'active') return { ok: false, error: { kind: 'ALREADY_ACTIVE' } };
+    if (link.status === 'pending') return { ok: false, error: { kind: 'ALREADY_PENDING' } };
+    // Re-request: declined / revoked / expired → pending
+    const { data: updated, error: updErr } = await supabase
+      .from('clinician_patient_links')
+      .update({
+        status: 'pending',
+        requested_at: new Date().toISOString(),
+        consented_at: null,
+        revoked_at: null,
+      })
+      .eq('id', link.id)
+      .select()
+      .single();
+    if (updErr) return { ok: false, error: { kind: 'UNKNOWN', message: updErr.message } };
+    return { ok: true, link: updated as ClinicianPatientLink };
+  }
+
+  const { data: inserted, error: insErr } = await supabase
+    .from('clinician_patient_links')
+    .insert({
+      clinician_id: clinicianId,
+      patient_user_id: userId,
+      status: 'pending',
+    })
+    .select()
+    .single();
+  if (insErr) return { ok: false, error: { kind: 'UNKNOWN', message: insErr.message } };
+  return { ok: true, link: inserted as ClinicianPatientLink };
+}
+
+export async function cancelLinkRequest(linkId: string): Promise<void> {
+  const { error } = await supabase
+    .from('clinician_patient_links')
+    .update({ status: 'revoked', revoked_at: new Date().toISOString() })
+    .eq('id', linkId);
+  if (error) throw new Error(error.message);
+}
+
+export async function getPendingPatientLinks(
+  clinicianId: string
+): Promise<PendingPatientLinkRow[]> {
+  const { data, error } = await supabase
+    .from('clinician_patient_links')
+    .select('*')
+    .eq('clinician_id', clinicianId)
+    .eq('status', 'pending')
+    .order('requested_at', { ascending: false });
+  if (error) throw new Error(error.message);
+
+  const links = (data ?? []) as ClinicianPatientLink[];
+  // Resolve display IDs in parallel — each via the SECURITY DEFINER RPC.
+  // Patient display_id is non-secret and the RPC is gated on link party.
+  const rows = await Promise.all(
+    links.map(async (link) => {
+      const { data: displayId } = await supabase.rpc('get_patient_display_id', {
+        p_user_id: link.patient_user_id,
+      });
+      return { link, patientDisplayId: (displayId as string | null) ?? null };
+    })
+  );
+  return rows;
 }
 
 // RLS must allow clinician reads on emergency_contacts via clinician_patient_links.

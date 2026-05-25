@@ -13,6 +13,9 @@ import AlertsStrip from '../../components/clinician/AlertsStrip';
 import CohortOverviewCard from '../../components/clinician/CohortOverviewCard';
 import FilterChips, { FilterId } from '../../components/clinician/FilterChips';
 import PatientQueueRow from '../../components/clinician/PatientQueueRow';
+import PendingPatientRow from '../../components/clinician/PendingPatientRow';
+import AddPatientButton from '../../components/clinician/AddPatientButton';
+import AddPatientModal from '../../components/clinician/AddPatientModal';
 import PatientDetailPane from '../../components/clinician/PatientDetailPane';
 // Wave-1 brief slots (2026-05-17). See specs in docs/superpowers/specs/.
 import PreTransfusionLabsPanel from '../../components/clinician/PreTransfusionLabsPanel';
@@ -45,7 +48,7 @@ export default function ClinicianDashboardScreen() {
   const { user, signOut, isMockMode } = useAuth();
   const { t, language } = useLanguage();
   const { isDesktop, isWide } = useResponsive();
-  const { patients, loading } = useAssignedPatients();
+  const { patients, pendingLinks, loading, refresh: refreshAssigned } = useAssignedPatients();
   const [slices, setSlices] = useState<PatientSlice[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterId>(null);
@@ -56,6 +59,7 @@ export default function ClinicianDashboardScreen() {
   // in as an overlay. On desktop the leftRail is always inline, so this
   // state is unused there.
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
 
   const handleSelectPatient = useCallback((id: string) => {
     setSelectedId(id);
@@ -306,6 +310,11 @@ export default function ClinicianDashboardScreen() {
           language={language}
         />
       </View>
+      {isDesktop && (
+        <View style={styles.addPatientRow}>
+          <AddPatientButton onPress={() => setIsAddPatientOpen(true)} />
+        </View>
+      )}
       <View style={styles.searchRow}>
         <View style={styles.searchInputWrap}>
           <QueueSearchBar value={searchQuery} onChange={setSearchQuery} />
@@ -318,9 +327,24 @@ export default function ClinicianDashboardScreen() {
         keyExtractor={(item) => item.profile.user_id}
         renderItem={renderRow}
         ListEmptyComponent={queueEmpty}
-        contentContainerStyle={{ paddingBottom: SPACING.xl }}
+        contentContainerStyle={{ paddingBottom: SPACING.xs }}
         scrollEnabled={false}
       />
+      {pendingLinks.length > 0 && (
+        <View style={styles.pendingSection}>
+          <Text style={styles.pendingSectionLabel}>
+            {t('clinician.linkPatient.pendingRowSubtitle' as TranslationKey).toUpperCase()}
+          </Text>
+          {pendingLinks.map(({ link, patientDisplayId }) => (
+            <PendingPatientRow
+              key={link.id}
+              linkId={link.id}
+              patientDisplayId={patientDisplayId}
+              onCancelled={refreshAssigned}
+            />
+          ))}
+        </View>
+      )}
     </>
   );
 
@@ -453,6 +477,13 @@ export default function ClinicianDashboardScreen() {
                 <Text style={styles.drawerTitle} numberOfLines={1}>
                   {t('clinician.dashboard.queueTitle' as TranslationKey)}
                 </Text>
+                <AddPatientButton
+                  compact
+                  onPress={() => {
+                    setIsDrawerOpen(false);
+                    setIsAddPatientOpen(true);
+                  }}
+                />
                 <TouchableOpacity
                   onPress={() => setIsDrawerOpen(false)}
                   style={styles.drawerCloseBtn}
@@ -469,6 +500,12 @@ export default function ClinicianDashboardScreen() {
           </>
         )}
       </View>
+
+      <AddPatientModal
+        visible={isAddPatientOpen}
+        onClose={() => setIsAddPatientOpen(false)}
+        onSuccess={refreshAssigned}
+      />
     </SafeAreaView>
   );
 }
@@ -573,6 +610,16 @@ const styles = StyleSheet.create({
   leftRailWide: { flexBasis: 400 },
   leftRailScroll: { gap: SPACING.sm, paddingTop: SPACING.sm, paddingBottom: SPACING.xl },
   alertsWrap: { paddingHorizontal: SPACING.md },
+  addPatientRow: { paddingHorizontal: SPACING.md, paddingTop: SPACING.xs },
+  pendingSection: { paddingHorizontal: SPACING.sm, paddingTop: SPACING.sm, gap: SPACING.xs },
+  pendingSectionLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.textLight,
+    letterSpacing: 1.2,
+    paddingHorizontal: SPACING.sm,
+    paddingBottom: SPACING.xs,
+  },
   searchRow: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs,
@@ -666,7 +713,7 @@ const styles = StyleSheet.create({
   drawerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: SPACING.sm,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm + 2,
     borderBottomWidth: 1,
@@ -674,6 +721,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
   },
   drawerTitle: {
+    flex: 1,
     fontSize: 15,
     fontWeight: '700',
     color: COLORS.text,

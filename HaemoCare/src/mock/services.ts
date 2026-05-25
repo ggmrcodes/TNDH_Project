@@ -1,4 +1,5 @@
-import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, MedicationAdherenceEvent, AdherenceEventSource, ClinicianProfile, EmergencyContact, PreTransfusionLabs, TransfusionLabAuditEntry, UrineColor } from '../types/database';
+import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, MedicationAdherenceEvent, AdherenceEventSource, ClinicianProfile, EmergencyContact, PreTransfusionLabs, TransfusionLabAuditEntry, UrineColor, ClinicianPatientLink } from '../types/database';
+import type { RequestLinkResult, PendingPatientLinkRow } from '../services/clinicianService';
 import { validateLabs } from '../utils/preTransfusionLabs';
 import {
   MOCK_PROFILE,
@@ -652,4 +653,63 @@ export async function markMedicationTakenWithEvent(
     created_at: now.toISOString(),
   });
   return markMedicationTaken(userId, id);
+}
+
+// ── Clinician-patient linking (mock) ──────────────────────────
+// Backed by an in-memory list scoped to the session. Mock clinicians
+// start with no pending requests; submitting one creates a row that
+// shows up in the queue as greyed pending until the demo expires.
+
+let mockPendingLinks: ClinicianPatientLink[] = [];
+let mockLinkIdCounter = 1;
+
+export async function requestPatientLink(
+  clinicianId: string,
+  patientId: string
+): Promise<RequestLinkResult> {
+  const trimmed = patientId.trim();
+  if (!trimmed) return { ok: false, error: { kind: 'NOT_FOUND' } };
+
+  // Mock universe: any HC- code resolves to a fake user; reject anything else.
+  if (!/^HC-/i.test(trimmed)) return { ok: false, error: { kind: 'NOT_FOUND' } };
+
+  const fakeUserId = `mock-patient-${trimmed.toLowerCase()}`;
+  const existing = mockPendingLinks.find(
+    l => l.clinician_id === clinicianId && l.patient_user_id === fakeUserId
+  );
+  if (existing) {
+    if (existing.status === 'active') return { ok: false, error: { kind: 'ALREADY_ACTIVE' } };
+    if (existing.status === 'pending') return { ok: false, error: { kind: 'ALREADY_PENDING' } };
+    existing.status = 'pending';
+    existing.requested_at = new Date().toISOString();
+    return { ok: true, link: { ...existing } };
+  }
+  const link: ClinicianPatientLink = {
+    id: `mock-link-${mockLinkIdCounter++}`,
+    clinician_id: clinicianId,
+    patient_user_id: fakeUserId,
+    status: 'pending',
+    requested_at: new Date().toISOString(),
+    consented_at: null,
+    revoked_at: null,
+    share_full_name: true,
+  };
+  mockPendingLinks.push(link);
+  return { ok: true, link: { ...link } };
+}
+
+export async function cancelLinkRequest(linkId: string): Promise<void> {
+  mockPendingLinks = mockPendingLinks.filter(l => l.id !== linkId);
+}
+
+export async function getPendingPatientLinks(
+  clinicianId: string
+): Promise<PendingPatientLinkRow[]> {
+  return mockPendingLinks
+    .filter(l => l.clinician_id === clinicianId && l.status === 'pending')
+    .map(link => ({
+      link: { ...link },
+      // Derive a display id from the mock user_id (mock-patient-hc-123456 → HC-123456)
+      patientDisplayId: link.patient_user_id.replace(/^mock-patient-/, '').toUpperCase(),
+    }));
 }
