@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -16,26 +16,36 @@ export default function ConnectedCliniciansSection() {
 
   const handleRevoke = useCallback(
     (linkId: string, clinicianName: string) => {
-      Alert.alert(
-        t('privacy.connectedClinicians.revokeConfirmTitle' as TranslationKey),
-        t('privacy.connectedClinicians.revokeConfirmBody' as TranslationKey, { name: clinicianName }),
-        [
-          { text: t('privacy.connectedClinicians.revokeConfirmNo' as TranslationKey), style: 'cancel' },
-          {
-            text: t('privacy.connectedClinicians.revokeConfirmYes' as TranslationKey),
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                const svc = isMockMode ? mockService : realService;
-                await svc.revokeClinicianLink(linkId);
-                refresh();
-              } catch {
-                // Swallow; revoke is non-critical and the list will refresh on next mount.
-              }
-            },
-          },
-        ]
-      );
+      const title = t('privacy.connectedClinicians.revokeConfirmTitle' as TranslationKey);
+      const body = t('privacy.connectedClinicians.revokeConfirmBody' as TranslationKey, { name: clinicianName });
+      const doRevoke = async () => {
+        try {
+          const svc = isMockMode ? mockService : realService;
+          await svc.revokeClinicianLink(linkId);
+          refresh();
+        } catch {
+          // Swallow; revoke is non-critical and the list will refresh on next mount.
+        }
+      };
+
+      // react-native-web's Alert.alert is a no-op (see src/exports/Alert/index.js
+      // in the react-native-web package). Fall back to window.confirm so the
+      // web build can still gate the destructive action.
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${body}`)) {
+          void doRevoke();
+        }
+        return;
+      }
+
+      Alert.alert(title, body, [
+        { text: t('privacy.connectedClinicians.revokeConfirmNo' as TranslationKey), style: 'cancel' },
+        {
+          text: t('privacy.connectedClinicians.revokeConfirmYes' as TranslationKey),
+          style: 'destructive',
+          onPress: doRevoke,
+        },
+      ]);
     },
     [t, isMockMode, refresh]
   );
