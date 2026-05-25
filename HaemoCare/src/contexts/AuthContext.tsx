@@ -120,7 +120,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile, fetchClinicianProfile, isMockMode]);
+    // Bootstrap should only run once on mount. The handler reads
+    // `isMockModeRef.current` so it doesn't need to re-subscribe when mock
+    // mode toggles — listing `isMockMode` here caused getSession to re-run
+    // on every mock-mode flip, which wiped the just-set mock user.
+  }, [fetchProfile, fetchClinicianProfile]);
+
+  // Localhost web-only dev convenience: auto-sign-in as the mock clinician
+  // so testing post-auth flows (dashboard layouts, clinician-only screens)
+  // doesn't require typing demo credentials on every page reload. Guarded by
+  // a hostname check — production deploys (haemocare.pages.dev,
+  // expo.haemocare.app, EAS APK) never satisfy this, so users there still
+  // see the real login screen.
+  useEffect(() => {
+    if (isLoading || user || isMockMode) return;
+    if (typeof window === 'undefined') return;
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') return;
+    setIsMockMode(true);
+    setUser({ id: MOCK_CLINICIAN_USER_ID, email: MOCK_CLINICIAN_EMAIL } as User);
+    setClinicianProfile(MOCK_CLINICIAN_PROFILE);
+    setProfile(null);
+  }, [isLoading, user, isMockMode]);
 
   const isProfileComplete = !!(profile && profile.full_name.trim().length > 0);
   const isPdpaConsented = !!(profile && profile.pdpa_consented);
