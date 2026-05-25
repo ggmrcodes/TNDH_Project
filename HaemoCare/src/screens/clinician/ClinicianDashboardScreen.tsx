@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -24,6 +24,7 @@ import HeroGradient from '../../components/common/HeroGradient';
 import { computeCohortAlerts, type AlertSlice } from '../../utils/cohortAlerts';
 import { computeOverdueHistory14d, type OverdueHistorySlice } from '../../utils/cohortHistory';
 import { COLORS, SPACING, RADIUS } from '../../config/theme';
+import { confirm } from '../../utils/confirm';
 import { TranslationKey } from '../../i18n';
 import type { Profile, Outcome, Transfusion, SymptomLog, Appointment, ClinicianProfile } from '../../types/database';
 
@@ -247,21 +248,16 @@ export default function ClinicianDashboardScreen() {
     );
   }, [selectedId, handleSelectPatient]);
 
-  const handleSignOut = () => {
-    Alert.alert(
-      t('privacy.signOutConfirmTitle' as TranslationKey),
-      t('privacy.signOutConfirmBody' as TranslationKey),
-      [
-        { text: t('common.cancel' as TranslationKey), style: 'cancel' },
-        {
-          text: t('auth.logout' as TranslationKey),
-          style: 'destructive',
-          onPress: async () => {
-            try { await signOut(); } catch (err) { console.error('Sign out failed:', err); }
-          },
-        },
-      ]
-    );
+  const handleSignOut = async () => {
+    const ok = await confirm({
+      title: t('privacy.signOutConfirmTitle' as TranslationKey),
+      body: t('privacy.signOutConfirmBody' as TranslationKey),
+      confirmLabel: t('auth.logout' as TranslationKey),
+      cancelLabel: t('common.cancel' as TranslationKey),
+      destructive: true,
+    });
+    if (!ok) return;
+    try { await signOut(); } catch (err) { console.error('Sign out failed:', err); }
   };
 
   const hasActiveQuery = searchQuery.trim() !== '' || filter !== null;

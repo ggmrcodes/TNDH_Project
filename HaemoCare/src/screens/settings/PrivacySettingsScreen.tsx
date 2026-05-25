@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  Alert,
   Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -22,6 +21,7 @@ import { generatePassportPdf } from '../../utils/pdfGenerator';
 import { formatDate, formatDateTime } from '../../utils/dateHelpers';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 import { useUpdateContext } from '../../contexts/UpdateContext';
+import { confirm } from '../../utils/confirm';
 
 export default function PrivacySettingsScreen() {
   const navigation = useNavigation();
@@ -60,49 +60,39 @@ export default function PrivacySettingsScreen() {
     setIsExporting(false);
   };
 
-  const handleSignOut = () => {
-    Alert.alert(
-      t('privacy.signOutConfirmTitle'),
-      t('privacy.signOutConfirmBody'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('auth.logout'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut();
-            } catch (err) {
-              console.error('Sign out failed:', err);
-            }
-          },
-        },
-      ]
-    );
+  const handleSignOut = async () => {
+    const ok = await confirm({
+      title: t('privacy.signOutConfirmTitle'),
+      body: t('privacy.signOutConfirmBody'),
+      confirmLabel: t('auth.logout'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('Sign out failed:', err);
+    }
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      t('privacy.deleteConfirmTitle'),
-      t('privacy.deleteConfirmBody'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('privacy.deleteAccount'),
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              if (!isMockMode) {
-                await realProfileService.deleteAccount(user.id);
-              }
-              await signOut();
-            } catch (err) {
-              console.error('Delete account failed:', err);
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteAccount = async () => {
+    const ok = await confirm({
+      title: t('privacy.deleteConfirmTitle'),
+      body: t('privacy.deleteConfirmBody'),
+      confirmLabel: t('privacy.deleteAccount'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      if (!isMockMode) {
+        await realProfileService.deleteAccount(user.id);
+      }
+      await signOut();
+    } catch (err) {
+      console.error('Delete account failed:', err);
+    }
   };
 
   return (
