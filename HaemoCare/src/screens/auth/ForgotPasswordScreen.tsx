@@ -27,13 +27,23 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
     setError('');
     setIsLoading(true);
     // On web, route the reset email back to this origin so the recovery
-    // token fragment lands on a page running our app. On native we let
-    // Supabase use its configured Site URL (typically the web build) —
-    // the user resets via browser and returns to the app.
-    const redirectTo =
-      Platform.OS === 'web' && typeof window !== 'undefined'
-        ? window.location.origin
-        : undefined;
+    // token fragment lands on a page running our app. NEVER pass a
+    // localhost / dev origin — that would put `http://localhost:4173`
+    // into a real outgoing email, which is useless for anyone not on
+    // that exact machine. When we can't supply a real public origin,
+    // omit redirectTo and let Supabase use its configured Site URL.
+    let redirectTo: string | undefined;
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const isDevHost =
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        host === '0.0.0.0' ||
+        host.endsWith('.local');
+      if (!isDevHost) {
+        redirectTo = window.location.origin;
+      }
+    }
     const result = await sendPasswordResetEmail(email.trim(), redirectTo);
     setIsLoading(false);
     if (result.error) {

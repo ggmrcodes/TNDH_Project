@@ -52,7 +52,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isMockMode, setIsMockMode] = useState(false);
   const [clinicianProfile, setClinicianProfile] = useState<ClinicianProfile | null>(null);
-  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  // Detect a Supabase password-recovery hash synchronously on the very
+  // first render so AppNavigator can route straight to ResetPasswordScreen
+  // — otherwise the user briefly sees the LoginScreen while Supabase
+  // parses the hash and fires PASSWORD_RECOVERY async (~100-300ms gap).
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
+    if (Platform.OS !== 'web') return false;
+    if (typeof window === 'undefined' || !window.location) return false;
+    const hash = window.location.hash || '';
+    return /[#&]type=recovery(&|$)/.test(hash);
+  });
 
   const isMockModeRef = useRef(isMockMode);
   useEffect(() => { isMockModeRef.current = isMockMode; }, [isMockMode]);
