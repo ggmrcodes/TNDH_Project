@@ -481,6 +481,8 @@ const en = {
   // Clinician dashboard
   'clinician.dashboard.title': 'Clinician Dashboard',
   'clinician.dashboard.assignedPatients': 'patients assigned',
+  'clinician.dashboard.openQueue': 'Patient queue',
+  'clinician.dashboard.queueTitle': 'Patient queue',
   'clinician.dashboard.cohortOverview': 'Cohort Overview',
   'clinician.dashboard.statusSnapshot': 'Status snapshot',
   'clinician.dashboard.last7days': 'Last 7 days',

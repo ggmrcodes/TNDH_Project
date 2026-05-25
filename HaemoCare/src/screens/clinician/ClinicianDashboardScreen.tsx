@@ -51,6 +51,15 @@ export default function ClinicianDashboardScreen() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortKey, setSortKey] = useState<SortKey>('triage');
   const [clinicianProfile, setClinicianProfile] = useState<ClinicianProfile | null>(null);
+  // Mobile-only: the patient queue is hidden behind a hamburger and slides
+  // in as an overlay. On desktop the leftRail is always inline, so this
+  // state is unused there.
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleSelectPatient = useCallback((id: string) => {
+    setSelectedId(id);
+    if (!isDesktop) setIsDrawerOpen(false);
+  }, [isDesktop]);
 
   // Fetch the signed-in clinician's profile once for the header identity chip.
   useEffect(() => {
@@ -233,10 +242,10 @@ export default function ClinicianDashboardScreen() {
         bumpTiers={bumpTiers as 0 | 1 | 2}
         worstRecentOutcome={item.worstRecentOutcome}
         hasReactionOnFile={item.hasReactionOnFile}
-        onPress={() => setSelectedId(item.profile.user_id)}
+        onPress={() => handleSelectPatient(item.profile.user_id)}
       />
     );
-  }, [selectedId]);
+  }, [selectedId, handleSelectPatient]);
 
   const handleSignOut = () => {
     Alert.alert(
@@ -278,6 +287,47 @@ export default function ClinicianDashboardScreen() {
   const clinicianName = clinicianProfile?.full_name?.trim() || (t('clinician.signOut' as TranslationKey) && 'Clinician');
   const hospitalLabel = clinicianProfile?.hospital_affiliation?.trim() || '—';
 
+  // Same queue content is rendered inline on desktop and inside the mobile
+  // drawer overlay — pulled into a helper to avoid duplicating the tree.
+  const renderQueueContent = () => (
+    <>
+      <CohortOverviewCard
+        overdueCount={cohortSummary.overdueCount}
+        monitorCount={cohortSummary.monitorCount}
+        stableCount={cohortSummary.stableCount}
+        cohortSize={cohortSummary.cohortSize}
+        urgentLogs7d={cohortSummary.urgentLogs7d}
+        transfusions7d={cohortSummary.transfusions7d}
+        overdueHistory={overdueHistory14d}
+        isWide={isWide}
+      />
+      <View style={styles.alertsWrap}>
+        <AlertsStrip
+          alerts={cohortAlerts.alerts}
+          totalAlerts={cohortAlerts.total}
+          selectedPatientId={selectedId}
+          onSelectPatient={handleSelectPatient}
+          language={language}
+        />
+      </View>
+      <View style={styles.searchRow}>
+        <View style={styles.searchInputWrap}>
+          <QueueSearchBar value={searchQuery} onChange={setSearchQuery} />
+        </View>
+        <QueueSortSelector value={sortKey} onChange={setSortKey} />
+      </View>
+      <FilterChips active={filter} onChange={setFilter} />
+      <FlatList
+        data={visibleSlices}
+        keyExtractor={(item) => item.profile.user_id}
+        renderItem={renderRow}
+        ListEmptyComponent={queueEmpty}
+        contentContainerStyle={{ paddingBottom: SPACING.xl }}
+        scrollEnabled={false}
+      />
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.topBar}>
@@ -296,83 +346,64 @@ export default function ClinicianDashboardScreen() {
         </View>
       </View>
 
-      <View style={[styles.hero, isDesktop && styles.heroDesktop]}>
+      <View style={[styles.hero, isDesktop ? styles.heroDesktop : styles.heroMobile]}>
         <HeroGradient borderRadius={isDesktop ? 24 : 0} gradientId="clinicianHeroGrad" />
         <View style={styles.heroDecoCircle1} />
         <View style={styles.heroDecoCircle2} />
 
-        <View style={styles.heroTop}>
-          <Text style={styles.heroLabel}>{t('clinician.dashboard.title' as TranslationKey).toUpperCase()}</Text>
-          <Feather name="activity" size={18} color="rgba(255,255,255,0.45)" />
-        </View>
-
-        <View style={styles.heroMain}>
-          <View style={styles.avatarBadge}>
-            <Feather name="user" size={32} color="rgba(255,255,255,0.92)" />
+        {isDesktop ? (
+          <>
+            <View style={styles.heroTop}>
+              <Text style={styles.heroLabel}>{t('clinician.dashboard.title' as TranslationKey).toUpperCase()}</Text>
+              <Feather name="activity" size={18} color="rgba(255,255,255,0.45)" />
+            </View>
+            <View style={styles.heroMain}>
+              <View style={styles.avatarBadge}>
+                <Feather name="user" size={32} color="rgba(255,255,255,0.92)" />
+              </View>
+              <View style={styles.heroNameCol}>
+                <Text style={styles.heroName} numberOfLines={1}>{clinicianName}</Text>
+                <Text style={styles.heroHospital} numberOfLines={1}>{hospitalLabel}</Text>
+              </View>
+            </View>
+            <View style={styles.heroChipRow}>
+              <View style={styles.heroChip}>
+                <Feather name="users" size={12} color={COLORS.white} />
+                <Text style={styles.heroChipText}>
+                  {cohortSummary.cohortSize} {t('clinician.dashboard.assignedPatients' as TranslationKey)}
+                </Text>
+              </View>
+            </View>
+          </>
+        ) : (
+          // Slim mobile hero: single row, no chip (cohort size lives in the FAB),
+          // no "DASHBOARD" label. Cuts vertical real estate from ~220px → ~70px.
+          <View style={styles.heroMobileRow}>
+            <View style={styles.avatarBadgeSmall}>
+              <Feather name="user" size={18} color="rgba(255,255,255,0.92)" />
+            </View>
+            <View style={styles.heroNameCol}>
+              <Text style={styles.heroNameMobile} numberOfLines={1}>{clinicianName}</Text>
+              <Text style={styles.heroHospitalMobile} numberOfLines={1}>{hospitalLabel}</Text>
+            </View>
           </View>
-          <View style={styles.heroNameCol}>
-            <Text style={styles.heroName} numberOfLines={1}>{clinicianName}</Text>
-            <Text style={styles.heroHospital} numberOfLines={1}>{hospitalLabel}</Text>
-          </View>
-        </View>
-
-        <View style={styles.heroChipRow}>
-          <View style={styles.heroChip}>
-            <Feather name="users" size={12} color={COLORS.white} />
-            <Text style={styles.heroChipText}>
-              {cohortSummary.cohortSize} {t('clinician.dashboard.assignedPatients' as TranslationKey)}
-            </Text>
-          </View>
-        </View>
+        )}
       </View>
       <View style={[styles.body, isDesktop && styles.bodyDesktop]}>
-        <View
-          style={[
-            styles.leftRail,
-            isDesktop && styles.leftRailDesktop,
-            isWide && styles.leftRailWide,
-          ]}
-        >
-          <ScrollView
-            contentContainerStyle={styles.leftRailScroll}
-            stickyHeaderIndices={[]}
+        {isDesktop && (
+          <View
+            style={[
+              styles.leftRail,
+              styles.leftRailDesktop,
+              isWide && styles.leftRailWide,
+            ]}
           >
-            <CohortOverviewCard
-              overdueCount={cohortSummary.overdueCount}
-              monitorCount={cohortSummary.monitorCount}
-              stableCount={cohortSummary.stableCount}
-              cohortSize={cohortSummary.cohortSize}
-              urgentLogs7d={cohortSummary.urgentLogs7d}
-              transfusions7d={cohortSummary.transfusions7d}
-              overdueHistory={overdueHistory14d}
-              isWide={isWide}
-            />
-            <View style={styles.alertsWrap}>
-              <AlertsStrip
-                alerts={cohortAlerts.alerts}
-                totalAlerts={cohortAlerts.total}
-                selectedPatientId={selectedId}
-                onSelectPatient={setSelectedId}
-                language={language}
-              />
-            </View>
-            <View style={styles.searchRow}>
-              <View style={styles.searchInputWrap}>
-                <QueueSearchBar value={searchQuery} onChange={setSearchQuery} />
-              </View>
-              <QueueSortSelector value={sortKey} onChange={setSortKey} />
-            </View>
-            <FilterChips active={filter} onChange={setFilter} />
-            <FlatList
-              data={visibleSlices}
-              keyExtractor={(item) => item.profile.user_id}
-              renderItem={renderRow}
-              ListEmptyComponent={queueEmpty}
-              contentContainerStyle={{ paddingBottom: SPACING.xl }}
-              scrollEnabled={false}
-            />
-          </ScrollView>
-        </View>
+            <ScrollView contentContainerStyle={styles.leftRailScroll}>
+              {renderQueueContent()}
+            </ScrollView>
+          </View>
+        )}
+
         <View style={[styles.rightPane, isDesktop && styles.rightPaneDesktop]}>
           {selectedId ? (
             <ScrollView
@@ -396,6 +427,51 @@ export default function ClinicianDashboardScreen() {
             </ScrollView>
           )}
         </View>
+
+        {!isDesktop && !isDrawerOpen && (
+          <TouchableOpacity
+            onPress={() => setIsDrawerOpen(true)}
+            activeOpacity={0.85}
+            style={styles.queueFab}
+            accessibilityRole="button"
+            accessibilityLabel={t('clinician.dashboard.openQueue' as TranslationKey)}
+          >
+            <Feather name="menu" size={18} color={COLORS.white} />
+            <Text style={styles.queueFabText} numberOfLines={1}>
+              {t('clinician.dashboard.openQueue' as TranslationKey)}
+              {cohortSummary.cohortSize > 0 ? `  ·  ${cohortSummary.cohortSize}` : ''}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {!isDesktop && isDrawerOpen && (
+          <>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => setIsDrawerOpen(false)}
+              style={styles.drawerBackdrop}
+              accessibilityLabel={t('common.close' as TranslationKey)}
+            />
+            <View style={styles.drawerPanel}>
+              <View style={styles.drawerHeader}>
+                <Text style={styles.drawerTitle} numberOfLines={1}>
+                  {t('clinician.dashboard.queueTitle' as TranslationKey)}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setIsDrawerOpen(false)}
+                  style={styles.drawerCloseBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.close' as TranslationKey)}
+                >
+                  <Feather name="x" size={20} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView contentContainerStyle={styles.leftRailScroll}>
+                {renderQueueContent()}
+              </ScrollView>
+            </View>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -427,6 +503,25 @@ const styles = StyleSheet.create({
   },
   heroDesktop: {
     borderRadius: 24, marginHorizontal: SPACING.md, marginTop: SPACING.sm,
+  },
+  heroMobile: {
+    // Slim variant: less vertical padding, no gap between rows since there's
+    // only one row of content.
+    paddingTop: SPACING.md, paddingBottom: SPACING.md, gap: 0,
+  },
+  heroMobileRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12, zIndex: 1,
+  },
+  avatarBadgeSmall: {
+    width: 36, height: 36, borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.18)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.28)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  heroNameMobile: {
+    fontSize: 16, fontWeight: '800', color: COLORS.white, letterSpacing: -0.2,
+  },
+  heroHospitalMobile: {
+    fontSize: 12, color: 'rgba(255,255,255,0.78)',
   },
   heroDecoCircle1: {
     position: 'absolute', top: -30, right: -30,
@@ -495,4 +590,104 @@ const styles = StyleSheet.create({
   empty: { fontSize: 13, color: COLORS.textLight, textAlign: 'center', padding: SPACING.lg },
   noMatchWrap: { alignItems: 'center', padding: SPACING.lg, gap: SPACING.sm },
   clearLink: { fontSize: 13, color: COLORS.primary, fontWeight: '600' },
+
+  // Mobile-only drawer: hamburger pill floats above the body, panel slides
+  // in as an absolute overlay with a dimmed backdrop. Sized to ~85% of
+  // screen width with a hard cap so it stays readable on tablets-in-portrait.
+  queueFab: {
+    position: 'absolute',
+    // Negative top pulls the FAB up over the hero's lower edge so it
+    // doesn't eat a row of body content. Hero has marginBottom: SPACING.sm,
+    // so -20 lands roughly half-on the gradient, half-on the body.
+    top: -20,
+    left: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs + 2,
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.xs + 2,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.full,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+      },
+      android: { elevation: 6 },
+      default: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+      },
+    }),
+    zIndex: 5,
+  },
+  queueFabText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.white,
+    letterSpacing: 0.2,
+  },
+  drawerBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: COLORS.overlay,
+    zIndex: 10,
+  },
+  drawerPanel: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: '78%',
+    maxWidth: 320,
+    backgroundColor: COLORS.background,
+    borderRightWidth: 1,
+    borderRightColor: COLORS.borderLight,
+    zIndex: 11,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 2, height: 0 },
+        shadowOpacity: 0.18,
+        shadowRadius: 16,
+      },
+      android: { elevation: 12 },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 2, height: 0 },
+        shadowOpacity: 0.18,
+        shadowRadius: 16,
+      },
+    }),
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm + 2,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.borderLight,
+    backgroundColor: COLORS.surface,
+  },
+  drawerTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  drawerCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

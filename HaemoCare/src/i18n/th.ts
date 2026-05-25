@@ -484,6 +484,8 @@ const th: Record<TranslationKey, string> = {
   // Clinician dashboard
   'clinician.dashboard.title': 'แดชบอร์ดแพทย์',
   'clinician.dashboard.assignedPatients': 'ผู้ป่วยที่ดูแล',
+  'clinician.dashboard.openQueue': 'รายชื่อผู้ป่วย',
+  'clinician.dashboard.queueTitle': 'รายชื่อผู้ป่วย',
   'clinician.dashboard.cohortOverview': 'ภาพรวมผู้ป่วย',
   'clinician.dashboard.statusSnapshot': 'สถานะปัจจุบัน',
   'clinician.dashboard.last7days': '7 วันที่ผ่านมา',
