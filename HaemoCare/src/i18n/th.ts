@@ -489,7 +489,7 @@ const th: Record<TranslationKey, string> = {
   // Clinician — link patient flow (Thai polish in Phase 5)
   'clinician.linkPatient.addButton': 'เพิ่มผู้ป่วย',
   'clinician.linkPatient.modalTitle': 'เพิ่มผู้ป่วยเข้ารายชื่อ',
-  'clinician.linkPatient.modalSubtitle': 'กรอกรหัสผู้ป่วยที่แสดงในบัตร HaemoCare ของผู้ป่วย (รูปแบบ: HC-XXXXXX) ผู้ป่วยจะเห็นคำขอในแอปและสามารถอนุมัติหรือปฏิเสธได้',
+  'clinician.linkPatient.modalSubtitle': 'กรอกรหัสผู้ป่วยที่แสดงในพาสปอร์ตการรับเลือด HaemoCare ของผู้ป่วย (รูปแบบ: HC-XXXXXX) ผู้ป่วยจะเห็นคำขอในแอปและตอบรับหรือปฏิเสธได้',
   'clinician.linkPatient.inputLabel': 'รหัสผู้ป่วย',
   'clinician.linkPatient.inputPlaceholder': 'HC-000000',
   'clinician.linkPatient.submit': 'ส่งคำขอ',
@@ -504,7 +504,7 @@ const th: Record<TranslationKey, string> = {
   'clinician.linkPatient.cancelRequest': 'ยกเลิกคำขอ',
   // Patient — incoming link requests (Thai polish in Phase 5)
   'patient.linkRequest.bannerOne': '{name} ต้องการเชื่อมต่อกับคุณ',
-  'patient.linkRequest.bannerMany': 'แพทย์ {count} คนต้องการเชื่อมต่อ',
+  'patient.linkRequest.bannerMany': 'แพทย์ {count} คนต้องการเชื่อมต่อกับคุณ',
   'patient.linkRequest.bannerView': 'ดู',
   'patient.linkRequest.modalTitle': 'คำขอจากแพทย์',
   'patient.linkRequest.modalRequestedAt': 'ขอเมื่อ {date}',
