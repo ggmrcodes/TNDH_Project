@@ -558,6 +558,24 @@ const en = {
   'preLabs.error.upload': 'Could not upload photo. Labs were not saved.',
   'preLabs.clinicianEditPrompt': 'Update this patient-reported value? The previous value will be kept in the audit log.',
 
+  // Patient — find a clinician (patient-initiated link flow)
+  'patient.findClinician.entryButton': 'Find my doctor',
+  'patient.findClinician.title': 'Connect with a clinician',
+  'patient.findClinician.step1Title': 'Which hospital?',
+  'patient.findClinician.step2Title': 'Pick your doctor',
+  'patient.findClinician.empty': 'No registered doctors at this hospital yet.',
+  'patient.findClinician.alreadyConnected': 'Already connected',
+  'patient.findClinician.alreadyPending': 'Request pending',
+  'patient.findClinician.confirmTitle': 'Request connection?',
+  'patient.findClinician.confirmSubmit': 'Send request',
+  'patient.findClinician.success': 'Request sent. Waiting for {name} to approve.',
+  'patient.findClinician.error': 'Could not send request. Try again.',
+  // Clinician — incoming patient-initiated requests
+  'clinician.incomingRequests.title': 'Awaiting your approval',
+  'clinician.incomingRequests.approve': 'Approve',
+  'clinician.incomingRequests.decline': 'Decline',
+  'clinician.pendingSection.awaitingPatient': 'Awaiting patient',
+
   // Clinician dashboard
   'clinician.dashboard.title': 'Clinician Dashboard',
   'clinician.dashboard.assignedPatients': 'patients assigned',

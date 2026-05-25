@@ -196,6 +196,7 @@ export interface ClinicianPatientLink {
   clinician_id: string;
   patient_user_id: string;
   status: LinkStatus;
+  initiated_by: 'clinician' | 'patient';
   requested_at: string;
   consented_at: string | null;
   revoked_at: string | null;

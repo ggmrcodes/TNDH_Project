@@ -689,6 +689,7 @@ export async function requestPatientLink(
     clinician_id: clinicianId,
     patient_user_id: fakeUserId,
     status: 'pending',
+    initiated_by: 'clinician',
     requested_at: new Date().toISOString(),
     consented_at: null,
     revoked_at: null,
@@ -755,6 +756,7 @@ export async function acceptLinkRequest(linkId: string, shareFullName: boolean):
     clinician_id: MOCK_CLINICIAN_PROFILE.user_id,
     patient_user_id: MOCK_USER_ID,
     status: 'active',
+    initiated_by: 'clinician',
     requested_at: new Date().toISOString(),
     consented_at: new Date().toISOString(),
     revoked_at: null,
@@ -809,4 +811,76 @@ const MOCK_HOSPITALS: Hospital[] = [
 
 export async function getHospitals(): Promise<Hospital[]> {
   return [...MOCK_HOSPITALS];
+}
+
+// ── Patient-initiated linking (mock, clinician side) ─────────
+// Seeded: one incoming request from a mock patient to the demo clinician,
+// so the clinician dashboard demo shows the "Awaiting your approval" row.
+
+let mockIncomingPatientRequests: import('../services/clinicianService').IncomingPatientRequest[] = [
+  {
+    link: {
+      id: 'mock-incoming-patient-1',
+      clinician_id: MOCK_CLINICIAN_PROFILE.user_id,
+      patient_user_id: 'mock-patient-hc-987654',
+      status: 'pending',
+      initiated_by: 'patient',
+      requested_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+      consented_at: null,
+      revoked_at: null,
+      share_full_name: true,
+    },
+    patientDisplayId: 'HC-987654',
+    patientFullName: null,
+  },
+];
+
+export async function getIncomingPatientRequests(
+  clinicianId: string
+): Promise<import('../services/clinicianService').IncomingPatientRequest[]> {
+  return mockIncomingPatientRequests.filter(r => r.link.clinician_id === clinicianId);
+}
+
+export async function approveIncomingRequest(linkId: string): Promise<void> {
+  mockIncomingPatientRequests = mockIncomingPatientRequests.filter(r => r.link.id !== linkId);
+}
+
+export async function declineIncomingRequest(linkId: string): Promise<void> {
+  mockIncomingPatientRequests = mockIncomingPatientRequests.filter(r => r.link.id !== linkId);
+}
+
+// ── Patient-initiated linking (mock, patient side) ───────────
+// Returns the seeded mock clinicians at a given hospital. For the demo
+// patient flow, only Songklanagarind has the demo clinician registered.
+
+export async function getCliniciansAtHospital(
+  hospitalId: string
+): Promise<import('../services/patientService').CliniciansAtHospital[]> {
+  if (hospitalId === MOCK_CLINICIAN_PROFILE.hospital_id) {
+    return [{
+      user_id: MOCK_CLINICIAN_PROFILE.user_id,
+      full_name: MOCK_CLINICIAN_PROFILE.full_name,
+      hospital_id: MOCK_CLINICIAN_PROFILE.hospital_id ?? '',
+    }];
+  }
+  return [];
+}
+
+export async function requestClinicianLink(
+  clinicianId: string,
+  patientUserId: string,
+  shareFullName: boolean
+): Promise<import('../types/database').ClinicianPatientLink> {
+  // No-op for mock — just return a fake pending link
+  return {
+    id: `mock-self-request-${Date.now()}`,
+    clinician_id: clinicianId,
+    patient_user_id: patientUserId,
+    status: 'pending',
+    initiated_by: 'patient',
+    requested_at: new Date().toISOString(),
+    consented_at: null,
+    revoked_at: null,
+    share_full_name: shareFullName,
+  };
 }

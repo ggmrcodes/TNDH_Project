@@ -35,4 +35,5 @@ export type RootStackParamList = {
   IcsImport: undefined;
   FhirImport: undefined;
   EmergencyContacts: undefined;
+  PatientFindClinician: undefined;
 };

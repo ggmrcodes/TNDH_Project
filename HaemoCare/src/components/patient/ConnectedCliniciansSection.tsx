@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -12,6 +13,7 @@ import * as mockService from '../../mock/services';
 export default function ConnectedCliniciansSection() {
   const { t } = useLanguage();
   const { isMockMode } = useAuth();
+  const navigation = useNavigation<any>();
   const { connected, refresh } = useConnectedClinicians();
 
   const handleRevoke = useCallback(
@@ -52,9 +54,21 @@ export default function ConnectedCliniciansSection() {
 
   return (
     <>
-      <Text style={styles.sectionLabel}>
-        {t('privacy.connectedClinicians.title' as TranslationKey)}
-      </Text>
+      <View style={styles.headerRow}>
+        <Text style={styles.sectionLabel}>
+          {t('privacy.connectedClinicians.title' as TranslationKey)}
+        </Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('PatientFindClinician')}
+          style={styles.findBtn}
+          activeOpacity={0.7}
+        >
+          <Feather name="plus" size={14} color={COLORS.primary} />
+          <Text style={styles.findBtnText}>
+            {t('patient.findClinician.entryButton' as TranslationKey)}
+          </Text>
+        </TouchableOpacity>
+      </View>
       {connected.length === 0 ? (
         <View style={styles.emptyCard}>
           <Feather name="users" size={16} color={COLORS.textLight} />
@@ -106,11 +120,33 @@ export default function ConnectedCliniciansSection() {
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+    marginLeft: SPACING.xs,
+  },
+  findBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.primaryLight,
+    borderWidth: 1,
+    borderColor: COLORS.primaryMuted,
+  },
+  findBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
   sectionLabel: {
     ...TYPOGRAPHY.label,
     color: COLORS.textLight,
-    marginBottom: SPACING.sm,
-    marginLeft: SPACING.xs,
+    marginLeft: 0,
   },
   emptyCard: {
     backgroundColor: COLORS.white,

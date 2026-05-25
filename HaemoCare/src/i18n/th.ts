@@ -561,6 +561,24 @@ const th: Record<TranslationKey, string> = {
   'preLabs.error.upload': 'อัปโหลดรูปไม่สำเร็จ ยังไม่ได้บันทึกค่าเลือด',
   'preLabs.clinicianEditPrompt': 'แก้ไขค่าที่ผู้ป่วยบันทึกไว้? ค่าเดิมจะถูกเก็บไว้ในประวัติการแก้ไข',
 
+  // Patient — find a clinician (Thai polish later if needed)
+  'patient.findClinician.entryButton': 'ค้นหาแพทย์ของฉัน',
+  'patient.findClinician.title': 'เชื่อมต่อกับแพทย์',
+  'patient.findClinician.step1Title': 'โรงพยาบาลใด',
+  'patient.findClinician.step2Title': 'เลือกแพทย์ของคุณ',
+  'patient.findClinician.empty': 'ยังไม่มีแพทย์ที่ลงทะเบียนที่โรงพยาบาลนี้',
+  'patient.findClinician.alreadyConnected': 'เชื่อมต่อแล้ว',
+  'patient.findClinician.alreadyPending': 'รอการตอบรับ',
+  'patient.findClinician.confirmTitle': 'ขอเชื่อมต่อ?',
+  'patient.findClinician.confirmSubmit': 'ส่งคำขอ',
+  'patient.findClinician.success': 'ส่งคำขอแล้ว รอ {name} อนุมัติ',
+  'patient.findClinician.error': 'ไม่สามารถส่งคำขอได้ กรุณาลองอีกครั้ง',
+  // Clinician — incoming patient-initiated requests
+  'clinician.incomingRequests.title': 'รอการอนุมัติของคุณ',
+  'clinician.incomingRequests.approve': 'อนุมัติ',
+  'clinician.incomingRequests.decline': 'ปฏิเสธ',
+  'clinician.pendingSection.awaitingPatient': 'รอผู้ป่วยตอบรับ',
+
   // Clinician dashboard
   'clinician.dashboard.title': 'แดชบอร์ดแพทย์',
   'clinician.dashboard.assignedPatients': 'ผู้ป่วยที่ดูแล',

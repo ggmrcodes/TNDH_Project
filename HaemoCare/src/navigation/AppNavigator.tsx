@@ -21,6 +21,7 @@ import ScanTransfusionScreen from '../screens/detail/ScanTransfusionScreen';
 import ImportAppointmentsScreen from '../screens/detail/ImportAppointmentsScreen';
 import IcsImportScreen from '../screens/detail/IcsImportScreen';
 import FhirImportScreen from '../screens/detail/FhirImportScreen';
+import PatientFindClinicianScreen from '../screens/settings/PatientFindClinicianScreen';
 import ClinicianStackNavigator from './ClinicianStackNavigator';
 import PendingVerificationScreen from '../screens/auth/PendingVerificationScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
@@ -150,6 +151,11 @@ export default function AppNavigator() {
         name="FhirImport"
         component={FhirImportScreen}
         options={{ title: t('importAppt.fhir.title') }}
+      />
+      <RootStack.Screen
+        name="PatientFindClinician"
+        component={PatientFindClinicianScreen}
+        options={{ title: t('patient.findClinician.title') }}
       />
     </RootStack.Navigator>
   );

@@ -14,6 +14,7 @@ import CohortOverviewCard from '../../components/clinician/CohortOverviewCard';
 import FilterChips, { FilterId } from '../../components/clinician/FilterChips';
 import PatientQueueRow from '../../components/clinician/PatientQueueRow';
 import PendingPatientRow from '../../components/clinician/PendingPatientRow';
+import IncomingPatientRequestRow from '../../components/clinician/IncomingPatientRequestRow';
 import AddPatientButton from '../../components/clinician/AddPatientButton';
 import AddPatientModal from '../../components/clinician/AddPatientModal';
 import PatientDetailPane from '../../components/clinician/PatientDetailPane';
@@ -50,7 +51,7 @@ export default function ClinicianDashboardScreen() {
   const { t, language } = useLanguage();
   const { isDesktop, isWide } = useResponsive();
   const { hospitals } = useHospitals();
-  const { patients, pendingLinks, loading, refresh: refreshAssigned } = useAssignedPatients();
+  const { patients, pendingLinks, incomingRequests, loading, refresh: refreshAssigned } = useAssignedPatients();
   const [slices, setSlices] = useState<PatientSlice[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterId>(null);
@@ -338,19 +339,39 @@ export default function ClinicianDashboardScreen() {
         contentContainerStyle={{ paddingBottom: SPACING.xs }}
         scrollEnabled={false}
       />
-      {pendingLinks.length > 0 && (
+      {(pendingLinks.length > 0 || incomingRequests.length > 0) && (
         <View style={styles.pendingSection}>
-          <Text style={styles.pendingSectionLabel}>
-            {t('clinician.linkPatient.pendingRowSubtitle' as TranslationKey).toUpperCase()}
-          </Text>
-          {pendingLinks.map(({ link, patientDisplayId }) => (
-            <PendingPatientRow
-              key={link.id}
-              linkId={link.id}
-              patientDisplayId={patientDisplayId}
-              onCancelled={refreshAssigned}
-            />
-          ))}
+          {incomingRequests.length > 0 && (
+            <>
+              <Text style={styles.pendingSectionLabel}>
+                {t('clinician.incomingRequests.title' as TranslationKey).toUpperCase()}
+              </Text>
+              {incomingRequests.map((r) => (
+                <IncomingPatientRequestRow
+                  key={r.link.id}
+                  linkId={r.link.id}
+                  patientDisplayId={r.patientDisplayId}
+                  patientFullName={r.patientFullName}
+                  onResolved={refreshAssigned}
+                />
+              ))}
+            </>
+          )}
+          {pendingLinks.length > 0 && (
+            <>
+              <Text style={styles.pendingSectionLabel}>
+                {t('clinician.pendingSection.awaitingPatient' as TranslationKey).toUpperCase()}
+              </Text>
+              {pendingLinks.map(({ link, patientDisplayId }) => (
+                <PendingPatientRow
+                  key={link.id}
+                  linkId={link.id}
+                  patientDisplayId={patientDisplayId}
+                  onCancelled={refreshAssigned}
+                />
+              ))}
+            </>
+          )}
         </View>
       )}
     </>

@@ -187,6 +187,7 @@ export async function requestPatientLink(
         requested_at: new Date().toISOString(),
         consented_at: null,
         revoked_at: null,
+        initiated_by: 'clinician',
       })
       .eq('id', link.id)
       .select()
@@ -201,6 +202,7 @@ export async function requestPatientLink(
       clinician_id: clinicianId,
       patient_user_id: userId,
       status: 'pending',
+      initiated_by: 'clinician',
     })
     .select()
     .single();
@@ -224,6 +226,7 @@ export async function getPendingPatientLinks(
     .select('*')
     .eq('clinician_id', clinicianId)
     .eq('status', 'pending')
+    .eq('initiated_by', 'clinician')
     .order('requested_at', { ascending: false });
   if (error) throw new Error(error.message);
 
@@ -239,6 +242,58 @@ export async function getPendingPatientLinks(
     })
   );
   return rows;
+}
+
+export interface IncomingPatientRequest {
+  link: ClinicianPatientLink;
+  patientDisplayId: string | null;
+  patientFullName: string | null; // null if share_full_name = false at request time
+}
+
+export async function getIncomingPatientRequests(
+  clinicianId: string
+): Promise<IncomingPatientRequest[]> {
+  const { data: linkRows, error: linkErr } = await supabase
+    .from('clinician_patient_links')
+    .select('*')
+    .eq('clinician_id', clinicianId)
+    .eq('status', 'pending')
+    .eq('initiated_by', 'patient')
+    .order('requested_at', { ascending: false });
+  if (linkErr) throw new Error(linkErr.message);
+  const links = (linkRows ?? []) as ClinicianPatientLink[];
+  if (links.length === 0) return [];
+
+  // Resolve display id only — full name deferred until post-approval RLS allows it
+  const rows = await Promise.all(
+    links.map(async (link) => {
+      const { data: displayId } = await supabase.rpc('get_patient_display_id', {
+        p_user_id: link.patient_user_id,
+      });
+      return {
+        link,
+        patientDisplayId: (displayId as string | null) ?? null,
+        patientFullName: null,
+      };
+    })
+  );
+  return rows;
+}
+
+export async function approveIncomingRequest(linkId: string): Promise<void> {
+  const { error } = await supabase
+    .from('clinician_patient_links')
+    .update({ status: 'active', consented_at: new Date().toISOString() })
+    .eq('id', linkId);
+  if (error) throw new Error(error.message);
+}
+
+export async function declineIncomingRequest(linkId: string): Promise<void> {
+  const { error } = await supabase
+    .from('clinician_patient_links')
+    .update({ status: 'declined' })
+    .eq('id', linkId);
+  if (error) throw new Error(error.message);
 }
 
 // RLS must allow clinician reads on emergency_contacts via clinician_patient_links.

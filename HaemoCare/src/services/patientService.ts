@@ -137,3 +137,70 @@ export async function revokeClinicianLink(linkId: string): Promise<void> {
     .eq('id', linkId);
   if (error) throw new Error(error.message);
 }
+
+export interface CliniciansAtHospital {
+  user_id: string;
+  full_name: string;
+  hospital_id: string;
+}
+
+export async function getCliniciansAtHospital(hospitalId: string): Promise<CliniciansAtHospital[]> {
+  const { data, error } = await supabase
+    .from('clinician_profiles')
+    .select('user_id, full_name, hospital_id')
+    .eq('hospital_id', hospitalId)
+    .eq('verified', true)
+    .order('full_name', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as CliniciansAtHospital[];
+}
+
+export async function requestClinicianLink(
+  clinicianId: string,
+  patientUserId: string,
+  shareFullName: boolean
+): Promise<ClinicianPatientLink> {
+  // Upsert pattern: existing declined/revoked rows get flipped back to pending.
+  const { data: existing } = await supabase
+    .from('clinician_patient_links')
+    .select('*')
+    .eq('clinician_id', clinicianId)
+    .eq('patient_user_id', patientUserId)
+    .maybeSingle();
+
+  if (existing) {
+    const link = existing as ClinicianPatientLink;
+    if (link.status === 'active') throw new Error('ALREADY_ACTIVE');
+    if (link.status === 'pending') throw new Error('ALREADY_PENDING');
+    // declined / revoked / expired → flip back to pending
+    const { data: updated, error: updErr } = await supabase
+      .from('clinician_patient_links')
+      .update({
+        status: 'pending',
+        initiated_by: 'patient',
+        requested_at: new Date().toISOString(),
+        consented_at: null,
+        revoked_at: null,
+        share_full_name: shareFullName,
+      })
+      .eq('id', link.id)
+      .select()
+      .single();
+    if (updErr) throw new Error(updErr.message);
+    return updated as ClinicianPatientLink;
+  }
+
+  const { data: inserted, error: insErr } = await supabase
+    .from('clinician_patient_links')
+    .insert({
+      clinician_id: clinicianId,
+      patient_user_id: patientUserId,
+      status: 'pending',
+      initiated_by: 'patient',
+      share_full_name: shareFullName,
+    })
+    .select()
+    .single();
+  if (insErr) throw new Error(insErr.message);
+  return inserted as ClinicianPatientLink;
+}
