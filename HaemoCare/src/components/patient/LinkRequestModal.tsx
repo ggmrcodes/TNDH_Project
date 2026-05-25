@@ -29,19 +29,20 @@ function formatRequestedAt(iso: string, language: 'en' | 'th'): string {
 export default function LinkRequestModal({ visible, pending, onClose, onAnyResponse }: Props) {
   const { t, language } = useLanguage();
   const { isMockMode } = useAuth();
-  const [index, setIndex] = useState(0);
+  const [respondedIds, setRespondedIds] = useState<Set<string>>(new Set());
   const [shareFullName, setShareFullName] = useState(true);
   const [pendingAction, setPendingAction] = useState<'accept' | 'decline' | null>(null);
 
-  // Reset internal pointer + toggle whenever the modal is re-opened or the
-  // list changes (response from one request shrinks the list).
+  // Reset responded-ID set + toggle whenever the modal is re-opened.
+  // We no longer track an integer index, so pending.length changes don't
+  // require a reset — the filter below handles list shrinkage automatically.
   useEffect(() => {
-    setIndex(0);
+    setRespondedIds(new Set());
     setShareFullName(true);
     setPendingAction(null);
-  }, [visible, pending.length]);
+  }, [visible]);
 
-  const current = pending[index];
+  const current = pending.find(p => !respondedIds.has(p.linkId)) ?? null;
 
   const handleResponse = useCallback(
     async (kind: 'accept' | 'decline') => {
@@ -54,8 +55,12 @@ export default function LinkRequestModal({ visible, pending, onClose, onAnyRespo
         } else {
           await svc.declineLinkRequest(current.linkId);
         }
+        // Mark locally as responded so the UI advances immediately, even before
+        // the parent's refetch returns. Prevents fast double-tap from re-firing
+        // on the same item.
+        setRespondedIds(prev => new Set([...prev, current.linkId]));
+        setShareFullName(true);
         onAnyResponse();
-        // List will shrink on the next refresh; the useEffect above resets index.
       } finally {
         setPendingAction(null);
       }
@@ -92,11 +97,14 @@ export default function LinkRequestModal({ visible, pending, onClose, onAnyRespo
             </View>
           ) : (
             <>
-              {pending.length > 1 && (
-                <Text style={styles.progress}>
-                  {`${index + 1} / ${pending.length}`}
-                </Text>
-              )}
+              {(() => {
+                const totalRemaining = pending.filter(p => !respondedIds.has(p.linkId)).length;
+                return totalRemaining > 1 ? (
+                  <Text style={styles.progress}>
+                    {`${pending.length - totalRemaining + 1} / ${pending.length}`}
+                  </Text>
+                ) : null;
+              })()}
 
               <View style={styles.requestCard}>
                 <View style={styles.avatarBadge}>

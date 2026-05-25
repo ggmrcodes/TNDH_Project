@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../config/theme';
@@ -9,6 +9,7 @@ import { TranslationKey } from '../../i18n';
 import { useConnectedClinicians } from '../../hooks/useConnectedClinicians';
 import * as realService from '../../services/patientService';
 import * as mockService from '../../mock/services';
+import { confirm } from '../../utils/confirm';
 
 export default function ConnectedCliniciansSection() {
   const { t } = useLanguage();
@@ -17,37 +18,22 @@ export default function ConnectedCliniciansSection() {
   const { connected, refresh } = useConnectedClinicians();
 
   const handleRevoke = useCallback(
-    (linkId: string, clinicianName: string) => {
-      const title = t('privacy.connectedClinicians.revokeConfirmTitle' as TranslationKey);
-      const body = t('privacy.connectedClinicians.revokeConfirmBody' as TranslationKey, { name: clinicianName });
-      const doRevoke = async () => {
-        try {
-          const svc = isMockMode ? mockService : realService;
-          await svc.revokeClinicianLink(linkId);
-          refresh();
-        } catch {
-          // Swallow; revoke is non-critical and the list will refresh on next mount.
-        }
-      };
-
-      // react-native-web's Alert.alert is a no-op (see src/exports/Alert/index.js
-      // in the react-native-web package). Fall back to window.confirm so the
-      // web build can still gate the destructive action.
-      if (Platform.OS === 'web') {
-        if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${body}`)) {
-          void doRevoke();
-        }
-        return;
+    async (linkId: string, clinicianName: string) => {
+      const ok = await confirm({
+        title: t('privacy.connectedClinicians.revokeConfirmTitle' as TranslationKey),
+        body: t('privacy.connectedClinicians.revokeConfirmBody' as TranslationKey, { name: clinicianName }),
+        confirmLabel: t('privacy.connectedClinicians.revokeConfirmYes' as TranslationKey),
+        cancelLabel: t('privacy.connectedClinicians.revokeConfirmNo' as TranslationKey),
+        destructive: true,
+      });
+      if (!ok) return;
+      try {
+        const svc = isMockMode ? mockService : realService;
+        await svc.revokeClinicianLink(linkId);
+        refresh();
+      } catch {
+        // Swallow; revoke is non-critical and the list will refresh on next mount.
       }
-
-      Alert.alert(title, body, [
-        { text: t('privacy.connectedClinicians.revokeConfirmNo' as TranslationKey), style: 'cancel' },
-        {
-          text: t('privacy.connectedClinicians.revokeConfirmYes' as TranslationKey),
-          style: 'destructive',
-          onPress: doRevoke,
-        },
-      ]);
     },
     [t, isMockMode, refresh]
   );
