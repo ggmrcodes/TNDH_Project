@@ -34,6 +34,13 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setPdpaConsent: () => Promise<void>;
+  // Password reset flow. sendPasswordResetEmail dispatches the email;
+  // isPasswordRecovery flips true when Supabase fires PASSWORD_RECOVERY
+  // (user landed back here from the email link); updatePassword sets the
+  // new password and clears the recovery flag.
+  sendPasswordResetEmail: (email: string, redirectTo?: string) => Promise<{ error?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ error?: string }>;
+  isPasswordRecovery: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isMockMode, setIsMockMode] = useState(false);
   const [clinicianProfile, setClinicianProfile] = useState<ClinicianProfile | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   const isMockModeRef = useRef(isMockMode);
   useEffect(() => { isMockModeRef.current = isMockMode; }, [isMockMode]);
@@ -112,8 +120,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       if (isMockModeRef.current) return; // Don't let real auth events disturb mock sessions.
+      // PASSWORD_RECOVERY fires when the user lands here from a reset email.
+      // Capture the session but flag the app so AppNavigator routes to the
+      // ResetPasswordScreen instead of the normal post-auth tabs.
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+        setSession(s);
+        setUser(s?.user ?? null);
+        return;
+      }
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
@@ -148,9 +165,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined' || !window.location) return;
     const host = window.location.hostname;
     if (host !== 'localhost' && host !== '127.0.0.1') return;
-    // Allow ?as=patient to sign in as the demo patient instead of clinician,
-    // so post-auth patient flows can be exercised without typing creds.
+    // ?as=patient → mock patient; ?as=none → skip auto-login entirely
+    // (lets the real LoginScreen render for testing pre-auth flows);
+    // default → mock clinician.
     const asRole = new URLSearchParams(window.location.search).get('as');
+    if (asRole === 'none') return;
     setIsMockMode(true);
     if (asRole === 'patient') {
       setUser({ id: MOCK_USER_ID, email: MOCK_EMAIL } as User);
@@ -256,12 +275,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       setSession(null);
       setClinicianProfile(null);
+      setIsPasswordRecovery(false);
       return;
     }
     await supabase.auth.signOut();
     setProfile(null);
     setClinicianProfile(null);
     setIsMockMode(false);
+    setIsPasswordRecovery(false);
+  };
+
+  const sendPasswordResetEmail = async (
+    email: string,
+    redirectTo?: string
+  ): Promise<{ error?: string }> => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      ...(redirectTo ? { redirectTo } : {}),
+    });
+    if (error) return { error: error.message };
+    return {};
+  };
+
+  const updatePassword = async (newPassword: string): Promise<{ error?: string }> => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { error: error.message };
+    setIsPasswordRecovery(false);
+    return {};
   };
 
   return (
@@ -282,6 +321,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         refreshProfile,
         setPdpaConsent,
+        sendPasswordResetEmail,
+        updatePassword,
+        isPasswordRecovery,
       }}
     >
       {children}

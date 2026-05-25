@@ -6,6 +6,7 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
 import RoleSelectScreen from '../screens/auth/RoleSelectScreen';
 import ClinicianSignupScreen from '../screens/auth/ClinicianSignupScreen';
+import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import { COLORS } from '../config/theme';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -23,6 +24,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="RoleSelect" component={RoleSelectScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
       <Stack.Screen name="ClinicianSignup" component={ClinicianSignupScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
     </Stack.Navigator>
   );
 }

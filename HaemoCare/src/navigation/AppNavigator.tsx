@@ -23,17 +23,25 @@ import IcsImportScreen from '../screens/detail/IcsImportScreen';
 import FhirImportScreen from '../screens/detail/FhirImportScreen';
 import ClinicianStackNavigator from './ClinicianStackNavigator';
 import PendingVerificationScreen from '../screens/auth/PendingVerificationScreen';
+import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { COLORS } from '../config/theme';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { user, isLoading, isProfileComplete, isPdpaConsented, role, clinicianProfile } = useAuth();
+  const { user, isLoading, isProfileComplete, isPdpaConsented, role, clinicianProfile, isPasswordRecovery } = useAuth();
   const { t } = useLanguage();
 
   if (isLoading) {
     return <LoadingSpinner />;
+  }
+
+  // Password recovery overrides everything else. Fires when the user
+  // lands here from a Supabase reset email (PASSWORD_RECOVERY event in
+  // AuthContext) — render the reset screen before any auth/role routing.
+  if (isPasswordRecovery) {
+    return <ResetPasswordScreen />;
   }
 
   if (!user) {

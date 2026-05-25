@@ -34,6 +34,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: isWeb ? webStorageAdapter : nativeStorageAdapter,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
+    // Web only: parse `#access_token=...&type=recovery` from the URL when
+    // the user lands here from a Supabase password-reset email. Triggers
+    // the PASSWORD_RECOVERY auth event which AuthContext routes to the
+    // reset screen. No effect on native (URL parsing happens via Linking).
+    detectSessionInUrl: isWeb,
   },
 });
