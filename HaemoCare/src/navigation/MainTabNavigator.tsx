@@ -6,11 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from '../types/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useResponsive } from '../utils/responsive';
+import { usePatientLinkRequests } from '../hooks/usePatientLinkRequests';
 import PassportScreen from '../screens/tabs/PassportScreen';
 import SymptomMonitorScreen from '../screens/tabs/SymptomMonitorScreen';
 import AppointmentsScreen from '../screens/tabs/AppointmentsScreen';
 import TransfusionHistoryScreen from '../screens/tabs/TransfusionHistoryScreen';
 import DesktopSidebar from '../components/common/DesktopSidebar';
+import LinkRequestBanner from '../components/patient/LinkRequestBanner';
+import LinkRequestModal from '../components/patient/LinkRequestModal';
 import { COLORS } from '../config/theme';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -37,6 +40,8 @@ export default function MainTabNavigator() {
   const { t } = useLanguage();
   const { isMobile } = useResponsive();
   const insets = useSafeAreaInsets();
+  const { pending, refresh: refreshPending } = usePatientLinkRequests();
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 
   const tabLabels: Record<string, string> = {
     Passport: t('tab.passport'),
@@ -45,9 +50,28 @@ export default function MainTabNavigator() {
     TransfusionHistory: t('tab.history'),
   };
 
+  // Banner sits above whichever layout we render. Putting it inside the
+  // navigator keeps it visible across every tab without re-mounting.
+  const bannerOverlay = (
+    <>
+      <LinkRequestBanner pending={pending} onPress={() => setIsLinkModalOpen(true)} />
+      <LinkRequestModal
+        visible={isLinkModalOpen}
+        pending={pending}
+        onClose={() => setIsLinkModalOpen(false)}
+        onAnyResponse={refreshPending}
+      />
+    </>
+  );
+
   // Desktop: custom sidebar layout
   if (!isMobile) {
-    return <DesktopTabLayout tabLabels={tabLabels} />;
+    return (
+      <View style={wrapperStyles.root}>
+        {bannerOverlay}
+        <DesktopTabLayout tabLabels={tabLabels} />
+      </View>
+    );
   }
 
   // Honour the system gesture/home-indicator inset so taps in the bottom
@@ -63,7 +87,9 @@ export default function MainTabNavigator() {
 
   // Mobile: standard bottom tabs
   return (
-    <Tab.Navigator
+    <View style={wrapperStyles.root}>
+      {bannerOverlay}
+      <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ focused, color }) => {
@@ -101,9 +127,14 @@ export default function MainTabNavigator() {
       <Tab.Screen name="SymptomMonitor" component={SymptomMonitorScreen} options={{ tabBarLabel: tabLabels.SymptomMonitor }} />
       <Tab.Screen name="Appointments" component={AppointmentsScreen} options={{ tabBarLabel: tabLabels.Appointments }} />
       <Tab.Screen name="TransfusionHistory" component={TransfusionHistoryScreen} options={{ tabBarLabel: tabLabels.TransfusionHistory }} />
-    </Tab.Navigator>
+      </Tab.Navigator>
+    </View>
   );
 }
+
+const wrapperStyles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: COLORS.background },
+});
 
 /** Desktop layout: sidebar on the left, active screen on the right */
 function DesktopTabLayout({ tabLabels }: { tabLabels: Record<string, string> }) {

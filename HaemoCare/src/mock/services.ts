@@ -713,3 +713,42 @@ export async function getPendingPatientLinks(
       patientDisplayId: link.patient_user_id.replace(/^mock-patient-/, '').toUpperCase(),
     }));
 }
+
+// ── Patient-side linking (mock) ───────────────────────────────
+// One pre-seeded pending request from the demo clinician to the demo
+// patient, so opening the patient app in mock mode shows the banner
+// immediately. Accepting or declining removes it.
+
+let mockPatientPending: import('../services/patientService').PendingLinkRequest[] = [
+  {
+    linkId: 'mock-incoming-link-1',
+    clinicianUserId: MOCK_CLINICIAN_PROFILE.user_id,
+    clinicianFullName: MOCK_CLINICIAN_PROFILE.full_name,
+    clinicianHospital: MOCK_CLINICIAN_PROFILE.hospital_affiliation || null,
+    requestedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+  },
+];
+
+export async function getPendingLinkRequests(
+  _userId: string
+): Promise<import('../services/patientService').PendingLinkRequest[]> {
+  return [...mockPatientPending];
+}
+
+export async function acceptLinkRequest(linkId: string, _shareFullName: boolean): Promise<ClinicianPatientLink> {
+  mockPatientPending = mockPatientPending.filter(l => l.linkId !== linkId);
+  return {
+    id: linkId,
+    clinician_id: MOCK_CLINICIAN_PROFILE.user_id,
+    patient_user_id: MOCK_USER_ID,
+    status: 'active',
+    requested_at: new Date().toISOString(),
+    consented_at: new Date().toISOString(),
+    revoked_at: null,
+    share_full_name: _shareFullName,
+  };
+}
+
+export async function declineLinkRequest(linkId: string): Promise<void> {
+  mockPatientPending = mockPatientPending.filter(l => l.linkId !== linkId);
+}

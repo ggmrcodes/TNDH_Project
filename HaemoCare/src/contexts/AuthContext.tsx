@@ -143,10 +143,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined' || !window.location) return;
     const host = window.location.hostname;
     if (host !== 'localhost' && host !== '127.0.0.1') return;
+    // Allow ?as=patient to sign in as the demo patient instead of clinician,
+    // so post-auth patient flows can be exercised without typing creds.
+    const asRole = new URLSearchParams(window.location.search).get('as');
     setIsMockMode(true);
-    setUser({ id: MOCK_CLINICIAN_USER_ID, email: MOCK_CLINICIAN_EMAIL } as User);
-    setClinicianProfile(MOCK_CLINICIAN_PROFILE);
-    setProfile(null);
+    if (asRole === 'patient') {
+      setUser({ id: MOCK_USER_ID, email: MOCK_EMAIL } as User);
+      setProfile({ ...MOCK_PROFILE });
+      setClinicianProfile(null);
+    } else {
+      setUser({ id: MOCK_CLINICIAN_USER_ID, email: MOCK_CLINICIAN_EMAIL } as User);
+      setClinicianProfile(MOCK_CLINICIAN_PROFILE);
+      setProfile(null);
+    }
   }, [isLoading, user, isMockMode]);
 
   const isProfileComplete = !!(profile && profile.full_name.trim().length > 0);
