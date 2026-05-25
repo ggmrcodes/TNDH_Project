@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import { Platform } from 'react-native';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import { Profile } from '../types/database';
@@ -134,7 +135,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // see the real login screen.
   useEffect(() => {
     if (isLoading || user || isMockMode) return;
-    if (typeof window === 'undefined') return;
+    // Native runtimes (iOS/Android/Hermes) expose `window` as a polyfill
+    // global without `.location`, so `typeof window === 'undefined'` is
+    // false and the hostname read below would crash. Gate on
+    // Platform.OS === 'web' first.
+    if (Platform.OS !== 'web') return;
+    if (typeof window === 'undefined' || !window.location) return;
     const host = window.location.hostname;
     if (host !== 'localhost' && host !== '127.0.0.1') return;
     setIsMockMode(true);
