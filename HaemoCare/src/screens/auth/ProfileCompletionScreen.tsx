@@ -8,9 +8,11 @@ import ProfileEditForm from '../../components/passport/ProfileEditForm';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import { Profile } from '../../types/database';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
+import * as realPatientService from '../../services/patientService';
+import * as mockServices from '../../mock/services';
 
 export default function ProfileCompletionScreen() {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, isMockMode } = useAuth();
   const { t } = useLanguage();
   const { isMobile } = useResponsive();
   const [isLoading, setIsLoading] = useState(false);
@@ -32,6 +34,17 @@ export default function ProfileCompletionScreen() {
       setError(message);
     }
     setIsLoading(false);
+  };
+
+  const handleDoctorSelection = async (info: { hospitalId: string; clinicianUserId: string } | null) => {
+    if (!info || !user) return;
+    try {
+      const svc = isMockMode ? mockServices : realPatientService;
+      await svc.requestClinicianLink(info.clinicianUserId, user.id, true);
+    } catch (err) {
+      // Non-blocking — patient can connect later via PassportScreen tile.
+      console.error('Could not create clinician link at signup:', err);
+    }
   };
 
   return (
@@ -56,6 +69,7 @@ export default function ProfileCompletionScreen() {
         ) : null}
         <ProfileEditForm
           onSubmit={handleSubmit}
+          onDoctorSelection={handleDoctorSelection}
           isLoading={isLoading}
           submitLabel={t('profileSetup.complete')}
         />

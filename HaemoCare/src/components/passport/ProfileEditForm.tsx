@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { Profile } from '../../types/database';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
 import {
@@ -14,21 +16,32 @@ import {
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 import DiagnosisPicker from './DiagnosisPicker';
 import ThalassemiaSubtypePicker from './ThalassemiaSubtypePicker';
+import HospitalPicker from '../common/HospitalPicker';
 import type { PrimaryDiagnosis, ThalassemiaSubtype } from '../../types/database';
 import { TranslationKey } from '../../i18n';
+import { CliniciansAtHospital } from '../../services/patientService';
+import * as realService from '../../services/patientService';
+import * as mockService from '../../mock/services';
 
 interface ProfileEditFormProps {
   profile?: Profile | null;
   onSubmit: (data: Partial<Profile>) => void;
   isLoading?: boolean;
   submitLabel?: string;
+  /**
+   * Signup-only: when provided, renders an optional "Connect your doctor"
+   * section. Called AFTER onSubmit resolves successfully. Receives the
+   * selection if both hospital + clinician are picked, otherwise null.
+   */
+  onDoctorSelection?: (info: { hospitalId: string; clinicianUserId: string } | null) => Promise<void>;
 }
 
 const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;
 const RH_FACTORS = ['+', '-'] as const;
 
-export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLabel }: ProfileEditFormProps) {
+export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLabel, onDoctorSelection }: ProfileEditFormProps) {
   const { t } = useLanguage();
+  const { isMockMode } = useAuth();
   const { isMobile } = useResponsive();
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [bloodType, setBloodType] = useState(profile?.blood_type || '');
@@ -50,6 +63,32 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
     profile?.thalassemia_subtype ?? null
   );
 
+  // Doctor section state (only active when onDoctorSelection prop is provided)
+  const [hospitalId, setHospitalId] = useState<string | null>(null);
+  const [selectedClinicianUserId, setSelectedClinicianUserId] = useState<string | null>(null);
+  const [clinicians, setClinicians] = useState<CliniciansAtHospital[]>([]);
+  const [cliniciansLoading, setCliniciansLoading] = useState(false);
+
+  useEffect(() => {
+    if (!onDoctorSelection || !hospitalId) {
+      setClinicians([]);
+      setSelectedClinicianUserId(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setCliniciansLoading(true);
+      try {
+        const svc = isMockMode ? mockService : realService;
+        const list = await svc.getCliniciansAtHospital(hospitalId);
+        if (!cancelled) setClinicians(list);
+      } finally {
+        if (!cancelled) setCliniciansLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [hospitalId, onDoctorSelection, isMockMode]);
+
   const handleDiagnosisChange = (next: PrimaryDiagnosis | null) => {
     setPrimaryDiagnosis(next);
     // Clear subtype if diagnosis is not thalassemia
@@ -70,7 +109,7 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
     setAntibodies(antibodies.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     onSubmit({
       full_name: fullName.trim(),
       blood_type: bloodType as Profile['blood_type'],
@@ -82,6 +121,14 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
       primary_diagnosis: primaryDiagnosis,
       thalassemia_subtype: thalassemiaSubtype,
     });
+    // New: optional doctor selection callback
+    if (onDoctorSelection) {
+      if (hospitalId && selectedClinicianUserId) {
+        await onDoctorSelection({ hospitalId, clinicianUserId: selectedClinicianUserId });
+      } else {
+        await onDoctorSelection(null);
+      }
+    }
   };
 
   const decreaseInterval = () => setIntervalWeeks((w) => clampWeeks(w - 1));
@@ -223,6 +270,47 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
         </TouchableOpacity>
       </View>
       <Text style={styles.hint}>{t('profileSetup.visitIntervalHint')}</Text>
+
+      {onDoctorSelection && (
+        <View style={styles.doctorSection}>
+          <Text style={styles.sectionLabel}>
+            {t('profileSetup.connectDoctor.title' as TranslationKey)}
+          </Text>
+          <Text style={styles.doctorOptional}>
+            {t('profileSetup.connectDoctor.optional' as TranslationKey)}
+          </Text>
+          <HospitalPicker value={hospitalId} onChange={setHospitalId} />
+          {hospitalId && (
+            <View style={{ marginTop: SPACING.md, gap: SPACING.sm }}>
+              {cliniciansLoading && <ActivityIndicator color={COLORS.primary} />}
+              {!cliniciansLoading && clinicians.length === 0 && (
+                <Text style={styles.emptyClinicians}>
+                  {t('profileSetup.connectDoctor.noClinicians' as TranslationKey)}
+                </Text>
+              )}
+              {clinicians.map(c => {
+                const selected = c.user_id === selectedClinicianUserId;
+                return (
+                  <TouchableOpacity
+                    key={c.user_id}
+                    onPress={() => setSelectedClinicianUserId(selected ? null : c.user_id)}
+                    activeOpacity={0.7}
+                    style={[styles.clinicianRow, selected && styles.clinicianRowSelected]}
+                  >
+                    <View style={styles.clinicianAvatar}>
+                      <Feather name="user" size={16} color={COLORS.primary} />
+                    </View>
+                    <Text style={[styles.clinicianName, selected && styles.clinicianNameSelected]} numberOfLines={1}>
+                      {c.full_name || t('clinician.dashboard.title')}
+                    </Text>
+                    {selected && <Feather name="check" size={18} color={COLORS.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      )}
 
       <Button
         label={submitLabel || t('common.save')}
@@ -394,5 +482,51 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
     fontWeight: '600',
+  },
+  doctorSection: {
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.md,
+  },
+  doctorOptional: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginTop: -SPACING.xs,
+    marginBottom: SPACING.sm,
+  },
+  emptyClinicians: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    padding: SPACING.md,
+    textAlign: 'center',
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
+  },
+  clinicianRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.white,
+  },
+  clinicianRowSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
+  },
+  clinicianAvatar: {
+    width: 32, height: 32, borderRadius: 10,
+    backgroundColor: COLORS.primaryLight,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  clinicianName: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  clinicianNameSelected: {
+    color: COLORS.primary,
   },
 });
