@@ -74,6 +74,17 @@ const th: Record<TranslationKey, string> = {
   'profile.subtype.delta_beta_thal': 'เดลตา-เบต้าธาลัสซีเมีย',
   'profile.subtype.hb_lepore_syndrome': 'ฮีโมโกลบินเลพอร์ซินโดรม',
 
+  // Hospital picker (used by clinician signup + patient find-doctor flow)
+  'hospital.picker.title': 'เลือกโรงพยาบาลของคุณ',
+  'hospital.picker.searchPlaceholder': 'ค้นหาโรงพยาบาล...',
+  'hospital.picker.empty': 'ไม่พบโรงพยาบาล',
+  'hospital.region.north': 'ภาคเหนือ',
+  'hospital.region.northeast': 'ภาคอีสาน',
+  'hospital.region.central': 'ภาคกลาง',
+  'hospital.region.south': 'ภาคใต้',
+  'hospital.region.east': 'ภาคตะวันออก',
+  'hospital.region.west': 'ภาคตะวันตก',
+
   // Role select (pre-signup gate)
   'auth.roleSelect.title': 'สร้างบัญชีของคุณ',
   'auth.roleSelect.subtitle': 'คุณจะใช้ HaemoCare อย่างไร?',

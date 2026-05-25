@@ -169,12 +169,23 @@ export type Outcome = 'normal' | 'monitor' | 'urgent';
 
 export type LinkStatus = 'pending' | 'active' | 'declined' | 'revoked' | 'expired';
 
+export interface Hospital {
+  id: string;
+  name_th: string;
+  name_en: string;
+  code: string | null;
+  region: 'north' | 'northeast' | 'central' | 'south' | 'east' | 'west' | null;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface ClinicianProfile {
   id: string;
   user_id: string;
   full_name: string;
   license_number: string;
   hospital_affiliation: string;
+  hospital_id: string | null;
   verified: boolean;
   verified_at: string | null;
   created_at: string;

@@ -24,6 +24,7 @@ import QueueSearchBar from '../../components/clinician/QueueSearchBar';
 import QueueSortSelector, { type SortKey } from '../../components/clinician/QueueSortSelector';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import HeroGradient from '../../components/common/HeroGradient';
+import { useHospitals } from '../../hooks/useHospitals';
 import { computeCohortAlerts, type AlertSlice } from '../../utils/cohortAlerts';
 import { computeOverdueHistory14d, type OverdueHistorySlice } from '../../utils/cohortHistory';
 import { COLORS, SPACING, RADIUS } from '../../config/theme';
@@ -48,6 +49,7 @@ export default function ClinicianDashboardScreen() {
   const { user, signOut, isMockMode } = useAuth();
   const { t, language } = useLanguage();
   const { isDesktop, isWide } = useResponsive();
+  const { hospitals } = useHospitals();
   const { patients, pendingLinks, loading, refresh: refreshAssigned } = useAssignedPatients();
   const [slices, setSlices] = useState<PatientSlice[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -285,7 +287,13 @@ export default function ClinicianDashboardScreen() {
   }
 
   const clinicianName = clinicianProfile?.full_name?.trim() || (t('clinician.signOut' as TranslationKey) && 'Clinician');
-  const hospitalLabel = clinicianProfile?.hospital_affiliation?.trim() || '—';
+  const hospitalFromDirectory = clinicianProfile?.hospital_id
+    ? hospitals.find(h => h.id === clinicianProfile.hospital_id)
+    : null;
+  const hospitalLabel =
+    hospitalFromDirectory?.name_th ??
+    clinicianProfile?.hospital_affiliation?.trim() ??
+    '—';
 
   // Same queue content is rendered inline on desktop and inside the mobile
   // drawer overlay — pulled into a helper to avoid duplicating the tree.

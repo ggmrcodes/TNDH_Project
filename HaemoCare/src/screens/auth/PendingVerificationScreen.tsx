@@ -14,41 +14,57 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 import LanguageToggle from '../../components/common/LanguageToggle';
 import Button from '../../components/common/Button';
+import HospitalPicker from '../../components/common/HospitalPicker';
+import { useHospitals } from '../../hooks/useHospitals';
 import { supabase } from '../../config/supabase';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
 
 export default function PendingVerificationScreen() {
-  const { clinicianProfile, user, signOut, refreshProfile } = useAuth();
+  const { clinicianProfile, user, signOut, refreshProfile, isMockMode } = useAuth();
   const { t } = useLanguage();
   const { isMobile } = useResponsive();
+  const { hospitals } = useHospitals();
 
   const initialLicense = clinicianProfile?.license_number ?? '';
   const initialHospital = clinicianProfile?.hospital_affiliation ?? '';
-  const hasMissing = !initialLicense.trim() || !initialHospital.trim();
+  const hasHospital = !!initialHospital.trim() || !!clinicianProfile?.hospital_id;
+  const hasMissing = !initialLicense.trim() || !hasHospital;
 
   const [isEditing, setIsEditing] = useState(false);
   const [license, setLicense] = useState(initialLicense);
-  const [hospital, setHospital] = useState(initialHospital);
+  const [hospitalId, setHospitalId] = useState<string | null>(clinicianProfile?.hospital_id ?? null);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     if (!user) return;
     setIsSaving(true);
-    const { error } = await supabase
-      .from('clinician_profiles')
-      .update({
-        license_number: license.trim(),
-        hospital_affiliation: hospital.trim(),
-      })
-      .eq('user_id', user.id);
-    setIsSaving(false);
-    if (error) {
-      Alert.alert('', t('auth.pendingVerification.saveFailed'));
-      return;
+    try {
+      const selectedHospital = hospitalId ? hospitals.find(h => h.id === hospitalId) : null;
+      if (isMockMode) {
+        // Mock mode: no real DB write. Just refresh the UI.
+        await refreshProfile();
+        setIsEditing(false);
+        Alert.alert('', t('auth.pendingVerification.saved'));
+        return;
+      }
+      const { error } = await supabase
+        .from('clinician_profiles')
+        .update({
+          license_number: license.trim(),
+          hospital_affiliation: selectedHospital?.name_th ?? initialHospital ?? '',
+          hospital_id: hospitalId,
+        })
+        .eq('user_id', user.id);
+      if (error) {
+        Alert.alert('', t('auth.pendingVerification.saveFailed'));
+        return;
+      }
+      await refreshProfile();
+      setIsEditing(false);
+      Alert.alert('', t('auth.pendingVerification.saved'));
+    } finally {
+      setIsSaving(false);
     }
-    await refreshProfile();
-    setIsEditing(false);
-    Alert.alert('', t('auth.pendingVerification.saved'));
   };
 
   const handleSignOut = () => {
@@ -112,19 +128,14 @@ export default function PendingVerificationScreen() {
               placeholderTextColor={COLORS.textLight}
             />
             <Text style={styles.label}>{t('auth.clinicianSignup.hospital')}</Text>
-            <TextInput
-              style={styles.input}
-              value={hospital}
-              onChangeText={setHospital}
-              placeholderTextColor={COLORS.textLight}
-            />
+            <HospitalPicker value={hospitalId} onChange={setHospitalId} />
             <View style={styles.editButtonRow}>
               <Button
                 label={t('auth.pendingVerification.cancelAdd')}
                 variant="outline"
                 onPress={() => {
                   setLicense(initialLicense);
-                  setHospital(initialHospital);
+                  setHospitalId(clinicianProfile?.hospital_id ?? null);
                   setIsEditing(false);
                 }}
                 style={styles.editButton}

@@ -72,6 +72,17 @@ const en = {
   'profile.subtype.delta_beta_thal': 'δβ-thal',
   'profile.subtype.hb_lepore_syndrome': 'Hb Lepore syndrome',
 
+  // Hospital picker (used by clinician signup + patient find-doctor flow)
+  'hospital.picker.title': 'Select your hospital',
+  'hospital.picker.searchPlaceholder': 'Search hospitals…',
+  'hospital.picker.empty': 'No hospitals found.',
+  'hospital.region.north': 'Northern',
+  'hospital.region.northeast': 'Northeastern',
+  'hospital.region.central': 'Central',
+  'hospital.region.south': 'Southern',
+  'hospital.region.east': 'Eastern',
+  'hospital.region.west': 'Western',
+
   // Role select (pre-signup gate)
   'auth.roleSelect.title': 'Create your account',
   'auth.roleSelect.subtitle': 'How will you use HaemoCare?',

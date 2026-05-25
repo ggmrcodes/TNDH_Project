@@ -30,6 +30,7 @@ interface AuthContextType {
     fullName: string;
     licenseNumber: string;
     hospitalAffiliation: string;
+    hospitalId: string | null;
   }) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -246,6 +247,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fullName: string;
     licenseNumber: string;
     hospitalAffiliation: string;
+    hospitalId: string | null;
   }): Promise<{ error?: string }> => {
     const { data, error } = await supabase.auth.signUp({
       email: input.email,
@@ -269,6 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       full_name: input.fullName,
       license_number: input.licenseNumber,
       hospital_affiliation: input.hospitalAffiliation,
+      hospital_id: input.hospitalId,
       verified: false,
     });
     if (insertError) {

@@ -1,4 +1,4 @@
-import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, MedicationAdherenceEvent, AdherenceEventSource, ClinicianProfile, EmergencyContact, PreTransfusionLabs, TransfusionLabAuditEntry, UrineColor, ClinicianPatientLink } from '../types/database';
+import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, MedicationAdherenceEvent, AdherenceEventSource, ClinicianProfile, EmergencyContact, PreTransfusionLabs, TransfusionLabAuditEntry, UrineColor, ClinicianPatientLink, Hospital } from '../types/database';
 import type { RequestLinkResult, PendingPatientLinkRow } from '../services/clinicianService';
 import { validateLabs } from '../utils/preTransfusionLabs';
 import {
@@ -774,4 +774,39 @@ export async function getConnectedClinicians(
 
 export async function revokeClinicianLink(linkId: string): Promise<void> {
   mockPatientConnected = mockPatientConnected.filter(l => l.linkId !== linkId);
+}
+
+// ── Hospitals (mock) ──────────────────────────────────────────
+const MOCK_HOSPITALS: Hospital[] = [
+  {
+    id: 'mock-hospital-songkla',
+    name_th: 'โรงพยาบาลสงขลานครินทร์',
+    name_en: 'Songklanagarind Hospital',
+    code: 'songklanagarind',
+    region: 'south',
+    is_active: true,
+    created_at: new Date('2026-01-01').toISOString(),
+  },
+  {
+    id: 'mock-hospital-siriraj',
+    name_th: 'โรงพยาบาลศิริราช',
+    name_en: 'Siriraj Hospital',
+    code: 'siriraj',
+    region: 'central',
+    is_active: true,
+    created_at: new Date('2026-01-01').toISOString(),
+  },
+  {
+    id: 'mock-hospital-rama',
+    name_th: 'โรงพยาบาลรามาธิบดี',
+    name_en: 'Ramathibodi Hospital',
+    code: 'ramathibodi',
+    region: 'central',
+    is_active: true,
+    created_at: new Date('2026-01-01').toISOString(),
+  },
+];
+
+export async function getHospitals(): Promise<Hospital[]> {
+  return [...MOCK_HOSPITALS];
 }

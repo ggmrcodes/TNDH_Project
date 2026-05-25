@@ -17,6 +17,7 @@ export const MOCK_CLINICIAN_PROFILE: ClinicianProfile = {
   full_name: 'Dr. Ploy Wattanaporn',
   license_number: '12345-Demo',
   hospital_affiliation: 'Songklanagarind Hospital',
+  hospital_id: 'mock-hospital-songkla',
   verified: true,
   verified_at: '2026-01-15T09:00:00+07:00',
   created_at: '2026-01-15T09:00:00+07:00',

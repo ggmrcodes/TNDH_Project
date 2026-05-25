@@ -17,6 +17,8 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 import Button from '../../components/common/Button';
 import LanguageToggle from '../../components/common/LanguageToggle';
+import HospitalPicker from '../../components/common/HospitalPicker';
+import { useHospitals } from '../../hooks/useHospitals';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
 
 type Props = {
@@ -27,11 +29,12 @@ export default function ClinicianSignupScreen({ navigation }: Props) {
   const { signUpClinician } = useAuth();
   const { t } = useLanguage();
   const { isMobile } = useResponsive();
+  const { hospitals } = useHospitals();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [licenseNumber, setLicenseNumber] = useState('');
-  const [hospital, setHospital] = useState('');
+  const [hospitalId, setHospitalId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,12 +44,14 @@ export default function ClinicianSignupScreen({ navigation }: Props) {
     setError('');
     if (!canSubmit) return;
     setIsLoading(true);
+    const selectedHospital = hospitalId ? hospitals.find(h => h.id === hospitalId) : null;
     const result = await signUpClinician({
       email: email.trim(),
       password,
       fullName: fullName.trim(),
       licenseNumber: licenseNumber.trim(),
-      hospitalAffiliation: hospital.trim(),
+      hospitalAffiliation: selectedHospital?.name_th ?? '',
+      hospitalId,
     });
     setIsLoading(false);
     if (result.error) {
@@ -125,12 +130,7 @@ export default function ClinicianSignupScreen({ navigation }: Props) {
         />
 
         <Text style={styles.label}>{t('auth.clinicianSignup.hospital')}</Text>
-        <TextInput
-          style={styles.input}
-          value={hospital}
-          onChangeText={setHospital}
-          placeholderTextColor={COLORS.textLight}
-        />
+        <HospitalPicker value={hospitalId} onChange={setHospitalId} />
 
         <Button
           label={t('auth.clinicianSignup.submit')}
