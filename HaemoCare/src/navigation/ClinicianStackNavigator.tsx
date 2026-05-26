@@ -6,11 +6,14 @@ import { TranslationKey } from '../i18n';
 import ClinicianDashboardScreen from '../screens/clinician/ClinicianDashboardScreen';
 import ClinicianInboxScreen from '../screens/clinician/ClinicianInboxScreen';
 import ChatThreadScreen from '../screens/chat/ChatThreadScreen';
+import { useChatNotificationRouting } from '../hooks/useChatNotificationRouting';
 
 const Stack = createNativeStackNavigator<ClinicianStackParamList>();
 
 export default function ClinicianStackNavigator() {
   const { t } = useLanguage();
+  // Phase 4: route chat push notification taps to ClinicianInbox.
+  useChatNotificationRouting();
   return (
     <Stack.Navigator
       screenOptions={{
