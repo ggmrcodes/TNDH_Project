@@ -747,6 +747,16 @@ const th: Record<TranslationKey, string> = {
   'admin.approvals.licenseLabel': 'เลขใบอนุญาต',
   'admin.approvals.signedUpAt': 'สมัครเมื่อ {date}',
   'admin.approvals.approved': 'อนุมัติแล้ว',
+
+  // In-app chat (Phase 1)
+  'chat.tab': 'ข้อความ',
+  'chat.title': 'ข้อความ',
+  'chat.empty': 'ยังไม่มีการสนทนา',
+  'chat.noMessages': 'ยังไม่มีข้อความ',
+  'chat.threadEmpty': 'ทักทายเพื่อเริ่มการสนทนา',
+  'chat.composerPlaceholder': 'พิมพ์ข้อความ...',
+  'chat.send': 'ส่ง',
+  'chat.closed': 'การสนทนานี้ปิดแล้ว',
 };
 
 export default th;

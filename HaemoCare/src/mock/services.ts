@@ -1,4 +1,4 @@
-import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, MedicationAdherenceEvent, AdherenceEventSource, ClinicianProfile, EmergencyContact, PreTransfusionLabs, TransfusionLabAuditEntry, UrineColor, ClinicianPatientLink, Hospital } from '../types/database';
+import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, MedicationAdherenceEvent, AdherenceEventSource, ClinicianProfile, EmergencyContact, PreTransfusionLabs, TransfusionLabAuditEntry, UrineColor, ClinicianPatientLink, Hospital, Message, Conversation } from '../types/database';
 import type { RequestLinkResult, PendingPatientLinkRow } from '../services/clinicianService';
 import { validateLabs } from '../utils/preTransfusionLabs';
 import {
@@ -934,4 +934,66 @@ export async function getPendingClinicians(): Promise<import('../types/database'
 
 export async function approveClinician(userId: string): Promise<void> {
   mockPendingClinicians = mockPendingClinicians.filter(c => c.user_id !== userId);
+}
+
+// ── In-app chat (mock) ─────────────────────────────────────────
+// One seeded thread between the demo patient (MOCK_USER_ID) and demo
+// clinician (MOCK_CLINICIAN_PROFILE.user_id). Their link id is synthetic.
+const MOCK_CHAT_LINK_ID = 'mock-chat-link-1';
+let mockMessages: Message[] = [
+  {
+    id: 'mock-msg-1',
+    link_id: MOCK_CHAT_LINK_ID,
+    sender_id: MOCK_CLINICIAN_PROFILE.user_id,
+    body: 'สวัสดีค่ะ คุณรู้สึกอย่างไรบ้างหลังการรับเลือดครั้งล่าสุด?',
+    attachment_path: null,
+    attachment_type: null,
+    created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+  },
+];
+let mockReads: Record<string, string> = {}; // key `${linkId}:${userId}` -> iso
+
+export async function getConversations(
+  userId: string,
+  role: 'patient' | 'clinician'
+): Promise<Conversation[]> {
+  const last = mockMessages[mockMessages.length - 1];
+  const lastRead = mockReads[`${MOCK_CHAT_LINK_ID}:${userId}`];
+  const unread = mockMessages.filter(
+    m => m.sender_id !== userId && (!lastRead || m.created_at > lastRead)
+  ).length;
+  const otherName = role === 'clinician' ? 'สมชาย ทะลังสาง' : MOCK_CLINICIAN_PROFILE.full_name;
+  const otherSub = role === 'clinician' ? 'HC-048291' : (MOCK_CLINICIAN_PROFILE.hospital_affiliation || null);
+  return [{
+    linkId: MOCK_CHAT_LINK_ID,
+    otherPartyUserId: role === 'clinician' ? MOCK_USER_ID : MOCK_CLINICIAN_PROFILE.user_id,
+    otherPartyName: otherName,
+    otherPartySubtitle: otherSub,
+    status: 'active',
+    lastMessage: last?.body ?? null,
+    lastMessageAt: last?.created_at ?? null,
+    unreadCount: unread,
+  }];
+}
+
+export async function getMessages(_linkId: string): Promise<Message[]> {
+  return [...mockMessages];
+}
+
+export async function sendMessage(linkId: string, senderId: string, body: string): Promise<Message> {
+  const msg: Message = {
+    id: `mock-msg-${mockMessages.length + 1}`,
+    link_id: linkId,
+    sender_id: senderId,
+    body: body.trim(),
+    attachment_path: null,
+    attachment_type: null as 'image' | null,
+    created_at: new Date().toISOString(),
+  };
+  mockMessages.push(msg);
+  return msg;
+}
+
+export async function markRead(linkId: string, userId: string): Promise<void> {
+  mockReads[`${linkId}:${userId}`] = new Date().toISOString();
 }

@@ -743,6 +743,16 @@ const en = {
   'admin.approvals.licenseLabel': 'License',
   'admin.approvals.signedUpAt': 'Signed up {date}',
   'admin.approvals.approved': 'Approved',
+
+  // In-app chat (Phase 1)
+  'chat.tab': 'Messages',
+  'chat.title': 'Messages',
+  'chat.empty': 'No conversations yet.',
+  'chat.noMessages': 'No messages yet',
+  'chat.threadEmpty': 'Say hello to start the conversation.',
+  'chat.composerPlaceholder': 'Type a message…',
+  'chat.send': 'Send',
+  'chat.closed': 'This conversation is closed.',
 } as const;
 
 export default en;

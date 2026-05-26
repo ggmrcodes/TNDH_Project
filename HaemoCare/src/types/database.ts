@@ -212,6 +212,27 @@ export interface ClinicianPatientLink {
   share_full_name: boolean;
 }
 
+export interface Message {
+  id: string;
+  link_id: string;
+  sender_id: string;
+  body: string | null;
+  attachment_path: string | null;
+  attachment_type: 'image' | null;
+  created_at: string;
+}
+
+export interface Conversation {
+  linkId: string;
+  otherPartyUserId: string;
+  otherPartyName: string;
+  otherPartySubtitle: string | null;
+  status: LinkStatus;
+  lastMessage: string | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+}
+
 // ============================================================================
 // PRE-TRANSFUSION LABS (added 2026-05-17)
 // ----------------------------------------------------------------------------

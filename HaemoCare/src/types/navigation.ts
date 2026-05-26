@@ -13,10 +13,13 @@ export type MainTabParamList = {
   SymptomMonitor: undefined;
   Appointments: undefined;
   TransfusionHistory: undefined;
+  Messages: undefined;
 };
 
 export type ClinicianStackParamList = {
   ClinicianDashboard: undefined;
+  ClinicianInbox: undefined;
+  ChatThread: { linkId: string; otherPartyName: string; status: import('./database').LinkStatus };
 };
 
 export type RootStackParamList = {
@@ -36,4 +39,5 @@ export type RootStackParamList = {
   FhirImport: undefined;
   EmergencyContacts: undefined;
   PatientFindClinician: undefined;
+  ChatThread: { linkId: string; otherPartyName: string; status: import('./database').LinkStatus };
 };

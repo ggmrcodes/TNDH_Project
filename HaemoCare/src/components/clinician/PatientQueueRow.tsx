@@ -14,6 +14,7 @@ export interface PatientQueueRowProps {
   bumpTiers: 0 | 1 | 2;
   worstRecentOutcome: Outcome;
   hasReactionOnFile: boolean;
+  unreadCount?: number;
   onPress: () => void;
 }
 
@@ -27,7 +28,7 @@ export default function PatientQueueRow(props: PatientQueueRowProps) {
   const {
     patientId, displayName, isSelected,
     isOverdue, daysOverdue, bumpTiers,
-    worstRecentOutcome, hasReactionOnFile, onPress,
+    worstRecentOutcome, hasReactionOnFile, unreadCount, onPress,
   } = props;
 
   return (
@@ -51,6 +52,11 @@ export default function PatientQueueRow(props: PatientQueueRowProps) {
           )}
         </View>
       </View>
+      {!!unreadCount && unreadCount > 0 && (
+        <View style={styles.unreadBadge}>
+          <Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -72,4 +78,18 @@ const styles = StyleSheet.create({
   bottomLine: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   name: { flex: 1, fontSize: 13, fontWeight: '700', color: COLORS.text },
   id: { fontSize: 11, color: COLORS.textLight },
+  unreadBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  unreadBadgeText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: '800',
+  },
 });

@@ -22,6 +22,7 @@ import ImportAppointmentsScreen from '../screens/detail/ImportAppointmentsScreen
 import IcsImportScreen from '../screens/detail/IcsImportScreen';
 import FhirImportScreen from '../screens/detail/FhirImportScreen';
 import PatientFindClinicianScreen from '../screens/settings/PatientFindClinicianScreen';
+import ChatThreadScreen from '../screens/chat/ChatThreadScreen';
 import ClinicianStackNavigator from './ClinicianStackNavigator';
 import PendingVerificationScreen from '../screens/auth/PendingVerificationScreen';
 import AdminScreen from '../screens/admin/AdminScreen';
@@ -161,6 +162,11 @@ export default function AppNavigator() {
         name="PatientFindClinician"
         component={PatientFindClinicianScreen}
         options={{ title: t('patient.findClinician.title') }}
+      />
+      <RootStack.Screen
+        name="ChatThread"
+        component={ChatThreadScreen}
+        options={{ headerShown: true }}
       />
     </RootStack.Navigator>
   );

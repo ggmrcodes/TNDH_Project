@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useResponsive } from '../../utils/responsive';
+import { useConversations } from '../../hooks/useConversations';
 import { useAssignedPatients } from '../../hooks/useAssignedPatients';
 import { computeOverdueState, OverdueState } from '../../utils/overdueVisit';
 import { sortTriageDescending, type TriageInput } from '../../utils/triageQueue';
@@ -51,6 +53,8 @@ export default function ClinicianDashboardScreen() {
   const { t, language } = useLanguage();
   const { isDesktop, isWide } = useResponsive();
   const { hospitals } = useHospitals();
+  const navigation = useNavigation<any>();
+  const { conversations, totalUnread } = useConversations();
   const { patients, pendingLinks, incomingRequests, loading, refresh: refreshAssigned } = useAssignedPatients();
   const [slices, setSlices] = useState<PatientSlice[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -236,6 +240,12 @@ export default function ClinicianDashboardScreen() {
     return computeOverdueHistory14d(historySlices, new Date());
   }, [slices]);
 
+  const unreadByPatient = useMemo(() => {
+    const m = new Map<string, number>();
+    conversations.forEach(c => { if (c.unreadCount > 0) m.set(c.otherPartyUserId, c.unreadCount); });
+    return m;
+  }, [conversations]);
+
   const renderRow = useCallback(({ item }: { item: PatientSlice }) => {
     const isOverdue = item.overdueState.isOverdue;
     const daysOverdue = isOverdue ? item.overdueState.daysOverdue : 0;
@@ -250,10 +260,11 @@ export default function ClinicianDashboardScreen() {
         bumpTiers={bumpTiers as 0 | 1 | 2}
         worstRecentOutcome={item.worstRecentOutcome}
         hasReactionOnFile={item.hasReactionOnFile}
+        unreadCount={unreadByPatient.get(item.profile.user_id) ?? 0}
         onPress={() => handleSelectPatient(item.profile.user_id)}
       />
     );
-  }, [selectedId, handleSelectPatient]);
+  }, [selectedId, handleSelectPatient, unreadByPatient]);
 
   const handleSignOut = async () => {
     const ok = await confirm({
@@ -382,6 +393,20 @@ export default function ClinicianDashboardScreen() {
       <View style={styles.topBar}>
         <Text style={styles.brand}>HaemoCare</Text>
         <View style={styles.topBarActions}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ClinicianInbox')}
+            style={styles.inboxBtn}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={t('chat.title' as TranslationKey)}
+          >
+            <Feather name="message-circle" size={18} color={COLORS.primary} />
+            {totalUnread > 0 && (
+              <View style={styles.inboxBadge}>
+                <Text style={styles.inboxBadgeText}>{totalUnread}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSignOut}
             style={styles.signOutBtn}
@@ -555,6 +580,18 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.statusUrgent,
     justifyContent: 'center', alignItems: 'center',
   },
+  inboxBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    justifyContent: 'center', alignItems: 'center',
+    position: 'relative',
+  },
+  inboxBadge: {
+    position: 'absolute', top: 0, right: 0,
+    minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 3,
+    backgroundColor: COLORS.accent,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  inboxBadgeText: { color: COLORS.white, fontSize: 10, fontWeight: '800' },
 
   // Teal-gradient hero — parallel to patient PassportScreen hero
   hero: {

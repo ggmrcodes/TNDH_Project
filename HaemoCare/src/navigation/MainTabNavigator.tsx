@@ -7,14 +7,17 @@ import { MainTabParamList } from '../types/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useResponsive } from '../utils/responsive';
 import { usePatientLinkRequests } from '../hooks/usePatientLinkRequests';
+import { useConversations } from '../hooks/useConversations';
 import PassportScreen from '../screens/tabs/PassportScreen';
 import SymptomMonitorScreen from '../screens/tabs/SymptomMonitorScreen';
 import AppointmentsScreen from '../screens/tabs/AppointmentsScreen';
 import TransfusionHistoryScreen from '../screens/tabs/TransfusionHistoryScreen';
+import MessagesScreen from '../screens/tabs/MessagesScreen';
 import DesktopSidebar from '../components/common/DesktopSidebar';
 import LinkRequestBanner from '../components/patient/LinkRequestBanner';
 import LinkRequestModal from '../components/patient/LinkRequestModal';
 import { COLORS } from '../config/theme';
+import { TranslationKey } from '../i18n';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -23,6 +26,7 @@ const TAB_ICONS: Record<string, string> = {
   SymptomMonitor: 'heart',
   Appointments: 'calendar',
   TransfusionHistory: 'droplet',
+  Messages: 'message-circle',
 };
 
 const SCREENS: Record<string, React.ComponentType<any>> = {
@@ -30,6 +34,7 @@ const SCREENS: Record<string, React.ComponentType<any>> = {
   SymptomMonitor: SymptomMonitorScreen,
   Appointments: AppointmentsScreen,
   TransfusionHistory: TransfusionHistoryScreen,
+  Messages: MessagesScreen,
 };
 
 /**
@@ -41,6 +46,7 @@ export default function MainTabNavigator() {
   const { isMobile } = useResponsive();
   const insets = useSafeAreaInsets();
   const { pending, refresh: refreshPending } = usePatientLinkRequests();
+  const { totalUnread } = useConversations();
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
 
   const tabLabels: Record<string, string> = {
@@ -48,6 +54,7 @@ export default function MainTabNavigator() {
     SymptomMonitor: t('tab.log'),
     Appointments: t('tab.appointments'),
     TransfusionHistory: t('tab.history'),
+    Messages: t('chat.tab' as TranslationKey),
   };
 
   // Banner sits above whichever layout we render. Putting it inside the
@@ -127,6 +134,7 @@ export default function MainTabNavigator() {
       <Tab.Screen name="SymptomMonitor" component={SymptomMonitorScreen} options={{ tabBarLabel: tabLabels.SymptomMonitor }} />
       <Tab.Screen name="Appointments" component={AppointmentsScreen} options={{ tabBarLabel: tabLabels.Appointments }} />
       <Tab.Screen name="TransfusionHistory" component={TransfusionHistoryScreen} options={{ tabBarLabel: tabLabels.TransfusionHistory }} />
+      <Tab.Screen name="Messages" component={MessagesScreen} options={{ tabBarLabel: tabLabels.Messages, tabBarBadge: totalUnread > 0 ? totalUnread : undefined }} />
       </Tab.Navigator>
     </View>
   );

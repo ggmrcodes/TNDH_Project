@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { name: 'SymptomMonitor', icon: 'heart' },
   { name: 'Appointments', icon: 'calendar' },
   { name: 'TransfusionHistory', icon: 'droplet' },
+  { name: 'Messages', icon: 'message-circle' },
 ];
 
 export default function DesktopSidebar({ activeTab, onTabPress, tabLabels }: DesktopSidebarProps) {
