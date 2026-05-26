@@ -120,12 +120,34 @@ export async function getMessages(linkId: string): Promise<Message[]> {
   return (data ?? []) as Message[];
 }
 
-export async function sendMessage(linkId: string, senderId: string, body: string): Promise<Message> {
-  const { data, error } = await supabase
-    .from('messages')
-    .insert({ link_id: linkId, sender_id: senderId, body: body.trim() })
-    .select()
-    .single();
+const CHAT_BUCKET = 'chat-attachments';
+
+export async function uploadChatImage(linkId: string, fileBlob: Blob): Promise<string> {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const path = `${linkId}/${stamp}.jpg`;
+  const { error } = await supabase.storage.from(CHAT_BUCKET).upload(path, fileBlob, { contentType: 'image/jpeg', upsert: false });
+  if (error) throw new Error(error.message);
+  return path;
+}
+
+export async function getChatImageSignedUrl(path: string, expiresInSeconds = 3600): Promise<string | null> {
+  const { data, error } = await supabase.storage.from(CHAT_BUCKET).createSignedUrl(path, expiresInSeconds);
+  if (error) return null;
+  return data?.signedUrl ?? null;
+}
+
+export async function deleteChatImage(path: string): Promise<void> {
+  await supabase.storage.from(CHAT_BUCKET).remove([path]);
+}
+
+export async function sendMessage(
+  linkId: string, senderId: string, body: string,
+  attachment?: { path: string; type: 'image' }
+): Promise<Message> {
+  const insert: Record<string, unknown> = { link_id: linkId, sender_id: senderId };
+  if (body.trim()) insert.body = body.trim();
+  if (attachment) { insert.attachment_path = attachment.path; insert.attachment_type = attachment.type; }
+  const { data, error } = await supabase.from('messages').insert(insert).select().single();
   if (error) throw new Error(error.message);
   return data as Message;
 }

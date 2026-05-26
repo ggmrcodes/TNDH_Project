@@ -16,10 +16,18 @@
  *    of using DailyTriggerInput / WeeklyTriggerInput. This keeps payloads
  *    addressable (one identifier per dose) so editing/deleting a med can
  *    cancel exactly the right notifications.
+ *
+ * Push token registration (Phase 4):
+ *  - registerPushToken() upserts an Expo push token into push_tokens for
+ *    both patient and clinician roles. It is safe on web (returns early),
+ *    on simulators (getExpoPushTokenAsync returns null gracefully), and
+ *    when permission is denied. All failures are non-fatal (console.warn).
  */
 
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+import { supabase } from '../config/supabase';
 import {
   AndroidImportance,
   SchedulableTriggerInputTypes,
@@ -344,4 +352,43 @@ export async function rehydrateFromSchedule(
  */
 export async function cancelAll(): Promise<void> {
   await cancelAllMedicationReminders();
+}
+
+/**
+ * Registers the device's Expo push token in the push_tokens table for
+ * the given user. Safe to call for both patient and clinician roles.
+ *
+ * Guards:
+ *  - Web: returns immediately (Expo push tokens don't exist on web).
+ *  - No EAS projectId in app config: returns silently.
+ *  - Permission denied: returns without upsert.
+ *  - Simulator / no push entitlement: getExpoPushTokenAsync may throw;
+ *    the outer try/catch swallows and warns — non-fatal.
+ */
+export async function registerPushToken(userId: string): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    const granted = await requestPermission();
+    if (!granted) return;
+    const projectId =
+      (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)
+        ?.eas?.projectId ??
+      (Constants.easConfig as { projectId?: string } | undefined)?.projectId;
+    if (!projectId) return;
+    const tokenResult = await Notifications.getExpoPushTokenAsync({ projectId });
+    const token = tokenResult?.data;
+    if (!token) return;
+    await supabase.from('push_tokens').upsert(
+      {
+        user_id: userId,
+        token,
+        platform: Platform.OS,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'token' }
+    );
+  } catch (e) {
+    // Non-fatal — push is best-effort.
+    console.warn('push token registration failed', e);
+  }
 }

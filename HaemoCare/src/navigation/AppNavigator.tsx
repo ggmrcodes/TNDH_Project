@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { usePushRegistration } from '../hooks/usePushRegistration';
 import AuthNavigator from './AuthNavigator';
 import MainTabNavigator from './MainTabNavigator';
 import PDPAConsentScreen from '../screens/auth/PDPAConsentScreen';
@@ -35,6 +36,9 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 export default function AppNavigator() {
   const { user, isLoading, isProfileComplete, isPdpaConsented, role, clinicianProfile, isPasswordRecovery, isAdmin } = useAuth();
   const { t } = useLanguage();
+  // Phase 4: register Expo push token for all authenticated roles.
+  // No-ops on web, mock mode, and when user is null.
+  usePushRegistration();
 
   if (isLoading) {
     return <LoadingSpinner />;

@@ -757,6 +757,10 @@ const th: Record<TranslationKey, string> = {
   'chat.composerPlaceholder': 'พิมพ์ข้อความ...',
   'chat.send': 'ส่ง',
   'chat.closed': 'การสนทนานี้ปิดแล้ว',
+  'chat.attachImage': 'แนบรูปภาพ',
+  'chat.uploading': 'กำลังอัปโหลด...',
+  'chat.photo': 'รูปภาพ',
+  'chat.uploadError': 'ไม่สามารถส่งรูปภาพได้ ลองอีกครั้ง',
 };
 
 export default th;

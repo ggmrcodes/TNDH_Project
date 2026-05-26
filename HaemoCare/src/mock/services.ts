@@ -980,14 +980,27 @@ export async function getMessages(_linkId: string): Promise<Message[]> {
   return [...mockMessages];
 }
 
-export async function sendMessage(linkId: string, senderId: string, body: string): Promise<Message> {
+export async function uploadChatImage(_linkId: string, _blob: Blob): Promise<string> {
+  return `mock-chat-img-${Date.now()}.jpg`;
+}
+
+export async function getChatImageSignedUrl(path: string): Promise<string | null> {
+  return path;
+}
+
+export async function deleteChatImage(_path: string): Promise<void> { /* no-op in mock */ }
+
+export async function sendMessage(
+  linkId: string, senderId: string, body: string,
+  attachment?: { path: string; type: 'image' }
+): Promise<Message> {
   const msg: Message = {
     id: `mock-msg-${mockMessages.length + 1}`,
     link_id: linkId,
     sender_id: senderId,
-    body: body.trim(),
-    attachment_path: null,
-    attachment_type: null as 'image' | null,
+    body: body.trim() || null,
+    attachment_path: attachment?.path ?? null,
+    attachment_type: attachment?.type ?? null,
     created_at: new Date().toISOString(),
   };
   mockMessages.push(msg);

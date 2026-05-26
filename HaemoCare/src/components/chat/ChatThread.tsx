@@ -1,30 +1,123 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { COLORS, SPACING, RADIUS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThread } from '../../hooks/useThread';
 import { TranslationKey } from '../../i18n';
 import type { LinkStatus } from '../../types/database';
+import * as realService from '../../services/chatService';
+import * as mockService from '../../mock/services';
 
 interface Props {
   linkId: string;
   status: LinkStatus;
 }
 
+// ── ChatImage sub-component ────────────────────────────────────
+// Resolves a signed URL on mount and renders the image with a loading placeholder.
+interface ChatImageProps {
+  path: string;
+  isMockMode: boolean;
+}
+
+function ChatImage({ path, isMockMode }: ChatImageProps) {
+  const [uri, setUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const svc = isMockMode ? mockService : realService;
+      const url = await svc.getChatImageSignedUrl(path);
+      if (!cancelled) setUri(url);
+    })();
+    return () => { cancelled = true; };
+  }, [path, isMockMode]);
+
+  if (!uri) {
+    return (
+      <View style={imgStyles.placeholder}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={{ uri }}
+      style={imgStyles.image}
+      resizeMode="cover"
+    />
+  );
+}
+
+const imgStyles = StyleSheet.create({
+  image: { width: 200, height: 200, borderRadius: RADIUS.md, marginBottom: SPACING.xs },
+  placeholder: {
+    width: 200, height: 200, borderRadius: RADIUS.md,
+    backgroundColor: COLORS.borderLight, justifyContent: 'center', alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+});
+
+// ── ChatThread ─────────────────────────────────────────────────
+
 export default function ChatThread({ linkId, status }: Props) {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
+  const { user, isMockMode } = useAuth();
   const { messages, loading, sending, send } = useThread(linkId);
   const [draft, setDraft] = useState('');
+  const [uploading, setUploading] = useState(false);
   const isActive = status === 'active';
+  const composerDisabled = sending || uploading;
 
   const handleSend = async () => {
     const body = draft.trim();
     if (!body) return;
     setDraft('');
     await send(body);
+  };
+
+  const handleAttach = async () => {
+    if (Platform.OS !== 'web') {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(t('chat.uploadError' as TranslationKey));
+        return;
+      }
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+    });
+    if (result.canceled || !result.assets || result.assets.length === 0) return;
+    const asset = result.assets[0];
+
+    const svc = isMockMode ? mockService : realService;
+    let uploadedPath: string | null = null;
+    setUploading(true);
+    try {
+      // Resize to max 1200px wide, compress to 0.8 JPEG.
+      const needsResize = (asset.width ?? 0) > 1200;
+      const manipulated = await ImageManipulator.manipulateAsync(
+        asset.uri,
+        needsResize ? [{ resize: { width: 1200 } }] : [],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      const response = await fetch(manipulated.uri);
+      const blob = await response.blob();
+
+      uploadedPath = await svc.uploadChatImage(linkId, blob);
+      await send('', { path: uploadedPath, type: 'image' });
+    } catch (err) {
+      if (uploadedPath) { await svc.deleteChatImage(uploadedPath).catch(() => {}); }
+      Alert.alert(t('chat.uploadError' as TranslationKey));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const fmtTime = (iso: string) => {
@@ -52,6 +145,9 @@ export default function ChatThread({ linkId, status }: Props) {
             return (
               <View style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowOther]}>
                 <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
+                  {item.attachment_path && item.attachment_type === 'image' ? (
+                    <ChatImage path={item.attachment_path} isMockMode={isMockMode} />
+                  ) : null}
                   {item.body ? (
                     <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{item.body}</Text>
                   ) : null}
@@ -66,6 +162,18 @@ export default function ChatThread({ linkId, status }: Props) {
 
       {isActive ? (
         <View style={styles.composer}>
+          <TouchableOpacity
+            onPress={handleAttach}
+            disabled={composerDisabled}
+            style={[styles.attachBtn, composerDisabled && styles.attachBtnDisabled]}
+            accessibilityRole="button"
+            accessibilityLabel={t('chat.attachImage' as TranslationKey)}
+          >
+            {uploading
+              ? <ActivityIndicator size="small" color={COLORS.primary} />
+              : <Feather name="image" size={22} color={composerDisabled ? COLORS.textLight : COLORS.primary} />
+            }
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             value={draft}
@@ -73,12 +181,12 @@ export default function ChatThread({ linkId, status }: Props) {
             placeholder={t('chat.composerPlaceholder' as TranslationKey)}
             placeholderTextColor={COLORS.textLight}
             multiline
-            editable={!sending}
+            editable={!composerDisabled}
           />
           <TouchableOpacity
             onPress={handleSend}
-            disabled={!draft.trim() || sending}
-            style={[styles.sendBtn, (!draft.trim() || sending) && styles.sendBtnDisabled]}
+            disabled={!draft.trim() || composerDisabled}
+            style={[styles.sendBtn, (!draft.trim() || composerDisabled) && styles.sendBtnDisabled]}
             accessibilityRole="button"
             accessibilityLabel={t('chat.send' as TranslationKey)}
           >
@@ -113,6 +221,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm,
     padding: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.borderLight, backgroundColor: COLORS.surface,
   },
+  attachBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  attachBtnDisabled: { opacity: 0.4 },
   input: {
     flex: 1, maxHeight: 120, minHeight: 40, borderWidth: 1, borderColor: COLORS.border,
     borderRadius: RADIUS.lg, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,

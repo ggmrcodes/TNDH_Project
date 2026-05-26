@@ -19,7 +19,6 @@ import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import * as notificationsService from '../services/notifications';
@@ -29,7 +28,6 @@ import {
   SchedulableTriggerInputTypes,
 } from 'expo-notifications';
 import type { MedicationReminder, AdherenceEventSource } from '../types/database';
-import type { RootStackParamList } from '../types/navigation';
 import type { TranslationKey } from '../i18n';
 
 const SNOOZE_MIN = 10;
@@ -40,7 +38,7 @@ const askedThisSession = new Set<string>();
 export default function NotificationGate() {
   const { user, role, isMockMode } = useAuth();
   const { t, language } = useLanguage();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<any>();
   const didInitForUserRef = useRef<string | null>(null);
   // Latest language ref so the tap-handler always builds strings in the
   // user's current language without re-subscribing.
@@ -115,8 +113,21 @@ export default function NotificationGate() {
     if (!user || role !== 'patient') return;
     const sub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as
-        | { kind?: string; reminderId?: string; medicationName?: string; time?: string }
+        | { kind?: string; reminderId?: string; medicationName?: string; time?: string; type?: string; linkId?: string }
         | undefined;
+
+      // Phase 4 — chat push notification tap: route patient to Messages tab.
+      // v1 routes to the inbox; direct-to-thread (requires otherPartyName + status
+      // from a DB fetch) is a future refinement.
+      if (data?.type === 'chat') {
+        try {
+          navigation.navigate('MainTabs', { screen: 'Messages' });
+        } catch (err) {
+          console.warn('navigate to Messages tab failed:', err);
+        }
+        return;
+      }
+
       if (data?.kind !== 'medication-reminder' || !data.reminderId) return;
 
       // Navigate to MedicationRemindersScreen. The screen re-loads on focus
