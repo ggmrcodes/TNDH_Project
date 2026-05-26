@@ -8,6 +8,11 @@ import type { Hospital } from '../types/database';
 let cachedMockHospitals: Hospital[] | null = null;
 let cachedRealHospitals: Hospital[] | null = null;
 
+export function invalidateHospitalsCache(): void {
+  cachedMockHospitals = null;
+  cachedRealHospitals = null;
+}
+
 export interface UseHospitalsResult {
   hospitals: Hospital[];
   loading: boolean;

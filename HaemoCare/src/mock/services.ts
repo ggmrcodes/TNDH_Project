@@ -813,6 +813,28 @@ export async function getHospitals(): Promise<Hospital[]> {
   return [...MOCK_HOSPITALS];
 }
 
+let mockHospitalIdCounter = 1;
+
+export async function createOrGetHospital(name: string): Promise<string> {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error('hospital name required');
+  const existing = MOCK_HOSPITALS.find(
+    h => h.name_th.toLowerCase() === trimmed.toLowerCase()
+  );
+  if (existing) return existing.id;
+  const id = `mock-hospital-other-${mockHospitalIdCounter++}`;
+  MOCK_HOSPITALS.push({
+    id,
+    name_th: trimmed,
+    name_en: trimmed,
+    code: null,
+    region: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
+  });
+  return id;
+}
+
 // ── Patient-initiated linking (mock, clinician side) ─────────
 // Seeded: one incoming request from a mock patient to the demo clinician,
 // so the clinician dashboard demo shows the "Awaiting your approval" row.
