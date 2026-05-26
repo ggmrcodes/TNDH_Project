@@ -9,7 +9,7 @@ export interface UseThreadResult {
   messages: Message[];
   loading: boolean;
   sending: boolean;
-  send: (body: string) => Promise<void>;
+  send: (body: string, attachment?: { path: string; type: 'image' }) => Promise<void>;
   refresh: () => void;
 }
 
@@ -61,12 +61,12 @@ export function useThread(linkId: string): UseThreadResult {
     return () => { cancelled = true; if (channel) supabase.removeChannel(channel); };
   }, [linkId, userId, isMockMode, refresh]);
 
-  const send = useCallback(async (body: string) => {
-    if (!userId || !body.trim()) return;
+  const send = useCallback(async (body: string, attachment?: { path: string; type: 'image' }) => {
+    if (!userId || (!body.trim() && !attachment)) return;
     setSending(true);
     try {
       const svc = isMockMode ? mockService : realService;
-      const msg = await svc.sendMessage(linkId, userId, body);
+      const msg = await svc.sendMessage(linkId, userId, body, attachment);
       setMessages(prev => [...prev, msg]);
     } finally {
       setSending(false);

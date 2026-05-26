@@ -753,6 +753,10 @@ const en = {
   'chat.composerPlaceholder': 'Type a message…',
   'chat.send': 'Send',
   'chat.closed': 'This conversation is closed.',
+  'chat.attachImage': 'Attach photo',
+  'chat.uploading': 'Uploading…',
+  'chat.photo': 'Photo',
+  'chat.uploadError': 'Could not send the photo. Try again.',
 } as const;
 
 export default en;
