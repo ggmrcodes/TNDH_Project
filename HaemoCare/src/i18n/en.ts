@@ -734,6 +734,15 @@ const en = {
   'labTrends.window.6mo': '6 mo',
   'labTrends.window.1y': '1 yr',
   'labTrends.window.all': 'All',
+
+  // Admin approval workflow
+  'admin.title': 'Approvals',
+  'admin.subtitle': 'Doctors waiting for verification',
+  'admin.approvals.empty': 'No pending approvals.',
+  'admin.approvals.approve': 'Approve',
+  'admin.approvals.licenseLabel': 'License',
+  'admin.approvals.signedUpAt': 'Signed up {date}',
+  'admin.approvals.approved': 'Approved',
 } as const;
 
 export default en;

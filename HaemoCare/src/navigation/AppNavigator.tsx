@@ -24,6 +24,7 @@ import FhirImportScreen from '../screens/detail/FhirImportScreen';
 import PatientFindClinicianScreen from '../screens/settings/PatientFindClinicianScreen';
 import ClinicianStackNavigator from './ClinicianStackNavigator';
 import PendingVerificationScreen from '../screens/auth/PendingVerificationScreen';
+import AdminScreen from '../screens/admin/AdminScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import { COLORS } from '../config/theme';
@@ -31,7 +32,7 @@ import { COLORS } from '../config/theme';
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { user, isLoading, isProfileComplete, isPdpaConsented, role, clinicianProfile, isPasswordRecovery } = useAuth();
+  const { user, isLoading, isProfileComplete, isPdpaConsented, role, clinicianProfile, isPasswordRecovery, isAdmin } = useAuth();
   const { t } = useLanguage();
 
   if (isLoading) {
@@ -47,6 +48,10 @@ export default function AppNavigator() {
 
   if (!user) {
     return <AuthNavigator />;
+  }
+
+  if (isAdmin) {
+    return <AdminScreen />;
   }
 
   if (role === 'clinician') {

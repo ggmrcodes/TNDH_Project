@@ -738,6 +738,15 @@ const th: Record<TranslationKey, string> = {
   'labTrends.window.6mo': '6 เดือน',
   'labTrends.window.1y': '1 ปี',
   'labTrends.window.all': 'ทั้งหมด',
+
+  // Admin approval workflow
+  'admin.title': 'การอนุมัติ',
+  'admin.subtitle': 'แพทย์ที่รอการยืนยัน',
+  'admin.approvals.empty': 'ไม่มีรายการรออนุมัติ',
+  'admin.approvals.approve': 'อนุมัติ',
+  'admin.approvals.licenseLabel': 'เลขใบอนุญาต',
+  'admin.approvals.signedUpAt': 'สมัครเมื่อ {date}',
+  'admin.approvals.approved': 'อนุมัติแล้ว',
 };
 
 export default th;

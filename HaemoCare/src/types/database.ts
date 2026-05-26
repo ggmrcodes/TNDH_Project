@@ -191,6 +191,15 @@ export interface ClinicianProfile {
   created_at: string;
 }
 
+export interface PendingClinician {
+  user_id: string;
+  full_name: string;
+  license_number: string;
+  hospital_affiliation: string;
+  hospital_id: string | null;
+  created_at: string;
+}
+
 export interface ClinicianPatientLink {
   id: string;
   clinician_id: string;

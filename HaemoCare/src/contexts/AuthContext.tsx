@@ -22,6 +22,7 @@ interface AuthContextType {
   isMockMode: boolean;
   role: 'patient' | 'clinician' | null;
   clinicianProfile: ClinicianProfile | null;
+  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signUp: (email: string, password: string) => Promise<{ error?: string }>;
   signUpClinician: (input: {
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMockMode, setIsMockMode] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [clinicianProfile, setClinicianProfile] = useState<ClinicianProfile | null>(null);
   // Detect a Supabase password-recovery hash synchronously on the very
   // first render so AppNavigator can route straight to ResetPasswordScreen
@@ -100,6 +102,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setClinicianProfile(data as ClinicianProfile);
   }, []);
 
+  const fetchIsAdmin = useCallback(async (): Promise<void> => {
+    const { data, error } = await supabase.rpc('is_admin');
+    setIsAdmin(!error && data === true);
+  }, []);
+
   const refreshProfile = useCallback(async () => {
     if (isMockMode) {
       if (clinicianProfile) {
@@ -120,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(s);
         setUser(s?.user ?? null);
         if (s?.user) {
-          Promise.all([fetchProfile(s.user.id), fetchClinicianProfile(s.user.id)])
+          Promise.all([fetchProfile(s.user.id), fetchClinicianProfile(s.user.id), fetchIsAdmin()])
             .finally(() => setIsLoading(false));
         } else {
           setIsLoading(false);
@@ -146,9 +153,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (s?.user) {
         fetchProfile(s.user.id);
         fetchClinicianProfile(s.user.id);
+        fetchIsAdmin();
       } else {
         setProfile(null);
         setClinicianProfile(null);
+        setIsAdmin(false);
       }
     });
 
@@ -157,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // `isMockModeRef.current` so it doesn't need to re-subscribe when mock
     // mode toggles — listing `isMockMode` here caused getSession to re-run
     // on every mock-mode flip, which wiped the just-set mock user.
-  }, [fetchProfile, fetchClinicianProfile]);
+  }, [fetchProfile, fetchClinicianProfile, fetchIsAdmin]);
 
   // Localhost web-only dev convenience: auto-sign-in as the mock clinician
   // so testing post-auth flows (dashboard layouts, clinician-only screens)
@@ -180,6 +189,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // default → mock clinician.
     const asRole = new URLSearchParams(window.location.search).get('as');
     if (asRole === 'none') return;
+    if (asRole === 'admin') {
+      setIsMockMode(true);
+      setUser({ id: MOCK_CLINICIAN_USER_ID, email: MOCK_CLINICIAN_EMAIL } as User);
+      setIsAdmin(true);
+      setProfile(null);
+      setClinicianProfile(null);
+      return;
+    }
     setIsMockMode(true);
     if (asRole === 'patient') {
       setUser({ id: MOCK_USER_ID, email: MOCK_EMAIL } as User);
@@ -287,12 +304,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       setSession(null);
       setClinicianProfile(null);
+      setIsAdmin(false);
       setIsPasswordRecovery(false);
       return;
     }
     await supabase.auth.signOut();
     setProfile(null);
     setClinicianProfile(null);
+    setIsAdmin(false);
     setIsMockMode(false);
     setIsPasswordRecovery(false);
   };
@@ -325,6 +344,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isProfileComplete,
         isPdpaConsented,
         isMockMode,
+        isAdmin,
         role,
         clinicianProfile,
         signIn,

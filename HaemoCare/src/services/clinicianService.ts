@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase';
 import type {
   ClinicianProfile,
+  PendingClinician,
   Profile,
   Transfusion,
   SymptomLog,
@@ -310,4 +311,23 @@ export async function getEmergencyContactsForPatient(
     .order('priority', { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as EmergencyContact[];
+}
+
+export async function getPendingClinicians(): Promise<PendingClinician[]> {
+  const { data, error } = await supabase
+    .from('clinician_profiles')
+    .select('user_id, full_name, license_number, hospital_affiliation, hospital_id, created_at')
+    .eq('verified', false)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as PendingClinician[];
+}
+
+export async function approveClinician(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('clinician_profiles')
+    .update({ verified: true, verified_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('verified', false);
+  if (error) throw new Error(error.message);
 }

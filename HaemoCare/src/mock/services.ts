@@ -906,3 +906,32 @@ export async function requestClinicianLink(
     share_full_name: shareFullName,
   };
 }
+
+// ── Admin approval (mock) ─────────────────────────────────────
+
+let mockPendingClinicians: import('../types/database').PendingClinician[] = [
+  {
+    user_id: 'mock-clinician-pending-1',
+    full_name: 'Dr. Somsak Wattana',
+    license_number: 'MD-44821',
+    hospital_affiliation: 'โรงพยาบาลศิริราช',
+    hospital_id: 'mock-hospital-siriraj',
+    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    user_id: 'mock-clinician-pending-2',
+    full_name: 'Dr. Nan Thirakul',
+    license_number: 'MD-50193',
+    hospital_affiliation: 'โรงพยาบาลรามาธิบดี',
+    hospital_id: 'mock-hospital-rama',
+    created_at: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+export async function getPendingClinicians(): Promise<import('../types/database').PendingClinician[]> {
+  return [...mockPendingClinicians];
+}
+
+export async function approveClinician(userId: string): Promise<void> {
+  mockPendingClinicians = mockPendingClinicians.filter(c => c.user_id !== userId);
+}
