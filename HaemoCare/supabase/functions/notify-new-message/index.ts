@@ -24,6 +24,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { resolveRecipientId, buildExpoMessages } from './notify-logic.ts';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
@@ -82,12 +83,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // 2. Recipient = the party that is NOT the sender.
-    const { clinician_id, patient_user_id } = link as {
-      clinician_id: string;
-      patient_user_id: string;
-    };
-    const recipientId =
-      record.sender_id === clinician_id ? patient_user_id : clinician_id;
+    const recipientId = resolveRecipientId(
+      link as { clinician_id: string; patient_user_id: string },
+      record.sender_id
+    );
 
     // 3. Load recipient's push tokens.
     const { data: tokens, error: tokensErr } = await adminClient
@@ -100,20 +99,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return new Response('no tokens', { status: 200 });
     }
 
-    // 4. Build the notification body.
-    const messageBody: string = record.body ?? '📷 Photo';
-    // Title is intentionally generic (no patient/clinician name here to avoid
-    // leaking PHI in the notification center on a shared/unlocked device).
-    const title = 'HaemoCare';
-
-    // 5. POST to the Expo Push API.
-    const expoPushMessages = (tokens as PushToken[]).map(({ token }) => ({
-      to: token,
-      title,
-      body: messageBody,
-      data: { type: 'chat', linkId: record.link_id },
-      sound: 'default',
-    }));
+    // 4-5. Build Expo push payloads (generic title avoids leaking PHI on a
+    // locked-device preview; attachment-only messages show "📷 Photo").
+    const expoPushMessages = buildExpoMessages(
+      (tokens as PushToken[]).map(({ token }) => token),
+      record.body,
+      record.link_id
+    );
 
     const expoResponse = await fetch(EXPO_PUSH_URL, {
       method: 'POST',
