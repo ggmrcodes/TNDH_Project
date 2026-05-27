@@ -29,18 +29,23 @@ export function resolveRecipientId(link: LinkParties, senderId: string): string 
 
 /**
  * Build the Expo push payloads for a message. Attachment-only messages
- * (null/empty body) show "📷 Photo". Title is intentionally generic to
- * avoid leaking PHI on a locked-device notification preview.
+ * (null/empty body) show "📷 Photo". `title` is the sender's display name so
+ * the recipient sees who the message is from (defaults to 'HaemoCare').
+ *
+ * Privacy note: this surfaces the sender's name and the message body on a
+ * locked-device preview. Acceptable per product decision; to reduce exposure,
+ * pass a generic body instead of the message text.
  */
 export function buildExpoMessages(
   tokens: string[],
   body: string | null,
-  linkId: string
+  linkId: string,
+  title: string = 'HaemoCare'
 ): ExpoPushMessage[] {
   const text = body && body.trim().length > 0 ? body : '📷 Photo';
   return tokens.map((token) => ({
     to: token,
-    title: 'HaemoCare',
+    title,
     body: text,
     data: { type: 'chat', linkId },
     sound: 'default',

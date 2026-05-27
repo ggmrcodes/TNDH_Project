@@ -39,4 +39,12 @@ describe('buildExpoMessages', () => {
   it('returns an empty array when there are no tokens', () => {
     expect(buildExpoMessages([], 'hi', 'l')).toEqual([]);
   });
+
+  it('uses the sender name as the title when provided', () => {
+    expect(buildExpoMessages(['t'], 'hi', 'l', 'Dr. Smith')[0].title).toBe('Dr. Smith');
+  });
+
+  it('defaults the title to "HaemoCare" when no sender name is given', () => {
+    expect(buildExpoMessages(['t'], 'hi', 'l')[0].title).toBe('HaemoCare');
+  });
 });

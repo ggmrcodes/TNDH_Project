@@ -764,6 +764,7 @@ const th: Record<TranslationKey, string> = {
   'chat.today': 'วันนี้',
   'chat.yesterday': 'เมื่อวาน',
   'chat.subtitlePatient': 'ทีมดูแลของคุณ',
+  'chat.subtitleClinician': 'ผู้ป่วยของคุณ',
   'chat.privacyNote': 'เฉพาะแพทย์ที่คุณเชื่อมต่อด้วยเท่านั้นที่ส่งข้อความถึงคุณได้',
 };
 
