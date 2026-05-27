@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -13,6 +14,7 @@ interface Props {
 
 export default function LinkRequestBanner({ pending, onPress }: Props) {
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   if (pending.length === 0) return null;
 
   const single = pending.length === 1;
@@ -24,7 +26,10 @@ export default function LinkRequestBanner({ pending, onPress }: Props) {
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
-      style={styles.banner}
+      // Banner is the topmost element in MainTabNavigator's root (no SafeAreaView
+      // above it), so it must clear the status bar / notch itself. On web/desktop
+      // insets.top is 0, leaving the original SPACING.sm gap.
+      style={[styles.banner, { marginTop: insets.top + SPACING.sm }]}
       accessibilityRole="button"
       accessibilityLabel={t('patient.linkRequest.bannerView' as TranslationKey)}
     >
@@ -50,7 +55,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     marginHorizontal: SPACING.md,
-    marginTop: SPACING.sm,
+    // marginTop applied inline (insets.top + SPACING.sm) to clear the status bar.
     backgroundColor: COLORS.goldLight,
     borderRadius: RADIUS.md,
     borderWidth: 1,
