@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -74,6 +75,10 @@ export default function ChatThread({ linkId, status }: Props) {
   const isActive = status === 'active';
   const composerDisabled = sending || uploading;
   const insets = useSafeAreaInsets();
+  // Exact header height (status bar + nav bar) so KeyboardAvoidingView lifts the
+  // composer to the right spot. A hardcoded offset under-lifts on tall devices,
+  // leaving the input under the keyboard.
+  const headerHeight = useHeaderHeight();
 
   // Track keyboard so the footer hugs the keyboard when open, but clears the
   // home indicator (insets.bottom) when closed — avoids a dead gap above the
@@ -174,7 +179,7 @@ export default function ChatThread({ linkId, status }: Props) {
     <KeyboardAvoidingView
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       {loading ? (
         <ActivityIndicator color={COLORS.primary} style={{ marginTop: SPACING.xl }} />
