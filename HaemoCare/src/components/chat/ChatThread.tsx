@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert, Keyboard, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Feather } from '@expo/vector-icons';
@@ -28,7 +28,10 @@ interface ChatImageProps {
 }
 
 function ChatImage({ path, isMockMode }: ChatImageProps) {
+  const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [uri, setUri] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -48,16 +51,44 @@ function ChatImage({ path, isMockMode }: ChatImageProps) {
     );
   }
   return (
-    <Image
-      source={{ uri }}
-      style={imgStyles.image}
-      resizeMode="cover"
-    />
+    <>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => setViewerOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={t('chat.viewPhoto' as TranslationKey)}
+      >
+        <Image source={{ uri }} style={imgStyles.image} resizeMode="cover" />
+      </TouchableOpacity>
+
+      {/* Full-screen viewer: tap the image or the X to dismiss. */}
+      <Modal visible={viewerOpen} transparent statusBarTranslucent animationType="fade" onRequestClose={() => setViewerOpen(false)}>
+        <View style={imgStyles.viewerBackdrop}>
+          <TouchableOpacity
+            style={[imgStyles.viewerClose, { top: insets.top + SPACING.sm }]}
+            onPress={() => setViewerOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close' as TranslationKey)}
+          >
+            <Feather name="x" size={26} color={COLORS.white} />
+          </TouchableOpacity>
+          <TouchableOpacity style={imgStyles.viewerBody} activeOpacity={1} onPress={() => setViewerOpen(false)}>
+            <Image source={{ uri }} style={imgStyles.viewerImage} resizeMode="contain" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </>
   );
 }
 
 const imgStyles = StyleSheet.create({
   image: { width: 200, height: 200, borderRadius: RADIUS.md, marginBottom: SPACING.xs },
+  // Full-screen viewer. Backdrop uses the theme's overlay base (27,35,51) at a
+  // high opacity for distraction-free photo viewing.
+  viewerBackdrop: { flex: 1, backgroundColor: 'rgba(27, 35, 51, 0.96)' },
+  viewerBody: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  viewerImage: { width: '100%', height: '100%' },
+  viewerClose: { position: 'absolute', right: SPACING.md, zIndex: 2, padding: SPACING.sm },
   placeholder: {
     width: 200, height: 200, borderRadius: RADIUS.md,
     backgroundColor: COLORS.borderLight, justifyContent: 'center', alignItems: 'center',
