@@ -5,6 +5,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { decode as decodeBase64 } from 'base64-arraybuffer';
 import { COLORS, SPACING, RADIUS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -128,13 +129,14 @@ export default function ChatThread({ linkId, status }: Props) {
       const manipulated = await ImageManipulator.manipulateAsync(
         asset.uri,
         needsResize ? [{ resize: { width: 1200 } }] : [],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
+      if (!manipulated.base64) throw new Error('Could not read image data');
 
-      const response = await fetch(manipulated.uri);
-      const blob = await response.blob();
-
-      uploadedPath = await svc.uploadChatImage(linkId, blob);
+      // Upload the bytes as an ArrayBuffer decoded from base64. On React Native
+      // `fetch(uri).blob()` produces a Blob that supabase-storage-js uploads as
+      // 0 bytes, so we read the data directly (works on native + web).
+      uploadedPath = await svc.uploadChatImage(linkId, decodeBase64(manipulated.base64));
       await send('', { path: uploadedPath, type: 'image' });
     } catch (err) {
       if (uploadedPath) { await svc.deleteChatImage(uploadedPath).catch(() => {}); }

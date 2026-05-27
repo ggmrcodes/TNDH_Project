@@ -980,7 +980,7 @@ export async function getMessages(_linkId: string): Promise<Message[]> {
   return [...mockMessages];
 }
 
-export async function uploadChatImage(_linkId: string, _blob: Blob): Promise<string> {
+export async function uploadChatImage(_linkId: string, _data: ArrayBuffer): Promise<string> {
   return `mock-chat-img-${Date.now()}.jpg`;
 }
 

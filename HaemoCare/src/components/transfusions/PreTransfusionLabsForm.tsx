@@ -24,6 +24,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
+import { decode as decodeBase64 } from 'base64-arraybuffer';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import Button from '../common/Button';
@@ -46,10 +47,10 @@ export interface PreTransfusionLabsFormProps {
     ferritin: number | null;
     lab_slip_photo_url: string | null;
   }) => Promise<void>;
-  /** Optional photo-upload handler. Receives a JPEG Blob (already
-   * compressed); should return the storage path / URL to persist.
+  /** Optional photo-upload handler. Receives the compressed JPEG bytes
+   * (ArrayBuffer); should return the storage path / URL to persist.
    * If omitted, the form uses the local URI directly (mock mode). */
-  onUploadPhoto?: (jpegBlob: Blob, localUri: string) => Promise<string>;
+  onUploadPhoto?: (jpegData: ArrayBuffer, localUri: string) => Promise<string>;
   onCancel?: () => void;
   /** When the form opens for a clinician overwriting a patient value, the
    * caller should set this so the prompt explains the audit-log behavior. */
@@ -139,14 +140,14 @@ export default function PreTransfusionLabsForm({
       const manipulated = await ImageManipulator.manipulateAsync(
         asset.uri,
         needResize ? [{ resize: { width: 1200 } }] : [],
-        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
       );
 
       if (onUploadPhoto) {
-        // Real mode: fetch the manipulated URI into a Blob then upload.
-        const response = await fetch(manipulated.uri);
-        const blob = await response.blob();
-        const storedRef = await onUploadPhoto(blob, manipulated.uri);
+        // Real mode: upload the bytes as an ArrayBuffer. fetch(uri).blob()
+        // uploads 0 bytes on React Native, so decode the base64 directly.
+        if (!manipulated.base64) throw new Error('Could not read image data');
+        const storedRef = await onUploadPhoto(decodeBase64(manipulated.base64), manipulated.uri);
         setPhotoUri(storedRef);
       } else {
         // Mock mode: just keep the local URI.
