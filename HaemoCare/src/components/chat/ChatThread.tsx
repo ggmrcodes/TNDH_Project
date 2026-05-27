@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -72,6 +72,7 @@ export default function ChatThread({ linkId, status }: Props) {
   const { messages, loading, sending, send } = useThread(linkId);
   const [draft, setDraft] = useState('');
   const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<TextInput>(null);
   const isActive = status === 'active';
   const composerDisabled = sending || uploading;
   const insets = useSafeAreaInsets();
@@ -97,6 +98,9 @@ export default function ChatThread({ linkId, status }: Props) {
     const body = draft.trim();
     if (!body) return;
     setDraft('');
+    // Keep the keyboard open after sending — re-assert focus so the button
+    // tap doesn't dismiss it.
+    inputRef.current?.focus();
     await send(body);
   };
 
@@ -232,13 +236,16 @@ export default function ChatThread({ linkId, status }: Props) {
             }
           </TouchableOpacity>
           <TextInput
+            ref={inputRef}
             style={styles.input}
             value={draft}
             onChangeText={setDraft}
             placeholder={t('chat.composerPlaceholder' as TranslationKey)}
             placeholderTextColor={COLORS.textLight}
             multiline
-            editable={!composerDisabled}
+            // Stay editable during a text send (sending is brief) so the
+            // keyboard isn't dismissed; only lock during an image upload.
+            editable={!uploading}
           />
           <TouchableOpacity
             onPress={handleSend}
