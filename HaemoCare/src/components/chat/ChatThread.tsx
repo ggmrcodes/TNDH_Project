@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -9,7 +9,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThread } from '../../hooks/useThread';
 import { TranslationKey } from '../../i18n';
-import type { LinkStatus } from '../../types/database';
+import type { LinkStatus, Message } from '../../types/database';
 import * as realService from '../../services/chatService';
 import * as mockService from '../../mock/services';
 
@@ -141,6 +141,35 @@ export default function ChatThread({ linkId, status }: Props) {
     } catch { return ''; }
   };
 
+  // Interleave day separators between messages. Built chronologically (a
+  // separator precedes the first message of each new day) then reversed,
+  // because the FlatList is inverted (index 0 renders at the bottom = newest).
+  type Row = { type: 'sep'; key: string; label: string } | { type: 'msg'; key: string; message: Message };
+  const rows = useMemo<Row[]>(() => {
+    const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const now = new Date();
+    const todayKey = dayKey(now);
+    const yd = new Date(now); yd.setDate(now.getDate() - 1);
+    const yesterdayKey = dayKey(yd);
+    const labelFor = (iso: string) => {
+      const d = new Date(iso);
+      const k = dayKey(d);
+      if (k === todayKey) return t('chat.today' as TranslationKey);
+      if (k === yesterdayKey) return t('chat.yesterday' as TranslationKey);
+      const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' };
+      if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+      try { return d.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', opts); } catch { return k; }
+    };
+    const out: Row[] = [];
+    let lastDay: string | null = null;
+    for (const m of messages) {
+      const k = dayKey(new Date(m.created_at));
+      if (k !== lastDay) { out.push({ type: 'sep', key: 'sep-' + k, label: labelFor(m.created_at) }); lastDay = k; }
+      out.push({ type: 'msg', key: m.id, message: m });
+    }
+    return out.reverse();
+  }, [messages, language, t]);
+
   return (
     <KeyboardAvoidingView
       style={styles.root}
@@ -151,22 +180,30 @@ export default function ChatThread({ linkId, status }: Props) {
         <ActivityIndicator color={COLORS.primary} style={{ marginTop: SPACING.xl }} />
       ) : (
         <FlatList
-          data={[...messages].reverse()}
+          data={rows}
           inverted
-          keyExtractor={(m) => m.id}
+          keyExtractor={(item) => item.key}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => {
-            const mine = item.sender_id === user?.id;
+            if (item.type === 'sep') {
+              return (
+                <View style={styles.sepRow}>
+                  <Text style={styles.sepLabel}>{item.label}</Text>
+                </View>
+              );
+            }
+            const m = item.message;
+            const mine = m.sender_id === user?.id;
             return (
               <View style={[styles.bubbleRow, mine ? styles.rowMine : styles.rowOther]}>
                 <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleOther]}>
-                  {item.attachment_path && item.attachment_type === 'image' ? (
-                    <ChatImage path={item.attachment_path} isMockMode={isMockMode} />
+                  {m.attachment_path && m.attachment_type === 'image' ? (
+                    <ChatImage path={m.attachment_path} isMockMode={isMockMode} />
                   ) : null}
-                  {item.body ? (
-                    <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{item.body}</Text>
+                  {m.body ? (
+                    <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{m.body}</Text>
                   ) : null}
-                  <Text style={[styles.time, mine && styles.timeMine]}>{fmtTime(item.created_at)}</Text>
+                  <Text style={[styles.time, mine && styles.timeMine]}>{fmtTime(m.created_at)}</Text>
                 </View>
               </View>
             );
@@ -221,6 +258,12 @@ export default function ChatThread({ linkId, status }: Props) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
   list: { padding: SPACING.md, gap: SPACING.xs },
+  sepRow: { alignItems: 'center', marginVertical: SPACING.sm },
+  sepLabel: {
+    fontSize: 11, fontWeight: '600', color: COLORS.textSecondary,
+    backgroundColor: COLORS.borderLight, overflow: 'hidden',
+    paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs / 2 + 1, borderRadius: RADIUS.md,
+  },
   bubbleRow: { flexDirection: 'row', marginVertical: 2 },
   rowMine: { justifyContent: 'flex-end' },
   rowOther: { justifyContent: 'flex-start' },
