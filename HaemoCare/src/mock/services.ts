@@ -131,13 +131,14 @@ export async function createSymptomLog(
     outcome: 'normal' | 'monitor' | 'urgent';
     notes?: string;
     urine_color?: UrineColor | null;
+    logged_at?: string;
   }
 ): Promise<SymptomLog> {
   const entry: SymptomLog = {
     id: genId(),
     user_id: profile.user_id,
     transfusion_id: log.transfusion_id ?? null,
-    logged_at: new Date().toISOString(),
+    logged_at: log.logged_at ?? new Date().toISOString(),
     symptoms: log.symptoms,
     severity_scores: log.severity_scores,
     outcome: log.outcome,
@@ -147,6 +148,38 @@ export async function createSymptomLog(
   };
   symptomLogs.unshift(entry);
   return entry;
+}
+
+export async function updateSymptomLog(
+  id: string,
+  fields: {
+    symptoms: string[];
+    severity_scores: Record<string, number>;
+    outcome: 'normal' | 'monitor' | 'urgent';
+    notes?: string;
+    urine_color?: UrineColor | null;
+    logged_at?: string;
+  }
+): Promise<SymptomLog> {
+  const idx = symptomLogs.findIndex((l) => l.id === id);
+  const existing = idx >= 0 ? symptomLogs[idx] : symptomLogs[0];
+  const updated: SymptomLog = {
+    ...existing,
+    id,
+    symptoms: fields.symptoms,
+    severity_scores: fields.severity_scores,
+    outcome: fields.outcome,
+    notes: fields.notes ?? '',
+    urine_color: fields.urine_color ?? null,
+    logged_at: fields.logged_at ?? existing.logged_at,
+    edited_at: new Date().toISOString(),
+  };
+  if (idx >= 0) symptomLogs[idx] = updated;
+  return updated;
+}
+
+export async function deleteSymptomLog(id: string): Promise<void> {
+  symptomLogs = symptomLogs.filter((l) => l.id !== id);
 }
 
 // ── Appointments ─────────────────────────────────────────────
