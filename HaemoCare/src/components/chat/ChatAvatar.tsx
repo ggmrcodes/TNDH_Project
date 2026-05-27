@@ -1,33 +1,20 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { COLORS, RADIUS } from '../../config/theme';
-import { deriveInitials } from '../../utils/initials';
+import Avatar from 'react-native-boring-avatars';
+import { COLORS } from '../../config/theme';
 
-// Shared chat avatar: a solid-teal circle with the other party's initials,
-// falling back to a user icon for id-style names (HC-XXXXXX). Used by both the
-// thread header and the conversation list so the treatment is consistent.
+// On-brand palette for the generated "beam" avatars — teal family plus the warm
+// gold/coral accents. boring-avatars picks deterministically from this set per
+// name, so every person gets a distinct but on-theme avatar (no ad-hoc colors).
+const AVATAR_COLORS = [
+  COLORS.primary,
+  COLORS.primaryGradientEnd,
+  COLORS.primaryDark,
+  COLORS.gold,
+  COLORS.accent,
+];
+
+// Shared chat avatar used by both the thread header and the conversation list.
+// `name` is the seed (a display name or an HC-XXXXXX id both work).
 export default function ChatAvatar({ name, size = 44 }: { name: string; size?: number }) {
-  const initials = deriveInitials(name);
-  return (
-    <View style={[styles.avatar, { width: size, height: size }]}>
-      {initials ? (
-        <Text style={[styles.text, { fontSize: Math.round(size * 0.38) }]} allowFontScaling={false}>
-          {initials}
-        </Text>
-      ) : (
-        <Feather name="user" size={Math.round(size * 0.44)} color={COLORS.textOnPrimary} />
-      )}
-    </View>
-  );
+  return <Avatar size={size} name={name || 'HaemoCare'} variant="beam" colors={AVATAR_COLORS} />;
 }
-
-const styles = StyleSheet.create({
-  avatar: {
-    borderRadius: RADIUS.full,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  text: { color: COLORS.textOnPrimary, fontWeight: '700', letterSpacing: 0.3 },
-});
