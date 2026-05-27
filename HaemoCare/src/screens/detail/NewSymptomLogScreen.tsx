@@ -61,6 +61,9 @@ export default function NewSymptomLogScreen() {
   // a sensible timestamp rather than midnight.
   const [logDate, setLogDate] = useState<Date>(new Date());
   const [datePickerVisible, setDatePickerVisible] = useState(false);
+  // Snapshot taken when the picker opens, so iOS "Cancel" can discard changes
+  // (the iOS spinner commits live on each scroll).
+  const dateBeforeEditRef = useRef<Date>(new Date());
   const [result, setResult] = useState<ThresholdResult | null>(null);
   // Outcome the patient has selected (or accepted) on the review step.
   // Initialised to the bumped suggestion in handlePreview; patient can override.
@@ -286,7 +289,7 @@ export default function NewSymptomLogScreen() {
             <Text style={styles.dateLabel}>{t('symptom.logDate')}</Text>
             <TouchableOpacity
               style={styles.dateRow}
-              onPress={() => setDatePickerVisible(true)}
+              onPress={() => { dateBeforeEditRef.current = logDate; setDatePickerVisible(true); }}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={`${t('symptom.logDate')}: ${logDateLabel}`}
@@ -306,6 +309,15 @@ export default function NewSymptomLogScreen() {
             )}
             {Platform.OS === 'ios' && datePickerVisible && (
               <View style={styles.iosPickerActions}>
+                <TouchableOpacity
+                  style={styles.iosPickerCancel}
+                  onPress={() => { setLogDate(dateBeforeEditRef.current); setDatePickerVisible(false); }}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.cancel')}
+                >
+                  <Text style={styles.iosPickerCancelText}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.iosPickerDone}
                   onPress={() => setDatePickerVisible(false)}
@@ -524,18 +536,21 @@ const styles = StyleSheet.create({
   },
   iosPickerActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'flex-end',
     gap: SPACING.sm,
-    marginTop: 4,
+    marginTop: SPACING.xs,
     marginBottom: SPACING.md,
   },
+  iosPickerCancel: { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.md },
+  iosPickerCancelText: { ...TYPOGRAPHY.bodySmall, fontWeight: '700', color: COLORS.textSecondary },
   iosPickerDone: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.sm,
     backgroundColor: COLORS.primary,
   },
-  iosPickerDoneText: { fontSize: 13, fontWeight: '700', color: COLORS.white },
+  iosPickerDoneText: { ...TYPOGRAPHY.bodySmall, fontWeight: '700', color: COLORS.white },
   bumpNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
