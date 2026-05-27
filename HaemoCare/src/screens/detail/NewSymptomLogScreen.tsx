@@ -110,7 +110,12 @@ export default function NewSymptomLogScreen() {
       const existing = isMockMode
         ? await mockServices.getSymptomLogById(editLogId)
         : await realSymptomService.getSymptomLogById(editLogId);
-      if (cancelled || !existing) return;
+      if (cancelled) return;
+      // If the log can't be loaded (e.g. deleted between detail and edit),
+      // surface an error instead of leaving a blank edit form. (t is captured
+      // intentionally — not a dep — so a later language switch can't re-run
+      // this effect and wipe the user's in-progress edits.)
+      if (!existing) { setEditError(t('symptoms.updateFailed')); return; }
       // severity_scores may carry a 'urine_color' key (the color's intensity);
       // selectedSymptoms is the symptom list only.
       setSelectedSymptoms(existing.symptoms);
