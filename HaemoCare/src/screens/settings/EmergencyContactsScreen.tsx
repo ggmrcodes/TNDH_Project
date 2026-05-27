@@ -98,12 +98,17 @@ export default function EmergencyContactsScreen() {
           }
           return (
             <View key={c.id} style={styles.filledSlot}>
-              <View style={styles.filledLeft}>
+              <TouchableOpacity
+                style={styles.filledLeft}
+                onPress={() => setEditing({ priority, existing: c })}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('common.edit')} ${c.name}`}
+              >
                 <Text style={styles.slotName}>{c.name}</Text>
                 <Text style={styles.slotMeta}>
                   {c.role_label || '—'} · {c.phone}
                 </Text>
-              </View>
+              </TouchableOpacity>
               <View style={styles.actions}>
                 {priority > 1 && (
                   <TouchableOpacity
