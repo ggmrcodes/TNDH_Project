@@ -34,7 +34,7 @@ create table public.transfusions (
   user_id uuid references auth.users(id) on delete cascade not null,
   date timestamptz not null,
   hospital text not null default '',
-  units_received integer not null default 1,
+  units_received integer,
   reaction_noted boolean default false,
   reaction_detail text default '',
   pre_hb_g_dl numeric(4,2),

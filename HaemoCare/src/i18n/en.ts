@@ -462,7 +462,9 @@ const en = {
   'scan.field.preHb': 'Pre-Hb (g/dL)',
   'scan.field.postHb': 'Post-Hb (g/dL)',
   'scan.field.reactionDetail': 'Reaction detail',
+  'scan.field.units': 'Blood bags received (optional)',
   'scan.save': 'Save',
+  'scan.error.required': 'Date and hospital are required.',
   'scan.error.network': 'Could not reach the extraction service. Try again.',
   'scan.error.unreadable': 'Could not read enough from this photo. Enter manually or try again.',
 

@@ -110,7 +110,7 @@ export default function TransfusionDetailScreen() {
           </View>
           <View style={styles.row}>
             <Ionicons name="water" size={20} color={COLORS.primary} />
-            <Text style={styles.value}>{transfusion.units_received} {t('history.units')}</Text>
+            <Text style={styles.value}>{transfusion.units_received ?? '—'} {t('history.units')}</Text>
           </View>
         </Card>
 

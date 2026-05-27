@@ -463,7 +463,9 @@ const th: Record<TranslationKey, string> = {
   'scan.field.preHb': 'Hb ก่อนให้เลือด (g/dL)',
   'scan.field.postHb': 'Hb หลังให้เลือด (g/dL)',
   'scan.field.reactionDetail': 'รายละเอียดปฏิกิริยา',
+  'scan.field.units': 'จำนวนถุงเลือดที่ได้รับ (ไม่บังคับ)',
   'scan.save': 'บันทึก',
+  'scan.error.required': 'ต้องระบุวันที่และโรงพยาบาล',
   'scan.error.network': 'ไม่สามารถเชื่อมต่อบริการได้ กรุณาลองใหม่',
   'scan.error.unreadable': 'อ่านข้อมูลจากภาพไม่พอ กรุณากรอกเองหรือลองใหม่',
 

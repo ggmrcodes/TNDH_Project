@@ -51,7 +51,7 @@ export default function CareEventsTimeline({
       const post = tx.post_hb_g_dl;
       const hospital = tx.hospital ?? '';
       const base = t('clinician.detail.timeline.tx' as TranslationKey, {
-        units: tx.units_received,
+        units: tx.units_received ?? '—',
         hospital,
       });
       const hbSuffix =

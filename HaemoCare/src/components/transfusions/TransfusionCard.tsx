@@ -33,7 +33,7 @@ export default function TransfusionCard({ transfusion, onPress }: TransfusionCar
         <Text style={styles.hospital} numberOfLines={1}>{transfusion.hospital}</Text>
         <View style={styles.footer}>
           <Text style={styles.units}>
-            {transfusion.units_received} {t('history.units')}
+            {transfusion.units_received ?? '—'} {t('history.units')}
           </Text>
           {onPress && <Ionicons name="chevron-forward" size={18} color={COLORS.textLight} />}
         </View>

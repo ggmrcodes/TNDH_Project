@@ -160,13 +160,17 @@ export default function ScanTransfusionScreen() {
 
   const save = async () => {
     if (!user) return;
-    if (!form.date || !form.hospital || !form.units) {
-      setErrorMsg('Date, hospital, and units are required.');
+    // Units (blood bags received) is optional; left blank it saves as the
+    // schema default (1). Only date + hospital are required.
+    if (!form.date || !form.hospital) {
+      setErrorMsg(t('scan.error.required'));
       return;
     }
     setSaving(true);
     try {
-      const units = Number(form.units);
+      // Optional: blank → null (unknown), not a guessed default.
+      const unitsNum = Number(form.units);
+      const units = form.units.trim() !== '' && isFinite(unitsNum) ? unitsNum : null;
       const preHb = form.preHb ? Number(form.preHb) : undefined;
       const postHb = form.postHb ? Number(form.postHb) : undefined;
       const hctNum = form.hct ? Number(form.hct) : undefined;
@@ -176,7 +180,7 @@ export default function ScanTransfusionScreen() {
           ? `${form.date}T00:00:00+07:00`
           : form.date,
         hospital: form.hospital,
-        units_received: isFinite(units) ? units : 1,
+        units_received: units,
         reaction_noted: form.reactionNoted,
         reaction_detail: form.reactionDetail,
         notes: form.notes,
@@ -423,7 +427,7 @@ function ReviewStep(props: {
         t={t}
       />
       <Field
-        label={t('history.units')}
+        label={t('scan.field.units')}
         value={form.units}
         onChange={(v) => update('units', v)}
         ai={aiFields.has('units')}
