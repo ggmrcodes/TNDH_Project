@@ -16,6 +16,7 @@ export default function MessagesScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <Text style={styles.title}>{t('chat.title' as TranslationKey)}</Text>
+      <Text style={styles.subtitle}>{t('chat.subtitlePatient' as TranslationKey)}</Text>
       <FlatList
         data={conversations}
         keyExtractor={(c) => c.linkId}
@@ -26,6 +27,12 @@ export default function MessagesScreen() {
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListFooterComponent={conversations.length > 0 ? (
+          <View style={styles.footerNote}>
+            <Feather name="lock" size={12} color={COLORS.textLight} />
+            <Text style={styles.footerText}>{t('chat.privacyNote' as TranslationKey)}</Text>
+          </View>
+        ) : null}
         ListEmptyComponent={!loading ? (
           <View style={styles.emptyWrap}>
             <Feather name="message-circle" size={40} color={COLORS.textLight} />
@@ -39,9 +46,12 @@ export default function MessagesScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.white },
-  title: { ...TYPOGRAPHY.h1, color: COLORS.text, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.sm },
+  title: { ...TYPOGRAPHY.h1, color: COLORS.text, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: 2 },
+  subtitle: { fontSize: 14, color: COLORS.textSecondary, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md },
   // Inset past the 48px avatar (md padding + md gap) for a clean iOS-style divider.
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.borderLight, marginLeft: SPACING.md * 2 + 48 },
+  footerNote: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.xs, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg },
+  footerText: { flex: 1, fontSize: 12, lineHeight: 17, color: COLORS.textLight },
   emptyWrap: { alignItems: 'center', justifyContent: 'center', paddingTop: SPACING.xxl, gap: SPACING.md },
   empty: { textAlign: 'center', color: COLORS.textSecondary, fontSize: 14 },
 });

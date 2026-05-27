@@ -759,6 +759,8 @@ const en = {
   'chat.uploadError': 'Could not send the photo. Try again.',
   'chat.today': 'Today',
   'chat.yesterday': 'Yesterday',
+  'chat.subtitlePatient': 'Your care team',
+  'chat.privacyNote': 'Only clinicians you’ve connected with can message you.',
 } as const;
 
 export default en;

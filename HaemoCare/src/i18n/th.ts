@@ -763,6 +763,8 @@ const th: Record<TranslationKey, string> = {
   'chat.uploadError': 'ไม่สามารถส่งรูปภาพได้ ลองอีกครั้ง',
   'chat.today': 'วันนี้',
   'chat.yesterday': 'เมื่อวาน',
+  'chat.subtitlePatient': 'ทีมดูแลของคุณ',
+  'chat.privacyNote': 'เฉพาะแพทย์ที่คุณเชื่อมต่อด้วยเท่านั้นที่ส่งข้อความถึงคุณได้',
 };
 
 export default th;
