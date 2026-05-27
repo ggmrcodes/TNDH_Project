@@ -26,7 +26,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   TransfusionDetail: { transfusionId: string };
   SymptomLogDetail: { logId: string };
-  NewSymptomLog: { transfusionId?: string };
+  NewSymptomLog: { transfusionId?: string; editLogId?: string };
   EditProfile: undefined;
   AppointmentDetail: { appointmentId: string };
   AddAppointment: undefined;

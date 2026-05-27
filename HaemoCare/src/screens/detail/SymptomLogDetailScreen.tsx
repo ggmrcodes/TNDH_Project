@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import * as realSymptomService from '../../services/symptomService';
 import * as mockServices from '../../mock/services';
+import { confirm } from '../../utils/confirm';
 import { formatDateTime } from '../../utils/dateHelpers';
 import { SymptomLog } from '../../types/database';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 import StatusBadge from '../../components/common/StatusBadge';
 import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import { COLORS, TYPOGRAPHY, SPACING } from '../../config/theme';
 import { getSymptomLabel, URINE_COLOR_HEX, isHematuriaColor } from '../../utils/clinicalThresholds';
@@ -30,10 +33,13 @@ function SeverityBar({ value }: { value: number }) {
 
 export default function SymptomLogDetailScreen() {
   const route = useRoute<RouteProps>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isMockMode } = useAuth();
   const { t, language } = useLanguage();
   const { isMobile } = useResponsive();
   const [log, setLog] = useState<SymptomLog | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = isMockMode
@@ -41,6 +47,37 @@ export default function SymptomLogDetailScreen() {
       : realSymptomService.getSymptomLogById(route.params.logId);
     fetch.then(setLog);
   }, [route.params.logId, isMockMode]);
+
+  const handleEdit = () => {
+    if (!log) return;
+    navigation.navigate('NewSymptomLog', { editLogId: log.id });
+  };
+
+  const handleDelete = async () => {
+    if (!log) return;
+    const ok = await confirm({
+      title: t('symptoms.deleteConfirmTitle'),
+      body: t('symptoms.deleteConfirmBody'),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+    });
+    if (!ok) return;
+    setError(null);
+    setDeleting(true);
+    try {
+      if (isMockMode) {
+        await mockServices.deleteSymptomLog(log.id);
+      } else {
+        await realSymptomService.deleteSymptomLog(log.id);
+      }
+      navigation.goBack();
+    } catch (err) {
+      console.error('Delete symptom log error:', err);
+      setError(t('symptoms.deleteFailed'));
+      setDeleting(false);
+    }
+  };
 
   if (!log) return <LoadingSpinner />;
 
@@ -93,6 +130,25 @@ export default function SymptomLogDetailScreen() {
             <Text style={styles.notesText}>{log.notes}</Text>
           </Card>
         ) : null}
+
+        <View style={styles.actions}>
+          <Button
+            label={t('common.edit')}
+            onPress={handleEdit}
+            variant="outline"
+            disabled={deleting}
+            accessibilityLabel={t('symptoms.editLog')}
+          />
+          <Button
+            label={t('common.delete')}
+            onPress={handleDelete}
+            variant="danger"
+            isLoading={deleting}
+            style={styles.deleteButton}
+            accessibilityLabel={t('symptoms.deleteConfirmTitle')}
+          />
+        </View>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -172,5 +228,18 @@ const styles = StyleSheet.create({
   notesText: {
     ...TYPOGRAPHY.body,
     color: COLORS.text,
+  },
+  actions: {
+    marginTop: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  deleteButton: {
+    backgroundColor: COLORS.error,
+  },
+  errorText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.error,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
   },
 });

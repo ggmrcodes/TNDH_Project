@@ -39,6 +39,12 @@ export default function NewSymptomLogScreen() {
 
   const { isMobile } = useResponsive();
   const transfusionId = route.params?.transfusionId;
+  // When present, the wizard runs in EDIT mode: it loads the existing log,
+  // pre-fills every field, and saves via updateSymptomLog instead of
+  // createSymptomLog. Absent → the normal create flow (unchanged).
+  const editLogId = route.params?.editLogId;
+  const isEditing = !!editLogId;
+  const [editError, setEditError] = useState<string | null>(null);
 
   const { overdueState } = useOverdueState();
   const { contacts } = useEmergencyContacts();
@@ -94,6 +100,34 @@ export default function NewSymptomLogScreen() {
       cancelled = true;
     };
   }, [user, isMockMode]);
+
+  // Edit mode: load the existing log and pre-fill every field. The wizard
+  // still starts at the 'select' step so the patient can adjust anything.
+  useEffect(() => {
+    if (!editLogId) return;
+    let cancelled = false;
+    (async () => {
+      const existing = isMockMode
+        ? await mockServices.getSymptomLogById(editLogId)
+        : await realSymptomService.getSymptomLogById(editLogId);
+      if (cancelled || !existing) return;
+      // severity_scores may carry a 'urine_color' key (the color's intensity);
+      // selectedSymptoms is the symptom list only.
+      setSelectedSymptoms(existing.symptoms);
+      setSeverityScores(existing.severity_scores);
+      setUrineColor(existing.urine_color ?? null);
+      setNotes(existing.notes ?? '');
+      setLogDate(new Date(existing.logged_at));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editLogId, isMockMode]);
+
+  // Reflect edit mode in the header title.
+  useEffect(() => {
+    navigation.setOptions({ title: isEditing ? t('symptoms.editLog') : t('symptoms.logNew') });
+  }, [navigation, isEditing, t]);
 
   const triage: TriageResult | null = useMemo(() => {
     if (step !== 'severity') return null;
@@ -188,11 +222,41 @@ export default function NewSymptomLogScreen() {
 
   /**
    * Called when the patient taps Confirm on the review step.
-   * Saves with whatever outcome the patient last selected, then moves to result.
+   * Saves with whatever outcome the patient last selected.
+   *
+   * Create mode: inserts a new log and advances to the 'result' step (which
+   * runs the urgent "notify clinician" nudge). Edit mode: updates the existing
+   * log via updateSymptomLog and navigates straight back to the detail screen,
+   * skipping the result/nudge flow.
    */
   const handleConfirm = async () => {
     if (!user) return;
+    setEditError(null);
     setSaving(true);
+    if (isEditing && editLogId) {
+      try {
+        const fields = {
+          symptoms: selectedSymptoms,
+          severity_scores: severityScores,
+          outcome: confirmedOutcome,
+          notes,
+          urine_color: urineColor,
+          logged_at: logDate.toISOString(),
+        };
+        if (isMockMode) {
+          await mockServices.updateSymptomLog(editLogId, fields);
+        } else {
+          await realSymptomService.updateSymptomLog(editLogId, fields);
+        }
+        setSaving(false);
+        navigation.goBack();
+      } catch (err) {
+        console.error('Update symptom log error:', err);
+        setEditError(t('symptoms.updateFailed'));
+        setSaving(false);
+      }
+      return;
+    }
     try {
       const logData = {
         transfusion_id: transfusionId || null,
@@ -382,7 +446,7 @@ export default function NewSymptomLogScreen() {
             </View>
 
             <Button
-              label={t('common.confirm')}
+              label={isEditing ? t('symptoms.saveChanges') : t('common.confirm')}
               onPress={handleConfirm}
               isLoading={saving}
               style={{ marginTop: SPACING.lg }}
@@ -393,6 +457,7 @@ export default function NewSymptomLogScreen() {
               variant="outline"
               style={{ marginTop: SPACING.sm }}
             />
+            {editError ? <Text style={styles.editError}>{editError}</Text> : null}
           </>
         )}
 
@@ -563,6 +628,12 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   bumpNoteText: { flex: 1, fontSize: 12, color: COLORS.text, lineHeight: 17 },
+  editError: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.error,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+  },
   outcomeSelector: {
     flexDirection: 'row',
     gap: SPACING.sm,
