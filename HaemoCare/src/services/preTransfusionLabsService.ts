@@ -96,14 +96,14 @@ export async function listLabAuditEntries(
 export async function uploadLabSlipPhoto(
   patientUserId: string,
   transfusionId: string,
-  fileBlob: Blob,
+  data: ArrayBuffer,
   contentType: string = 'image/jpeg'
 ): Promise<string> {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const path = `${patientUserId}/${transfusionId}/${stamp}.jpg`;
   const { error } = await supabase.storage
     .from(LAB_SLIPS_BUCKET)
-    .upload(path, fileBlob, { contentType, upsert: false });
+    .upload(path, data, { contentType, upsert: false });
   if (error) throw new Error(error.message);
   return path;
 }

@@ -122,10 +122,10 @@ export async function getMessages(linkId: string): Promise<Message[]> {
 
 const CHAT_BUCKET = 'chat-attachments';
 
-export async function uploadChatImage(linkId: string, fileBlob: Blob): Promise<string> {
+export async function uploadChatImage(linkId: string, data: ArrayBuffer): Promise<string> {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const path = `${linkId}/${stamp}.jpg`;
-  const { error } = await supabase.storage.from(CHAT_BUCKET).upload(path, fileBlob, { contentType: 'image/jpeg', upsert: false });
+  const { error } = await supabase.storage.from(CHAT_BUCKET).upload(path, data, { contentType: 'image/jpeg', upsert: false });
   if (error) throw new Error(error.message);
   return path;
 }
