@@ -35,6 +35,9 @@ yarn-error.*
 .env*.local
 .env.e2e
 
+# supabase CLI cache (created by `supabase link` / `functions deploy`)
+supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 
