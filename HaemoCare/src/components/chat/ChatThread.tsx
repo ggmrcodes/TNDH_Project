@@ -188,7 +188,9 @@ export default function ChatThread({ linkId, status }: Props) {
       keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       {loading ? (
-        <ActivityIndicator color={COLORS.primary} style={{ marginTop: SPACING.xl }} />
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={COLORS.primary} />
+        </View>
       ) : (
         <FlatList
           data={rows}
@@ -271,6 +273,7 @@ export default function ChatThread({ linkId, status }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   list: { padding: SPACING.md, gap: SPACING.xs },
   sepRow: { alignItems: 'center', marginVertical: SPACING.sm },
   sepLabel: {

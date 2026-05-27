@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import * as realService from '../services/chatService';
 import * as mockService from '../mock/services';
@@ -21,12 +21,16 @@ export function useThread(linkId: string): UseThreadResult {
   const [tick, setTick] = useState(0);
   const refresh = useCallback(() => setTick(t => t + 1), []);
   const userId = user?.id ?? null;
+  // Distinguishes the first load from realtime-triggered refetches (tick), so a
+  // broadcast doesn't flip the whole thread back into the full-screen loader
+  // (which hides messages and collapses the layout on every sent/received msg).
+  const initialLoadDone = useRef(false);
 
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
     let cancelled = false;
     (async () => {
-      setLoading(true);
+      if (!initialLoadDone.current) setLoading(true);
       try {
         const svc = isMockMode ? mockService : realService;
         const data = await svc.getMessages(linkId);
@@ -37,7 +41,7 @@ export function useThread(linkId: string): UseThreadResult {
       } catch {
         if (!cancelled) setMessages([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) { setLoading(false); initialLoadDone.current = true; }
       }
     })();
     return () => { cancelled = true; };
