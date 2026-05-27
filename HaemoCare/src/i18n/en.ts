@@ -196,6 +196,8 @@ const en = {
   'symptoms.submit': 'Submit Log',
   'symptoms.notes': 'Additional notes',
   'symptoms.severity': 'Severity',
+  'symptom.logDate': 'Date of symptoms',
+  'symptom.dateToday': 'Today',
   'symptoms.status.attention': 'Needs Attention',
   'symptoms.status.monitorClosely': 'Monitor Closely',
   'symptoms.status.overallNormal': 'Overall: Normal',

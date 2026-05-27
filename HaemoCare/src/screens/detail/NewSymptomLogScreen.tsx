@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, ScrollView, TextInput, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TextInput, StyleSheet, SafeAreaView, TouchableOpacity, Platform } from 'react-native';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { isSameDay } from 'date-fns';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
+import { formatDate } from '../../utils/dateHelpers';
 import { evaluateSymptoms, ThresholdResult, getSymptomLabel } from '../../utils/clinicalThresholds';
 import { triageSymptoms, TriageResult } from '../../analytics';
 import * as realSymptomService from '../../services/symptomService';
@@ -32,7 +35,7 @@ export default function NewSymptomLogScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
   const { user, isMockMode, profile } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const { isMobile } = useResponsive();
   const transfusionId = route.params?.transfusionId;
@@ -51,6 +54,13 @@ export default function NewSymptomLogScreen() {
   const [severityScores, setSeverityScores] = useState<Record<string, number>>({});
   const [urineColor, setUrineColor] = useState<UrineColor | null>(null);
   const [notes, setNotes] = useState('');
+  // Date the symptoms occurred. Defaults to now; the patient can backdate it
+  // on the review step (future dates are disabled via the picker's maximumDate).
+  // The time-of-day is preserved as "now" — when a past day is picked we keep
+  // the current local clock time on that day, so a backdated log still carries
+  // a sensible timestamp rather than midnight.
+  const [logDate, setLogDate] = useState<Date>(new Date());
+  const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [result, setResult] = useState<ThresholdResult | null>(null);
   // Outcome the patient has selected (or accepted) on the review step.
   // Initialised to the bumped suggestion in handlePreview; patient can override.
@@ -86,12 +96,12 @@ export default function NewSymptomLogScreen() {
     if (step !== 'severity') return null;
     if (Object.keys(severityScores).length === 0 && !urineColor) return null;
     return triageSymptoms(severityScores, {
-      loggedAt: new Date().toISOString(),
+      loggedAt: logDate.toISOString(),
       recentLogs,
       recentTransfusion: latestTx,
       urineColor,
     });
-  }, [severityScores, step, recentLogs, latestTx, urineColor]);
+  }, [severityScores, step, recentLogs, latestTx, urineColor, logDate]);
 
   const handleToggle = (key: string) => {
     setSelectedSymptoms(prev =>
@@ -104,6 +114,38 @@ export default function NewSymptomLogScreen() {
   const handleSeverityChange = (key: string, value: number) => {
     setSeverityScores(prev => ({ ...prev, [key]: value }));
   };
+
+  /**
+   * Commits a date picked by the user. The picker yields midnight on the
+   * chosen day; we graft the current local time-of-day onto it so a backdated
+   * log keeps a realistic timestamp (see logDate state comment).
+   */
+  const commitPickedDate = (picked: Date) => {
+    const now = new Date();
+    const next = new Date(picked);
+    next.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), 0);
+    setLogDate(next);
+  };
+
+  const onDatePicked = (event: DateTimePickerEvent, selected?: Date) => {
+    // Android default dialog: fires once with OK ('set') or Cancel
+    // ('dismissed') and closes itself. iOS inline picker: we close it via the
+    // Done/Cancel buttons rendered alongside, committing the live value here.
+    if (Platform.OS === 'android') {
+      setDatePickerVisible(false);
+      if (event.type === 'dismissed' || !selected) return;
+      commitPickedDate(selected);
+      return;
+    }
+    if (selected) commitPickedDate(selected);
+  };
+
+  // Locale-aware label for the chosen date: "Today" when it is today,
+  // otherwise the shared formatDate helper (th-TH vs en-US via `language`).
+  const logDateLabel = useMemo(
+    () => (isSameDay(logDate, new Date()) ? t('symptom.dateToday') : formatDate(logDate, language)),
+    [logDate, language, t]
+  );
 
   const initSeverity = () => {
     const initial: Record<string, number> = {};
@@ -156,6 +198,7 @@ export default function NewSymptomLogScreen() {
         outcome: confirmedOutcome,
         notes,
         urine_color: urineColor,
+        logged_at: logDate.toISOString(),
       };
       if (isMockMode) {
         await mockServices.createSymptomLog(user.id, logData);
@@ -238,6 +281,42 @@ export default function NewSymptomLogScreen() {
         {step === 'review' && result && (
           <>
             <Text style={styles.stepTitle}>{t('symptoms.result')}</Text>
+
+            {/* Date of symptoms — defaults to today, backdating allowed */}
+            <Text style={styles.dateLabel}>{t('symptom.logDate')}</Text>
+            <TouchableOpacity
+              style={styles.dateRow}
+              onPress={() => setDatePickerVisible(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('symptom.logDate')}: ${logDateLabel}`}
+            >
+              <Feather name="calendar" size={18} color={COLORS.primary} />
+              <Text style={styles.dateRowText}>{logDateLabel}</Text>
+              <Feather name="chevron-down" size={18} color={COLORS.textLight} style={{ marginLeft: 'auto' }} />
+            </TouchableOpacity>
+            {datePickerVisible && (
+              <DateTimePicker
+                value={logDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                maximumDate={new Date()}
+                onChange={onDatePicked}
+              />
+            )}
+            {Platform.OS === 'ios' && datePickerVisible && (
+              <View style={styles.iosPickerActions}>
+                <TouchableOpacity
+                  style={styles.iosPickerDone}
+                  onPress={() => setDatePickerVisible(false)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.done')}
+                >
+                  <Text style={styles.iosPickerDoneText}>{t('common.done')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Bump explanation — only shown when the bump is a real change */}
             {overdueState?.isOverdue &&
@@ -420,6 +499,43 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  dateLabel: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    marginBottom: SPACING.xs,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.md - 2,
+    paddingHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.white,
+    marginBottom: SPACING.md,
+  },
+  dateRowText: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  iosPickerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: SPACING.sm,
+    marginTop: 4,
+    marginBottom: SPACING.md,
+  },
+  iosPickerDone: {
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.primary,
+  },
+  iosPickerDoneText: { fontSize: 13, fontWeight: '700', color: COLORS.white },
   bumpNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
