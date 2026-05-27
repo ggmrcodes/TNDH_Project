@@ -107,7 +107,13 @@ export default function SymptomMonitorScreen() {
     const sympSummary = symptoms.map(s => `${getSymptomLabel(s, t).split(' ')[0]} ${item.severity_scores[s] || 0}`).join(', ');
 
     return (
-      <View style={styles.logItem}>
+      <TouchableOpacity
+        style={styles.logItem}
+        onPress={() => navigation.navigate('SymptomLogDetail', { logId: item.id })}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={formatDate(item.logged_at, language)}
+      >
         <View style={[styles.logDotLine]}>
           <View style={[styles.logDot, { backgroundColor: itemCfg.color }]} />
           <View style={styles.logLine} />
@@ -123,7 +129,7 @@ export default function SymptomMonitorScreen() {
         <View style={[styles.logBadge, { backgroundColor: itemCfg.bg }]}>
           <Feather name={itemCfg.icon as any} size={14} color={itemCfg.color} />
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
