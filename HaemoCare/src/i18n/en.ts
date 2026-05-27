@@ -760,6 +760,7 @@ const en = {
   'chat.today': 'Today',
   'chat.yesterday': 'Yesterday',
   'chat.subtitlePatient': 'Your care team',
+  'chat.subtitleClinician': 'Your patients',
   'chat.privacyNote': 'Only clinicians you’ve connected with can message you.',
 } as const;
 

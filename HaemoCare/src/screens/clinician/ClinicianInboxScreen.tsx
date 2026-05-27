@@ -15,6 +15,7 @@ export default function ClinicianInboxScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <Text style={styles.title}>{t('chat.title' as TranslationKey)}</Text>
+      <Text style={styles.subtitle}>{t('chat.subtitleClinician' as TranslationKey)}</Text>
       <FlatList
         data={conversations}
         keyExtractor={(c) => c.linkId}
@@ -38,7 +39,8 @@ export default function ClinicianInboxScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.white },
-  title: { ...TYPOGRAPHY.h1, color: COLORS.text, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.sm },
+  title: { ...TYPOGRAPHY.h1, color: COLORS.text, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: 2 },
+  subtitle: { fontSize: 14, color: COLORS.textSecondary, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md },
   separator: { height: StyleSheet.hairlineWidth, backgroundColor: COLORS.borderLight, marginLeft: SPACING.md * 2 + 48 },
   emptyWrap: { alignItems: 'center', justifyContent: 'center', paddingTop: SPACING.xxl, gap: SPACING.md },
   empty: { textAlign: 'center', color: COLORS.textSecondary, fontSize: 14 },
