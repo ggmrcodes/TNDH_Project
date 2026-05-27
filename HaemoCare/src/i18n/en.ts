@@ -762,6 +762,7 @@ const en = {
   'chat.subtitlePatient': 'Your care team',
   'chat.subtitleClinician': 'Your patients',
   'chat.privacyNote': 'Only clinicians you’ve connected with can message you.',
+  'chat.viewPhoto': 'View photo',
 } as const;
 
 export default en;
