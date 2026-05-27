@@ -23,7 +23,12 @@ export default function SymptomLogCard({ log, onPress }: SymptomLogCardProps) {
     <TouchableOpacity onPress={onPress} activeOpacity={0.7} disabled={!onPress}>
       <Card style={styles.card}>
         <View style={styles.header}>
-          <Text style={styles.date}>{formatDateTime(log.logged_at, language)}</Text>
+          <View style={styles.dateRow}>
+            <Text style={styles.date}>{formatDateTime(log.logged_at, language)}</Text>
+            {log.edited_at ? (
+              <Text style={styles.editedTag}>{t('symptom.edited')}</Text>
+            ) : null}
+          </View>
           <StatusBadge outcome={log.outcome} />
         </View>
         <View style={styles.symptoms}>
@@ -73,9 +78,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.sm,
   },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
   date: {
     ...TYPOGRAPHY.bodySmall,
     color: COLORS.textSecondary,
+  },
+  editedTag: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textLight,
   },
   symptoms: {
     gap: SPACING.xs,

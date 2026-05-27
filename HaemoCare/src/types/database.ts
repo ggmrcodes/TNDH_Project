@@ -95,6 +95,10 @@ export interface SymptomLog {
    */
   urine_color?: UrineColor | null;
   created_at: string;
+  /** Set to the edit timestamp whenever the patient modifies an existing
+   * log; null/absent means the log has never been edited. Surfaced to the
+   * linked clinician so edits are transparent. */
+  edited_at?: string | null;
 }
 
 export type AppointmentSource =

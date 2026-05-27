@@ -58,6 +58,7 @@ export async function createSymptomLog(
     outcome: 'normal' | 'monitor' | 'urgent';
     notes?: string;
     urine_color?: UrineColor | null;
+    logged_at?: string;
   }
 ): Promise<SymptomLog> {
   const { data, error } = await supabase
@@ -70,10 +71,52 @@ export async function createSymptomLog(
       outcome: log.outcome,
       notes: log.notes ?? '',
       urine_color: log.urine_color ?? null,
+      // Only set logged_at when a backdate is provided; otherwise the DB
+      // default now() applies.
+      ...(log.logged_at ? { logged_at: log.logged_at } : {}),
     })
     .select()
     .single();
 
   if (error) throw new Error(error.message);
   return data as SymptomLog;
+}
+
+export async function updateSymptomLog(
+  id: string,
+  fields: {
+    symptoms: string[];
+    severity_scores: Record<string, number>;
+    outcome: 'normal' | 'monitor' | 'urgent';
+    notes?: string;
+    urine_color?: UrineColor | null;
+    logged_at?: string;
+  }
+): Promise<SymptomLog> {
+  const { data, error } = await supabase
+    .from('symptom_logs')
+    .update({
+      symptoms: fields.symptoms,
+      severity_scores: fields.severity_scores,
+      outcome: fields.outcome,
+      notes: fields.notes ?? '',
+      urine_color: fields.urine_color ?? null,
+      ...(fields.logged_at ? { logged_at: fields.logged_at } : {}),
+      edited_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as SymptomLog;
+}
+
+export async function deleteSymptomLog(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('symptom_logs')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw new Error(error.message);
 }

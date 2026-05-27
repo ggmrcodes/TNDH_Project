@@ -10,10 +10,11 @@ interface ButtonProps {
   disabled?: boolean;
   style?: ViewStyle;
   fullWidth?: boolean;
+  accessibilityLabel?: string;
 }
 
 export default function Button({
-  label, onPress, variant = 'primary', isLoading, disabled, style, fullWidth = true,
+  label, onPress, variant = 'primary', isLoading, disabled, style, fullWidth = true, accessibilityLabel,
 }: ButtonProps) {
   const isDisabled = disabled || isLoading;
   const bg = {
@@ -35,6 +36,9 @@ export default function Button({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: isDisabled, busy: isLoading }}
       style={[
         styles.base,
         { backgroundColor: bg },
