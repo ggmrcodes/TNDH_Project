@@ -59,7 +59,8 @@ create table public.symptom_logs (
     urine_color is null
     or urine_color in ('clear', 'yellow', 'dark_yellow', 'pink', 'red', 'brown_tea', 'cola')
   ),
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  edited_at timestamptz
 );
 
 -- ============================================

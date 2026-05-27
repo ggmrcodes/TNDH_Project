@@ -162,7 +162,8 @@ export async function updateSymptomLog(
   }
 ): Promise<SymptomLog> {
   const idx = symptomLogs.findIndex((l) => l.id === id);
-  const existing = idx >= 0 ? symptomLogs[idx] : symptomLogs[0];
+  if (idx < 0) throw new Error('Symptom log not found');
+  const existing = symptomLogs[idx];
   const updated: SymptomLog = {
     ...existing,
     id,
@@ -174,7 +175,7 @@ export async function updateSymptomLog(
     logged_at: fields.logged_at ?? existing.logged_at,
     edited_at: new Date().toISOString(),
   };
-  if (idx >= 0) symptomLogs[idx] = updated;
+  symptomLogs[idx] = updated;
   return updated;
 }
 
