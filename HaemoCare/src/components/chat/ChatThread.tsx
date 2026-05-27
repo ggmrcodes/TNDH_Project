@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert, Keyboard, Modal } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert, Keyboard, Modal, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Feather } from '@expo/vector-icons';
@@ -30,6 +30,7 @@ interface ChatImageProps {
 function ChatImage({ path, isMockMode }: ChatImageProps) {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const win = useWindowDimensions();
   const [uri, setUri] = useState<string | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
 
@@ -73,7 +74,7 @@ function ChatImage({ path, isMockMode }: ChatImageProps) {
             <Feather name="x" size={26} color={COLORS.white} />
           </TouchableOpacity>
           <TouchableOpacity style={imgStyles.viewerBody} activeOpacity={1} onPress={() => setViewerOpen(false)}>
-            <Image source={{ uri }} style={imgStyles.viewerImage} resizeMode="contain" />
+            <Image source={{ uri }} style={{ width: win.width, height: win.height }} resizeMode="contain" />
           </TouchableOpacity>
         </View>
       </Modal>
@@ -87,8 +88,13 @@ const imgStyles = StyleSheet.create({
   // high opacity for distraction-free photo viewing.
   viewerBackdrop: { flex: 1, backgroundColor: 'rgba(27, 35, 51, 0.96)' },
   viewerBody: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  viewerImage: { width: '100%', height: '100%' },
-  viewerClose: { position: 'absolute', right: SPACING.md, zIndex: 2, padding: SPACING.sm },
+  // Dark circular chip so the close X stays visible over light photos.
+  viewerClose: {
+    position: 'absolute', right: SPACING.md, zIndex: 2,
+    width: 40, height: 40, borderRadius: RADIUS.full,
+    backgroundColor: 'rgba(27, 35, 51, 0.55)',
+    justifyContent: 'center', alignItems: 'center',
+  },
   placeholder: {
     width: 200, height: 200, borderRadius: RADIUS.md,
     backgroundColor: COLORS.borderLight, justifyContent: 'center', alignItems: 'center',
