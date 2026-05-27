@@ -38,7 +38,7 @@ export interface Transfusion {
   user_id: string;
   date: string;
   hospital: string;
-  units_received: number;
+  units_received: number | null; // null = not recorded / unknown
   reaction_noted: boolean;
   reaction_detail: string;
   notes: string;

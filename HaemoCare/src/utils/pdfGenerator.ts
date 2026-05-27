@@ -302,7 +302,7 @@ function drawTimeline(c: Cur, transfusions: Transfusion[], symptomLogs: SymptomL
     c.doc.setFont(c.f, 'normal');
     c.doc.setFontSize(7);
     c.doc.setTextColor(...C.gray);
-    const txMeta = `${tx.units_received} units${tx.reaction_noted ? '  \u26a0 Reaction noted' : ''}`;
+    const txMeta = `${tx.units_received ?? '—'} units${tx.reaction_noted ? '  \u26a0 Reaction noted' : ''}`;
     c.doc.text(txMeta, contentX, c.y + 7);
     c.y += 12;
 
@@ -576,7 +576,7 @@ function buildTimelineHtml(transfusions: Transfusion[], symptomLogs: SymptomLog[
         <div class="tl-tx">
           <div class="tl-tx-dot"></div>
           <div class="tl-tx-label">${tr('history.title', language)} \u2014 ${fmtDate(tx.date)}</div>
-          <div class="tl-tx-meta">${tx.units_received} units${tx.reaction_noted ? ' \u26a0 Reaction noted' : ''}</div>
+          <div class="tl-tx-meta">${tx.units_received ?? '—'} units${tx.reaction_noted ? ' \u26a0 Reaction noted' : ''}</div>
         </div>`;
 
     for (const log of logs) {
@@ -661,7 +661,7 @@ export async function generateAppointmentBriefPdf(
 
     ly = labelValue(c, c.ml + 8, ly + 2, tr('passport.medications', language), profile.medications || 'None', c.cw - 16);
     if (lastTx) {
-      labelValue(c, c.ml + 8, ly + 1, tr('history.title', language), `${fmtDate(lastTx.date)} \u2014 ${lastTx.units_received} units at ${lastTx.hospital}`, c.cw - 16);
+      labelValue(c, c.ml + 8, ly + 1, tr('history.title', language), `${fmtDate(lastTx.date)} \u2014 ${lastTx.units_received ?? '—'} units at ${lastTx.hospital}`, c.cw - 16);
     }
     c.y += sumCardH + 6;
 
@@ -779,7 +779,7 @@ export async function generateAppointmentBriefPdf(
         <div class="row"><span class="lbl">${tr('passport.bloodType', language)}</span><strong>${profile.blood_type} Rh${profile.rh_factor}</strong></div>
         <div class="row"><span class="lbl">${tr('passport.antibodies', language)}</span>${profile.antibodies.length > 0 ? profile.antibodies.map(a => `<span class="chip">${a}</span>`).join('') : 'None'}</div>
         <div class="row"><span class="lbl">${tr('passport.medications', language)}</span>${profile.medications || 'None'}</div>
-        ${lastTx ? `<div class="row"><span class="lbl">Last Transfusion</span>${fmtDate(lastTx.date)} \u2014 ${lastTx.units_received} units at ${lastTx.hospital}</div>` : ''}
+        ${lastTx ? `<div class="row"><span class="lbl">Last Transfusion</span>${fmtDate(lastTx.date)} \u2014 ${lastTx.units_received ?? '—'} units at ${lastTx.hospital}</div>` : ''}
       </div>
     </div>
     <div class="card">

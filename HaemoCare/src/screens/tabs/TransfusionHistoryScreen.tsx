@@ -42,7 +42,7 @@ export default function TransfusionHistoryScreen() {
     }, [user, isMockMode])
   );
 
-  const totalUnits = transfusions.reduce((sum, tx) => sum + tx.units_received, 0);
+  const totalUnits = transfusions.reduce((sum, tx) => sum + (tx.units_received ?? 0), 0);
   const reactionCount = transfusions.filter(tx => tx.reaction_noted).length;
 
   const renderTxCard = ({ item }: { item: Transfusion }) => {
@@ -92,7 +92,7 @@ export default function TransfusionHistoryScreen() {
           <View style={styles.txFooter}>
             <View style={styles.unitPill}>
               <Feather name="droplet" size={12} color={COLORS.primary} />
-              <Text style={styles.unitText}>{item.units_received} {t('history.summary.units')}</Text>
+              <Text style={styles.unitText}>{item.units_received ?? '—'} {t('history.summary.units')}</Text>
             </View>
             <Feather name="chevron-right" size={18} color={COLORS.textLight} />
           </View>
