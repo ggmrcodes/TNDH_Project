@@ -99,12 +99,33 @@ Deno.serve(async (req: Request): Promise<Response> => {
       return new Response('no tokens', { status: 200 });
     }
 
-    // 4-5. Build Expo push payloads (generic title avoids leaking PHI on a
-    // locked-device preview; attachment-only messages show "📷 Photo").
+    // 4. Resolve the sender's display name for the title ("who it's from").
+    // Clinician sender → clinician_profiles.full_name; patient sender →
+    // profiles.full_name, falling back to the HC patient id.
+    let senderName = 'HaemoCare';
+    if (record.sender_id === link.clinician_id) {
+      const { data: cp } = await adminClient
+        .from('clinician_profiles')
+        .select('full_name')
+        .eq('user_id', record.sender_id)
+        .single();
+      senderName = (cp?.full_name as string)?.trim() || 'Clinician';
+    } else {
+      const { data: pp } = await adminClient
+        .from('profiles')
+        .select('full_name, patient_id')
+        .eq('user_id', record.sender_id)
+        .single();
+      senderName = (pp?.full_name as string)?.trim() || (pp?.patient_id as string) || 'Patient';
+    }
+
+    // 5. Build Expo push payloads. Title = sender name; body = message text
+    // (attachment-only messages show "📷 Photo").
     const expoPushMessages = buildExpoMessages(
       (tokens as PushToken[]).map(({ token }) => token),
       record.body,
-      record.link_id
+      record.link_id,
+      senderName
     );
 
     const expoResponse = await fetch(EXPO_PUSH_URL, {
