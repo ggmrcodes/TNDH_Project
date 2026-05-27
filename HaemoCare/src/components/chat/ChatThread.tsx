@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert, Keyboard } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -72,6 +73,20 @@ export default function ChatThread({ linkId, status }: Props) {
   const [uploading, setUploading] = useState(false);
   const isActive = status === 'active';
   const composerDisabled = sending || uploading;
+  const insets = useSafeAreaInsets();
+
+  // Track keyboard so the footer hugs the keyboard when open, but clears the
+  // home indicator (insets.bottom) when closed — avoids a dead gap above the
+  // keyboard while still respecting the safe area at rest.
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvt, () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener(hideEvt, () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  const footerPadBottom = keyboardVisible ? SPACING.sm : Math.max(insets.bottom, SPACING.sm);
 
   const handleSend = async () => {
     const body = draft.trim();
@@ -161,7 +176,7 @@ export default function ChatThread({ linkId, status }: Props) {
       )}
 
       {isActive ? (
-        <View style={styles.composer}>
+        <View style={[styles.composer, { paddingBottom: footerPadBottom }]}>
           <TouchableOpacity
             onPress={handleAttach}
             disabled={composerDisabled}
@@ -194,7 +209,7 @@ export default function ChatThread({ linkId, status }: Props) {
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.closedBanner}>
+        <View style={[styles.closedBanner, { paddingBottom: Math.max(insets.bottom, SPACING.md) }]}>
           <Feather name="lock" size={14} color={COLORS.textSecondary} />
           <Text style={styles.closedText}>{t('chat.closed' as TranslationKey)}</Text>
         </View>
@@ -219,12 +234,13 @@ const styles = StyleSheet.create({
   empty: { textAlign: 'center', color: COLORS.textSecondary, fontSize: 13, padding: SPACING.xl },
   composer: {
     flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm,
-    padding: SPACING.sm, borderTopWidth: 1, borderTopColor: COLORS.borderLight, backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.md, paddingTop: SPACING.sm,
+    borderTopWidth: 1, borderTopColor: COLORS.borderLight, backgroundColor: COLORS.surface,
   },
-  attachBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  attachBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
   attachBtnDisabled: { opacity: 0.4 },
   input: {
-    flex: 1, maxHeight: 120, minHeight: 40, borderWidth: 1, borderColor: COLORS.border,
+    flex: 1, maxHeight: 120, minHeight: 44, borderWidth: 1, borderColor: COLORS.border,
     borderRadius: RADIUS.lg, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
     fontSize: 15, color: COLORS.text, backgroundColor: COLORS.white,
   },
@@ -232,7 +248,8 @@ const styles = StyleSheet.create({
   sendBtnDisabled: { opacity: 0.5 },
   closedBanner: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: SPACING.sm,
-    padding: SPACING.md, borderTopWidth: 1, borderTopColor: COLORS.borderLight, backgroundColor: COLORS.background,
+    paddingHorizontal: SPACING.md, paddingTop: SPACING.md,
+    borderTopWidth: 1, borderTopColor: COLORS.borderLight, backgroundColor: COLORS.background,
   },
   closedText: { fontSize: 13, color: COLORS.textSecondary },
 });
