@@ -757,6 +757,8 @@ const en = {
   'chat.uploading': 'Uploading…',
   'chat.photo': 'Photo',
   'chat.uploadError': 'Could not send the photo. Try again.',
+  'chat.today': 'Today',
+  'chat.yesterday': 'Yesterday',
 } as const;
 
 export default en;

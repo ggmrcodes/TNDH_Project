@@ -761,6 +761,8 @@ const th: Record<TranslationKey, string> = {
   'chat.uploading': 'กำลังอัปโหลด...',
   'chat.photo': 'รูปภาพ',
   'chat.uploadError': 'ไม่สามารถส่งรูปภาพได้ ลองอีกครั้ง',
+  'chat.today': 'วันนี้',
+  'chat.yesterday': 'เมื่อวาน',
 };
 
 export default th;
