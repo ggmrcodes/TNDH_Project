@@ -206,6 +206,8 @@ const th: Record<TranslationKey, string> = {
   'symptoms.severity': 'ความรุนแรง',
   'symptom.logDate': 'วันที่มีอาการ',
   'symptom.dateToday': 'วันนี้',
+  'symptom.edited': 'แก้ไขแล้ว',
+  'symptom.originallyLogged': 'บันทึกเดิมเมื่อ {date}',
   'symptoms.status.attention': 'ต้องดูแล',
   'symptoms.status.monitorClosely': 'เฝ้าระวังใกล้ชิด',
   'symptoms.status.overallNormal': 'ภาพรวม: ปกติ',

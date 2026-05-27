@@ -204,6 +204,8 @@ const en = {
   'symptoms.severity': 'Severity',
   'symptom.logDate': 'Date of symptoms',
   'symptom.dateToday': 'Today',
+  'symptom.edited': 'Edited',
+  'symptom.originallyLogged': 'originally logged {date}',
   'symptoms.status.attention': 'Needs Attention',
   'symptoms.status.monitorClosely': 'Monitor Closely',
   'symptoms.status.overallNormal': 'Overall: Normal',

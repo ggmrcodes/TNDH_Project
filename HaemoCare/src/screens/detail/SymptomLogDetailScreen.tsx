@@ -8,7 +8,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import * as realSymptomService from '../../services/symptomService';
 import * as mockServices from '../../mock/services';
 import { confirm } from '../../utils/confirm';
-import { formatDateTime } from '../../utils/dateHelpers';
+import { formatDate, formatDateTime } from '../../utils/dateHelpers';
 import { SymptomLog } from '../../types/database';
 import { useResponsive, MAX_CONTENT_WIDTH } from '../../utils/responsive';
 import StatusBadge from '../../components/common/StatusBadge';
@@ -85,7 +85,14 @@ export default function SymptomLogDetailScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={[styles.content, !isMobile && { maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' as const, width: '100%' as any }]}>
         <View style={styles.header}>
-          <Text style={styles.date}>{formatDateTime(log.logged_at, language)}</Text>
+          <View style={styles.dateColumn}>
+            <Text style={styles.date}>{formatDateTime(log.logged_at, language)}</Text>
+            {log.edited_at ? (
+              <Text style={styles.editedNote}>
+                {`${t('symptom.edited')} · ${t('symptom.originallyLogged', { date: formatDate(log.created_at, language) })}`}
+              </Text>
+            ) : null}
+          </View>
           <StatusBadge outcome={log.outcome} large />
         </View>
 
@@ -169,9 +176,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.lg,
   },
+  dateColumn: {
+    flex: 1,
+    gap: SPACING.xs,
+  },
   date: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
+  },
+  editedNote: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textLight,
   },
   card: {
     marginBottom: SPACING.md,
