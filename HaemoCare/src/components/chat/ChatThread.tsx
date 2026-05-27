@@ -91,7 +91,7 @@ const imgStyles = StyleSheet.create({
   // Dark circular chip so the close X stays visible over light photos.
   viewerClose: {
     position: 'absolute', right: SPACING.md, zIndex: 2,
-    width: 40, height: 40, borderRadius: RADIUS.full,
+    width: 44, height: 44, borderRadius: RADIUS.full,
     backgroundColor: 'rgba(27, 35, 51, 0.55)',
     justifyContent: 'center', alignItems: 'center',
   },

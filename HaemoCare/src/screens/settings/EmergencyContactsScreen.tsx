@@ -112,7 +112,9 @@ export default function EmergencyContactsScreen() {
               <View style={styles.actions}>
                 {priority > 1 && (
                   <TouchableOpacity
+                    style={styles.actionBtn}
                     onPress={() => handleMove(c, -1)}
+                    accessibilityRole="button"
                     accessibilityLabel={t('emergency.settings.a11yMoveUp')}
                   >
                     <Feather name="arrow-up" size={18} color={COLORS.textLight} />
@@ -120,20 +122,26 @@ export default function EmergencyContactsScreen() {
                 )}
                 {priority < 3 && (
                   <TouchableOpacity
+                    style={styles.actionBtn}
                     onPress={() => handleMove(c, 1)}
+                    accessibilityRole="button"
                     accessibilityLabel={t('emergency.settings.a11yMoveDown')}
                   >
                     <Feather name="arrow-down" size={18} color={COLORS.textLight} />
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
+                  style={styles.actionBtn}
                   onPress={() => setEditing({ priority, existing: c })}
+                  accessibilityRole="button"
                   accessibilityLabel={t('emergency.settings.a11yEdit')}
                 >
                   <Feather name="edit-2" size={18} color={COLORS.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity
+                  style={styles.actionBtn}
                   onPress={() => handleDelete(c)}
+                  accessibilityRole="button"
                   accessibilityLabel={t('emergency.settings.a11yDelete')}
                 >
                   <Feather name="trash-2" size={18} color={COLORS.statusUrgent} />
@@ -326,7 +334,10 @@ const styles = StyleSheet.create({
   filledLeft: { flex: 1, gap: 2 },
   slotName: { fontSize: 14, fontWeight: '700', color: COLORS.text },
   slotMeta: { fontSize: 12, color: COLORS.textLight },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
+  actions: { flexDirection: 'row', alignItems: 'center' },
+  // 44pt tap boxes, flush (no gap) so adjacent targets don't overlap — prevents
+  // mis-taps (e.g. delete instead of edit). Icons stay visually 18pt, centered.
+  actionBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
