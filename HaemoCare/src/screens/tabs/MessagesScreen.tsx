@@ -21,7 +21,7 @@ export default function MessagesScreen() {
         renderItem={({ item }) => (
           <ConversationRow
             conversation={item}
-            onPress={() => navigation.navigate('ChatThread', { linkId: item.linkId, otherPartyName: item.otherPartyName, status: item.status })}
+            onPress={() => navigation.navigate('ChatThread', { linkId: item.linkId, otherPartyName: item.otherPartyName, otherPartySubtitle: item.otherPartySubtitle, status: item.status })}
           />
         )}
         ListEmptyComponent={!loading ? <Text style={styles.empty}>{t('chat.empty' as TranslationKey)}</Text> : null}
