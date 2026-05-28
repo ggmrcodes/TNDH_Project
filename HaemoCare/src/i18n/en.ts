@@ -22,6 +22,8 @@ const en = {
   'common.close': 'Close',
   'common.confirm': 'Confirm',
   'common.required': 'Required',
+  'common.permissionRequired': 'Permission required',
+  'common.photoPermissionBody': 'HaemoCare needs permission to use the camera or photo library.',
   'common.qrCode': 'QR Code',
 
   // Auth
@@ -577,6 +579,19 @@ const en = {
   'preLabs.error.save': 'Could not save labs. Please try again.',
   'preLabs.error.upload': 'Could not upload photo. Labs were not saved.',
   'preLabs.clinicianEditPrompt': 'Update this patient-reported value? The previous value will be kept in the audit log.',
+
+  // Transfusion document photo (the source scan kept with the record)
+  'transfusion.documentPhoto.title': 'Scanned document',
+  'transfusion.documentPhoto.addPhoto': 'Add photo',
+  'transfusion.documentPhoto.replacePhoto': 'Replace',
+  'transfusion.documentPhoto.deletePhoto': 'Delete',
+  'transfusion.documentPhoto.deleteConfirmTitle': 'Delete photo?',
+  'transfusion.documentPhoto.deleteConfirmBody': 'The transfusion record will remain. The photo will be removed permanently.',
+  'transfusion.documentPhoto.pickSourceTitle': 'Add scanned document',
+  'transfusion.documentPhoto.takePhoto': 'Take photo',
+  'transfusion.documentPhoto.chooseFromLibrary': 'Choose from library',
+  'transfusion.documentPhoto.viewFull': 'View full-size photo',
+  'transfusion.documentPhoto.uploadError': 'Could not upload the photo. Please try again.',
 
   // Patient — find a clinician (patient-initiated link flow)
   'patient.findClinician.entryButton': 'Find my doctor',

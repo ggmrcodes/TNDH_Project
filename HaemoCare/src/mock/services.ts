@@ -89,6 +89,39 @@ export async function createTransfusion(
   return tx;
 }
 
+// ── Transfusion document photo (mock) ────────────────────────
+// Real-mode lives in src/services/transfusionService.ts and uses a
+// private Supabase storage bucket. Mock-mode just embeds the base64
+// as a data: URI so the same display pipeline works without storage.
+
+export async function uploadTransfusionDocumentPhoto(
+  _userId: string,
+  _transfusionId: string,
+  base64Jpeg: string,
+): Promise<string> {
+  return `data:image/jpeg;base64,${base64Jpeg}`;
+}
+
+export async function setTransfusionDocumentPhotoUrl(
+  transfusionId: string,
+  storedValue: string | null,
+): Promise<void> {
+  const tx = transfusions.find(t => t.id === transfusionId);
+  if (tx) tx.document_photo_url = storedValue;
+}
+
+export async function getTransfusionDocumentPhotoSignedUrl(
+  storedValue: string,
+): Promise<string | null> {
+  // Mock-mode values are always already-resolvable (data:/file:/http:).
+  return storedValue;
+}
+
+export async function deleteTransfusionDocumentPhoto(_storedPath: string): Promise<void> {
+  // No-op in mock mode — the value lives entirely on the transfusion row,
+  // which the caller clears via setTransfusionDocumentPhotoUrl(id, null).
+}
+
 // ── Symptom Logs ─────────────────────────────────────────────
 export async function getSymptomLogs(
   _userId: string,

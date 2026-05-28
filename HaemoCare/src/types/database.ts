@@ -48,6 +48,12 @@ export interface Transfusion {
   // See docs/superpowers/specs/2026-05-17-pre-transfusion-labs-brief.md and
   // the PreTransfusionLabs section near the bottom of this file.
   pre_labs?: PreTransfusionLabs | null;
+  // ── Scanned-document photo (the source image from ScanTransfusionScreen).
+  // For real-mode this stores a storage path inside the private
+  // 'transfusion-documents' bucket ('{user_id}/{transfusion_id}.jpg').
+  // For mock-mode this is a data: URI. NULL for legacy rows and for
+  // manual-entry records with no attached photo. Added 2026-06-09.
+  document_photo_url?: string | null;
   created_at: string;
 }
 
