@@ -5,17 +5,19 @@ import { COLORS, SPACING, RADIUS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { TranslationKey } from '../../i18n';
+import { relativeTime } from '../../utils/dateHelpers';
 import * as realService from '../../services/clinicianService';
 import * as mockService from '../../mock/services';
 
 interface Props {
   linkId: string;
   patientDisplayId: string | null;
+  requestedAt: string;
   onCancelled: () => void;
 }
 
-export default function PendingPatientRow({ linkId, patientDisplayId, onCancelled }: Props) {
-  const { t } = useLanguage();
+export default function PendingPatientRow({ linkId, patientDisplayId, requestedAt, onCancelled }: Props) {
+  const { t, language } = useLanguage();
   const { isMockMode } = useAuth();
   const [cancelling, setCancelling] = useState(false);
 
@@ -25,7 +27,8 @@ export default function PendingPatientRow({ linkId, patientDisplayId, onCancelle
     try {
       const svc = isMockMode ? mockService : realService;
       const result = await svc.cancelLinkRequest(linkId);
-      // If STATE_CHANGED the row is no longer pending — refresh regardless.
+      // STATE_CHANGED means the patient just accepted (or it was cancelled
+      // elsewhere) — refresh to let the parent reflect the new state.
       if (!result.ok && result.reason === 'STATE_CHANGED') {
         onCancelled();
         return;
@@ -38,13 +41,19 @@ export default function PendingPatientRow({ linkId, patientDisplayId, onCancelle
 
   return (
     <View style={styles.row}>
-      <View style={styles.pendingDot} />
+      <View style={styles.pill}>
+        <Text style={styles.pillText}>
+          {t('clinician.pendingSection.pendingPill' as TranslationKey)}
+        </Text>
+      </View>
       <View style={styles.col}>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={styles.id} numberOfLines={1}>
           {patientDisplayId ?? '—'}
         </Text>
         <Text style={styles.subtitle} numberOfLines={1}>
-          {t('clinician.linkPatient.pendingRowSubtitle' as TranslationKey)}
+          {t('clinician.pendingSection.sentRelative' as TranslationKey, {
+            ago: relativeTime(requestedAt, language),
+          })}
         </Text>
       </View>
       <TouchableOpacity
@@ -52,12 +61,13 @@ export default function PendingPatientRow({ linkId, patientDisplayId, onCancelle
         disabled={cancelling}
         hitSlop={8}
         style={styles.cancelBtn}
+        accessibilityRole="button"
         accessibilityLabel={t('clinician.linkPatient.cancelRequest' as TranslationKey)}
       >
         {cancelling ? (
           <ActivityIndicator size="small" color={COLORS.textSecondary} />
         ) : (
-          <Feather name="x" size={16} color={COLORS.textSecondary} />
+          <Feather name="x" size={20} color={COLORS.textSecondary} />
         )}
       </TouchableOpacity>
     </View>
@@ -72,24 +82,37 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     borderRadius: RADIUS.md,
-    backgroundColor: 'transparent',
-    opacity: 0.65,
+    backgroundColor: COLORS.goldLight,
+    marginBottom: SPACING.xs,
   },
-  pendingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: COLORS.textSecondary,
-    backgroundColor: 'transparent',
+  pill: {
+    backgroundColor: COLORS.gold,
+    paddingHorizontal: SPACING.xs + 2,
+    paddingVertical: 3,
+    borderRadius: RADIUS.sm,
+  },
+  pillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.white,
+    letterSpacing: 0.8,
   },
   col: { flex: 1, gap: 2 },
-  name: { fontSize: 13, fontWeight: '700', color: COLORS.textSecondary },
-  subtitle: { fontSize: 11, color: COLORS.textLight, fontStyle: 'italic' },
+  id: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: 0.3,
+  },
+  subtitle: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
   cancelBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
   },

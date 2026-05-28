@@ -601,7 +601,10 @@ const th: Record<TranslationKey, string> = {
   'clinician.incomingRequests.errorTitle': 'ดำเนินการไม่สำเร็จ',
   'clinician.incomingRequests.errorBody': 'ไม่สามารถดำเนินการคำขอนี้ได้ กรุณาลองอีกครั้ง',
   'clinician.incomingRequests.alreadyHandled': 'คำขอนี้ได้รับการดำเนินการแล้ว รายการจะรีเฟรช',
+  'clinician.incomingRequests.receivedRelative': 'รับเมื่อ {ago}',
   'clinician.pendingSection.awaitingPatient': 'รอผู้ป่วยตอบรับ',
+  'clinician.pendingSection.pendingPill': 'รอตอบรับ',
+  'clinician.pendingSection.sentRelative': 'ส่งเมื่อ {ago}',
 
   // Clinician dashboard
   'clinician.dashboard.title': 'แดชบอร์ดแพทย์',

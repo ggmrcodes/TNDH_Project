@@ -5,6 +5,7 @@ import { COLORS, SPACING, RADIUS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { TranslationKey } from '../../i18n';
+import { relativeTime } from '../../utils/dateHelpers';
 import * as realService from '../../services/clinicianService';
 import * as mockService from '../../mock/services';
 
@@ -12,11 +13,12 @@ interface Props {
   linkId: string;
   patientDisplayId: string | null;
   patientFullName: string | null;
+  requestedAt: string;
   onResolved: () => void;
 }
 
-export default function IncomingPatientRequestRow({ linkId, patientDisplayId, patientFullName, onResolved }: Props) {
-  const { t } = useLanguage();
+export default function IncomingPatientRequestRow({ linkId, patientDisplayId, patientFullName, requestedAt, onResolved }: Props) {
+  const { t, language } = useLanguage();
   const { isMockMode } = useAuth();
   const [pending, setPending] = useState<'approve' | 'decline' | null>(null);
 
@@ -47,17 +49,22 @@ export default function IncomingPatientRequestRow({ linkId, patientDisplayId, pa
   }, [pending, isMockMode, linkId, onResolved, t]);
 
   const label = patientFullName ?? patientDisplayId ?? '—';
+  const receivedLine = t('clinician.incomingRequests.receivedRelative' as TranslationKey, {
+    ago: relativeTime(requestedAt, language),
+  });
 
   return (
     <View style={styles.row}>
       <View style={styles.avatar}>
-        <Feather name="user-plus" size={14} color={COLORS.primary} />
+        <Feather name="user-plus" size={18} color={COLORS.primary} />
       </View>
       <View style={styles.col}>
         <Text style={styles.name} numberOfLines={1}>{label}</Text>
-        {patientFullName && patientDisplayId && (
-          <Text style={styles.subtitle}>{patientDisplayId}</Text>
-        )}
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {patientFullName && patientDisplayId
+            ? `${patientDisplayId}  ·  ${receivedLine}`
+            : receivedLine}
+        </Text>
       </View>
       <TouchableOpacity
         onPress={() => handle('decline')}
@@ -103,34 +110,36 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
   },
   col: { flex: 1, gap: 2 },
-  name: { fontSize: 13, fontWeight: '700', color: COLORS.text },
-  subtitle: { fontSize: 11, color: COLORS.textSecondary },
+  name: { fontSize: 15, fontWeight: '700', color: COLORS.text, letterSpacing: 0.2 },
+  subtitle: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '500' },
   declineBtn: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    minHeight: 44,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
     borderColor: COLORS.statusUrgent,
-    minWidth: 64,
+    minWidth: 72,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  declineText: { fontSize: 12, fontWeight: '700', color: COLORS.statusUrgent },
+  declineText: { fontSize: 13, fontWeight: '700', color: COLORS.statusUrgent },
   approveBtn: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs + 1,
+    paddingHorizontal: SPACING.md,
+    minHeight: 44,
     borderRadius: RADIUS.sm,
     backgroundColor: COLORS.primary,
-    minWidth: 64,
+    minWidth: 72,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  approveText: { fontSize: 12, fontWeight: '700', color: COLORS.white },
+  approveText: { fontSize: 13, fontWeight: '700', color: COLORS.white },
   btnDisabled: { opacity: 0.5 },
 });
