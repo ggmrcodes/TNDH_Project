@@ -1,5 +1,5 @@
 import { Profile, Transfusion, SymptomLog, Appointment, AppointmentSource, MedicationReminder, MedicationAdherenceEvent, AdherenceEventSource, ClinicianProfile, EmergencyContact, PreTransfusionLabs, TransfusionLabAuditEntry, UrineColor, ClinicianPatientLink, Hospital, Message, Conversation } from '../types/database';
-import type { RequestLinkResult, PendingPatientLinkRow } from '../services/clinicianService';
+import type { RequestLinkResult, PendingPatientLinkRow, LinkActionResult } from '../services/clinicianService';
 import { validateLabs } from '../utils/preTransfusionLabs';
 import {
   MOCK_PROFILE,
@@ -733,8 +733,11 @@ export async function requestPatientLink(
   return { ok: true, link: { ...link } };
 }
 
-export async function cancelLinkRequest(linkId: string): Promise<void> {
-  mockPendingLinks = mockPendingLinks.filter(l => l.id !== linkId);
+export async function cancelLinkRequest(linkId: string): Promise<LinkActionResult> {
+  const link = mockPendingLinks.find(l => l.id === linkId);
+  if (!link || link.status !== 'pending') return { ok: false, reason: 'STATE_CHANGED' };
+  link.status = 'revoked';
+  return { ok: true };
 }
 
 export async function getPendingPatientLinks(
@@ -897,12 +900,18 @@ export async function getIncomingPatientRequests(
   return mockIncomingPatientRequests.filter(r => r.link.clinician_id === clinicianId);
 }
 
-export async function approveIncomingRequest(linkId: string): Promise<void> {
+export async function approveIncomingRequest(linkId: string): Promise<LinkActionResult> {
+  const exists = mockIncomingPatientRequests.some(r => r.link.id === linkId && r.link.status === 'pending');
+  if (!exists) return { ok: false, reason: 'STATE_CHANGED' };
   mockIncomingPatientRequests = mockIncomingPatientRequests.filter(r => r.link.id !== linkId);
+  return { ok: true };
 }
 
-export async function declineIncomingRequest(linkId: string): Promise<void> {
+export async function declineIncomingRequest(linkId: string): Promise<LinkActionResult> {
+  const exists = mockIncomingPatientRequests.some(r => r.link.id === linkId && r.link.status === 'pending');
+  if (!exists) return { ok: false, reason: 'STATE_CHANGED' };
   mockIncomingPatientRequests = mockIncomingPatientRequests.filter(r => r.link.id !== linkId);
+  return { ok: true };
 }
 
 // ── Patient-initiated linking (mock, patient side) ───────────

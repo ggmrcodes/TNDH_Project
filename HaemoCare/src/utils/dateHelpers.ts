@@ -45,3 +45,10 @@ export function relativeTime(date: string | Date, language: 'th' | 'en'): string
   const locale = language === 'th' ? thLocale : enUS;
   return formatDistanceToNow(toDate(date), { addSuffix: true, locale });
 }
+
+/** Short day/month tick label for chart x-axes, e.g. "14/5".
+ *  Takes an epoch-millisecond timestamp. */
+export function shortDayMonth(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+}

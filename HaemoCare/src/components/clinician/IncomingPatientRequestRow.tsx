@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -25,16 +25,26 @@ export default function IncomingPatientRequestRow({ linkId, patientDisplayId, pa
     setPending(kind);
     try {
       const svc = isMockMode ? mockService : realService;
-      if (kind === 'approve') {
-        await svc.approveIncomingRequest(linkId);
-      } else {
-        await svc.declineIncomingRequest(linkId);
+      const result = kind === 'approve'
+        ? await svc.approveIncomingRequest(linkId)
+        : await svc.declineIncomingRequest(linkId);
+      if (!result.ok && result.reason === 'STATE_CHANGED') {
+        Alert.alert(
+          t('clinician.incomingRequests.alreadyHandled' as TranslationKey),
+        );
+        onResolved();
+        return;
       }
       onResolved();
+    } catch {
+      Alert.alert(
+        t('clinician.incomingRequests.errorTitle' as TranslationKey),
+        t('clinician.incomingRequests.errorBody' as TranslationKey),
+      );
     } finally {
       setPending(null);
     }
-  }, [pending, isMockMode, linkId, onResolved]);
+  }, [pending, isMockMode, linkId, onResolved, t]);
 
   const label = patientFullName ?? patientDisplayId ?? '—';
 

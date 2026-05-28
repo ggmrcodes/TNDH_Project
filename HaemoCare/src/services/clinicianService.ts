@@ -169,12 +169,13 @@ export async function requestPatientLink(
   if (rpcError) return { ok: false, error: { kind: 'UNKNOWN', message: rpcError.message } };
   if (!userId) return { ok: false, error: { kind: 'NOT_FOUND' } };
 
-  const { data: existing } = await supabase
+  const { data: existing, error: readErr } = await supabase
     .from('clinician_patient_links')
     .select('*')
     .eq('clinician_id', clinicianId)
     .eq('patient_user_id', userId)
     .maybeSingle();
+  if (readErr) return { ok: false, error: { kind: 'UNKNOWN', message: readErr.message } };
 
   if (existing) {
     const link = existing as ClinicianPatientLink;
@@ -189,6 +190,7 @@ export async function requestPatientLink(
         consented_at: null,
         revoked_at: null,
         initiated_by: 'clinician',
+        share_full_name: false,
       })
       .eq('id', link.id)
       .select()
@@ -211,12 +213,18 @@ export async function requestPatientLink(
   return { ok: true, link: inserted as ClinicianPatientLink };
 }
 
-export async function cancelLinkRequest(linkId: string): Promise<void> {
-  const { error } = await supabase
+export type LinkActionResult = { ok: true } | { ok: false; reason: 'STATE_CHANGED' };
+
+export async function cancelLinkRequest(linkId: string): Promise<LinkActionResult> {
+  const { data, error } = await supabase
     .from('clinician_patient_links')
     .update({ status: 'revoked', revoked_at: new Date().toISOString() })
-    .eq('id', linkId);
+    .eq('id', linkId)
+    .eq('status', 'pending')
+    .select('id');
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) return { ok: false, reason: 'STATE_CHANGED' };
+  return { ok: true };
 }
 
 export async function getPendingPatientLinks(
@@ -281,20 +289,28 @@ export async function getIncomingPatientRequests(
   return rows;
 }
 
-export async function approveIncomingRequest(linkId: string): Promise<void> {
-  const { error } = await supabase
+export async function approveIncomingRequest(linkId: string): Promise<LinkActionResult> {
+  const { data, error } = await supabase
     .from('clinician_patient_links')
     .update({ status: 'active', consented_at: new Date().toISOString() })
-    .eq('id', linkId);
+    .eq('id', linkId)
+    .eq('status', 'pending')
+    .select('id');
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) return { ok: false, reason: 'STATE_CHANGED' };
+  return { ok: true };
 }
 
-export async function declineIncomingRequest(linkId: string): Promise<void> {
-  const { error } = await supabase
+export async function declineIncomingRequest(linkId: string): Promise<LinkActionResult> {
+  const { data, error } = await supabase
     .from('clinician_patient_links')
     .update({ status: 'declined' })
-    .eq('id', linkId);
+    .eq('id', linkId)
+    .eq('status', 'pending')
+    .select('id');
   if (error) throw new Error(error.message);
+  if (!data || data.length === 0) return { ok: false, reason: 'STATE_CHANGED' };
+  return { ok: true };
 }
 
 // RLS must allow clinician reads on emergency_contacts via clinician_patient_links.

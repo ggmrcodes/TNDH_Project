@@ -4,6 +4,7 @@ import Svg, { Polyline, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { Transfusion } from '../../types/database';
 import { HbDecayResult } from '../../analytics';
 import { COLORS, TYPOGRAPHY } from '../../config/theme';
+import { shortDayMonth } from '../../utils/dateHelpers';
 
 interface Props {
   transfusions: Transfusion[];
@@ -61,22 +62,25 @@ export default function HbTrendChart({
       threshold,
       latest.hb - decay.decayRatePerDay * ((xMax - latest.ts) / MS_PER_DAY)
     );
-    // If decay carries past xMax before hitting threshold, clamp to xMax
+    // If decay carries past xMax before hitting threshold, clamp to xMax.
+    // Guard daysToCross > 0: when latest Hb is already at/below the threshold
+    // daysToCross would be ≤ 0 and crossTs would land at or before latest.ts,
+    // drawing a backwards segment — skip the crossing in that case.
     const daysToCross = (latest.hb - threshold) / decay.decayRatePerDay;
     const crossTs = latest.ts + daysToCross * MS_PER_DAY;
-    if (crossTs <= xMax) {
+    if (daysToCross > 0 && crossTs <= xMax) {
       projectionTarget = { ts: crossTs, hb: threshold };
-    } else {
+    } else if (daysToCross > 0) {
       projectionTarget = { ts: xMax, hb: endHb };
     }
   }
 
   // Build date tick labels (first, latest tx, projection target)
   const tickTimes: Array<{ ts: number; label: string }> = [
-    { ts: xMin, label: shortDate(xMin) },
-    { ts: latest.ts, label: shortDate(latest.ts) },
+    { ts: xMin, label: shortDayMonth(xMin) },
+    { ts: latest.ts, label: shortDayMonth(latest.ts) },
   ];
-  if (projectionTarget) tickTimes.push({ ts: projectionTarget.ts, label: shortDate(projectionTarget.ts) });
+  if (projectionTarget) tickTimes.push({ ts: projectionTarget.ts, label: shortDayMonth(projectionTarget.ts) });
 
   return (
     <View>
@@ -202,11 +206,6 @@ function LegendItem({ color, label, solid, dashed }: { color: string; label: str
       <Text style={styles.legendLabel}>{label}</Text>
     </View>
   );
-}
-
-function shortDate(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getDate()}/${d.getMonth() + 1}`;
 }
 
 const styles = StyleSheet.create({

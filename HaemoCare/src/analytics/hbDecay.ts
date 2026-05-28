@@ -12,6 +12,7 @@ export interface HbDecayResult {
 
 const DEFAULT_LOWER_THRESHOLD_G_DL = 7.0;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const MAX_PROJECTION_DAYS = 180;
 
 function daysBetween(a: string, b: string): number {
   return (new Date(b).getTime() - new Date(a).getTime()) / MS_PER_DAY;
@@ -85,6 +86,12 @@ export function projectHbDecay(
   }
 
   const daysToThresholdFromLatest = (latestPost - lower) / rate;
+  if (daysToThresholdFromLatest > MAX_PROJECTION_DAYS) {
+    // Rate is so small that the threshold crossing is beyond the clinically
+    // observable horizon. Leave projectedThresholdDate and daysUntilThreshold
+    // as null; decayRatePerDay and confidence remain populated above.
+    return result;
+  }
   const projectedTs = new Date(latestDate).getTime() + daysToThresholdFromLatest * MS_PER_DAY;
   result.projectedThresholdDate = new Date(projectedTs).toISOString();
   result.daysUntilThreshold = Math.round((projectedTs - new Date(asOf).getTime()) / MS_PER_DAY);

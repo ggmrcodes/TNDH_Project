@@ -595,6 +595,9 @@ const en = {
   'clinician.incomingRequests.title': 'Awaiting your approval',
   'clinician.incomingRequests.approve': 'Approve',
   'clinician.incomingRequests.decline': 'Decline',
+  'clinician.incomingRequests.errorTitle': 'Action failed',
+  'clinician.incomingRequests.errorBody': 'Could not process this request. Please try again.',
+  'clinician.incomingRequests.alreadyHandled': 'This request has already been handled. The list will refresh.',
   'clinician.pendingSection.awaitingPatient': 'Awaiting patient',
 
   // Clinician dashboard

@@ -40,32 +40,44 @@ export function useAssignedPatients(): UseAssignedPatientsResult {
     (async () => {
       setLoading(true);
       setError(null);
-      try {
-        const [activeData, pendingData, incomingData] = await Promise.all([
-          isMockMode
-            ? mockServices.getAssignedPatients()
-            : realClinicianService.getAssignedPatients(userId!),
-          isMockMode
-            ? mockServices.getPendingPatientLinks(userId!)
-            : realClinicianService.getPendingPatientLinks(userId!),
-          isMockMode
-            ? mockServices.getIncomingPatientRequests(userId!)
-            : realClinicianService.getIncomingPatientRequests(userId!),
-        ]);
-        if (!cancelled) {
-          setPatients(activeData);
-          setPendingLinks(pendingData);
-          setIncomingRequests(incomingData);
-        }
-      } catch (e) {
-        if (cancelled) return;
-        setError(e instanceof Error ? e : new Error(String(e)));
+      const [activeResult, pendingResult, incomingResult] = await Promise.allSettled([
+        isMockMode
+          ? mockServices.getAssignedPatients()
+          : realClinicianService.getAssignedPatients(userId!),
+        isMockMode
+          ? mockServices.getPendingPatientLinks(userId!)
+          : realClinicianService.getPendingPatientLinks(userId!),
+        isMockMode
+          ? mockServices.getIncomingPatientRequests(userId!)
+          : realClinicianService.getIncomingPatientRequests(userId!),
+      ]);
+      if (cancelled) return;
+      if (activeResult.status === 'fulfilled') {
+        setPatients(activeResult.value);
+      } else {
         setPatients([]);
-        setPendingLinks([]);
-        setIncomingRequests([]);
-      } finally {
-        if (!cancelled) setLoading(false);
       }
+      if (pendingResult.status === 'fulfilled') {
+        setPendingLinks(pendingResult.value);
+      } else {
+        setPendingLinks([]);
+      }
+      if (incomingResult.status === 'fulfilled') {
+        setIncomingRequests(incomingResult.value);
+      } else {
+        setIncomingRequests([]);
+      }
+      const firstRejection =
+        activeResult.status === 'rejected' ? activeResult.reason :
+        pendingResult.status === 'rejected' ? pendingResult.reason :
+        incomingResult.status === 'rejected' ? incomingResult.reason :
+        null;
+      setError(
+        firstRejection != null
+          ? (firstRejection instanceof Error ? firstRejection : new Error(String(firstRejection)))
+          : null
+      );
+      setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [enabled, userId, isMockMode, tick]);

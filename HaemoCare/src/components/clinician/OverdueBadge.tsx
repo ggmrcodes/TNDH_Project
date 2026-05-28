@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, SPACING } from '../../config/theme';
+import { SPACING } from '../../config/theme';
+import { riskColors } from '../../utils/statusColors';
 
 export interface OverdueBadgeProps {
   daysOverdue: number;
@@ -8,8 +9,7 @@ export interface OverdueBadgeProps {
 }
 
 export default function OverdueBadge({ daysOverdue, tier }: OverdueBadgeProps) {
-  const bg = tier === 2 ? (COLORS.statusUrgentBg ?? '#FEF2F2') : (COLORS.statusMonitorBg ?? '#FEF3E7');
-  const fg = tier === 2 ? (COLORS.statusUrgent ?? '#DC3B3B') : (COLORS.statusMonitor ?? '#E8933A');
+  const { bg, fg } = riskColors(tier === 2 ? 'high' : 'med');
   return (
     <View style={[styles.badge, { backgroundColor: bg, borderColor: fg }]}>
       <Text style={[styles.text, { color: fg }]}>{`${daysOverdue}d overdue`}</Text>

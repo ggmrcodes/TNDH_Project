@@ -1,6 +1,17 @@
 import { evaluateSymptoms, ThresholdResult } from '../utils/clinicalThresholds';
 import { Outcome, SymptomLog, Transfusion, UrineColor } from '../types/database';
 
+/**
+ * Reduce a list of symptom logs to the single worst outcome seen.
+ * Precedence: urgent > monitor > normal.
+ * Returns 'normal' for an empty list.
+ */
+export function worstRecentOutcome(logs: { outcome: Outcome }[]): Outcome {
+  if (logs.some(l => l.outcome === 'urgent')) return 'urgent';
+  if (logs.some(l => l.outcome === 'monitor')) return 'monitor';
+  return 'normal';
+}
+
 export type TriageTier = 'self_monitor' | 'contact_clinic' | 'seek_urgent_care';
 
 export interface TriageResult {

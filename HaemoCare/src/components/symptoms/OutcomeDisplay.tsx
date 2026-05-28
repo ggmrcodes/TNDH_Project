@@ -5,8 +5,9 @@ import { ThresholdResult, getSymptomLabel } from '../../utils/clinicalThresholds
 import { useLanguage } from '../../contexts/LanguageContext';
 import StatusBadge from '../common/StatusBadge';
 import Card from '../common/Card';
-import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
+import { TYPOGRAPHY, SPACING, RADIUS } from '../../config/theme';
 import { TranslationKey } from '../../i18n';
+import { outcomeColors } from '../../utils/statusColors';
 
 interface OutcomeDisplayProps {
   result: ThresholdResult;
@@ -18,35 +19,24 @@ const ICONS = {
   urgent: 'warning' as const,
 };
 
-const BG_COLORS = {
-  normal: COLORS.statusNormalBg,
-  monitor: COLORS.statusMonitorBg,
-  urgent: COLORS.statusUrgentBg,
-};
-
-const ICON_COLORS = {
-  normal: COLORS.statusNormal,
-  monitor: COLORS.statusMonitor,
-  urgent: COLORS.statusUrgent,
-};
-
 export default function OutcomeDisplay({ result }: OutcomeDisplayProps) {
   const { t } = useLanguage();
   const isUrgent = result.outcome === 'urgent';
+  const { fg: iconColor, bg } = outcomeColors(result.outcome);
 
   return (
-    <Card style={[styles.card, { backgroundColor: BG_COLORS[result.outcome] }]}>
+    <Card style={[styles.card, { backgroundColor: bg }]}>
       <Ionicons
         name={ICONS[result.outcome]}
         size={isUrgent ? 64 : 48}
-        color={ICON_COLORS[result.outcome]}
+        color={iconColor}
         style={styles.icon}
       />
       <StatusBadge outcome={result.outcome} large />
       <Text style={[
         styles.message,
         isUrgent && styles.urgentMessage,
-        { color: ICON_COLORS[result.outcome] },
+        { color: iconColor },
       ]}>
         {t(`status.${result.outcome}.message` as TranslationKey)}
       </Text>

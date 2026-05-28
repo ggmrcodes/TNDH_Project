@@ -29,6 +29,7 @@ import LanguageToggle from '../../components/common/LanguageToggle';
 import HeroGradient from '../../components/common/HeroGradient';
 import { useHospitals } from '../../hooks/useHospitals';
 import { computeCohortAlerts, type AlertSlice } from '../../utils/cohortAlerts';
+import { worstRecentOutcome } from '../../analytics/triage';
 import { computeOverdueHistory14d, type OverdueHistorySlice } from '../../utils/cohortHistory';
 import { COLORS, SPACING, RADIUS } from '../../config/theme';
 import { confirm } from '../../utils/confirm';
@@ -115,12 +116,10 @@ export default function ClinicianDashboardScreen() {
           mostRecentPastAppointment: pastAppt,
           today,
         });
-        const outcomes = recentLogs.map(l => l.outcome);
-        const worstRecentOutcome: Outcome = outcomes.includes('urgent')
-          ? 'urgent' : outcomes.includes('monitor') ? 'monitor' : 'normal';
+        const worstOutcome = worstRecentOutcome(recentLogs);
         return {
           profile, latestTx, pastAppt, recentLogs, overdueState,
-          worstRecentOutcome,
+          worstRecentOutcome: worstOutcome,
           hasReactionOnFile: latestTx?.reaction_noted ?? false,
         } satisfies PatientSlice;
       }));
@@ -201,7 +200,7 @@ export default function ClinicianDashboardScreen() {
     return {
       overdueCount: slices.filter(s => s.overdueState.isOverdue).length,
       monitorCount: slices.filter(s => s.worstRecentOutcome === 'monitor').length,
-      stableCount: slices.filter(s => !s.overdueState.isOverdue && s.worstRecentOutcome === 'normal').length,
+      stableCount: slices.filter(s => !s.overdueState.isOverdue && s.worstRecentOutcome === 'normal' && s.recentLogs.length > 0).length,
       cohortSize: slices.length,
       urgentLogs7d: slices.filter(s =>
         s.recentLogs.some(l => l.outcome === 'urgent' && new Date(l.logged_at).getTime() >= sevenDaysAgo)
@@ -298,7 +297,7 @@ export default function ClinicianDashboardScreen() {
       : <Text style={styles.empty}>{t('clinician.queue.empty' as TranslationKey)}</Text>;
   }
 
-  const clinicianName = clinicianProfile?.full_name?.trim() || (t('clinician.signOut' as TranslationKey) && 'Clinician');
+  const clinicianName = clinicianProfile?.full_name?.trim() || 'Clinician';
   const hospitalFromDirectory = clinicianProfile?.hospital_id
     ? hospitals.find(h => h.id === clinicianProfile.hospital_id)
     : null;

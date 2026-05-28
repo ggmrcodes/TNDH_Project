@@ -112,10 +112,6 @@ export function buildLabTrendsSeries(
 
   for (const tx of transfusions) {
     const ts = pointTimestamp(tx);
-    if (ts == null || ts < cutoff) {
-      // Even if this transfusion is out of the window, skip it entirely.
-      // The marker check below also requires the tx itself to fall inside.
-    }
 
     // Transfusion-event marker — anchored on the transfusion's own `date`,
     // not the labs' recorded_at, because the marker represents the event.
@@ -170,4 +166,11 @@ export function downsample(points: LabPoint[], max: number): LabPoint[] {
 export function latestValue(series: LabPoint[]): LabPoint | null {
   if (series.length === 0) return null;
   return series[series.length - 1];
+}
+
+/** Format a numeric lab value for chart tick/axis labels.
+ *  Values ≥ 100 are rounded to integer; smaller values show one decimal. */
+export function formatLabValue(v: number): string {
+  if (Math.abs(v) >= 100) return Math.round(v).toString();
+  return v.toFixed(1);
 }
