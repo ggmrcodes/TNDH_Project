@@ -24,6 +24,8 @@ const th: Record<TranslationKey, string> = {
   'common.close': 'ปิด',
   'common.confirm': 'ยืนยัน',
   'common.required': 'จำเป็น',
+  'common.permissionRequired': 'ต้องการสิทธิ์การเข้าถึง',
+  'common.photoPermissionBody': 'HaemoCare ต้องการสิทธิ์ในการใช้กล้องหรือคลังภาพ',
   'common.qrCode': 'QR Code',
 
   // Auth
@@ -580,6 +582,19 @@ const th: Record<TranslationKey, string> = {
   'preLabs.error.save': 'บันทึกค่าเลือดไม่สำเร็จ กรุณาลองใหม่',
   'preLabs.error.upload': 'อัปโหลดรูปไม่สำเร็จ ยังไม่ได้บันทึกค่าเลือด',
   'preLabs.clinicianEditPrompt': 'แก้ไขค่าที่ผู้ป่วยบันทึกไว้? ค่าเดิมจะถูกเก็บไว้ในประวัติการแก้ไข',
+
+  // Transfusion document photo (the source scan kept with the record)
+  'transfusion.documentPhoto.title': 'เอกสารที่สแกน',
+  'transfusion.documentPhoto.addPhoto': 'เพิ่มรูปภาพ',
+  'transfusion.documentPhoto.replacePhoto': 'เปลี่ยน',
+  'transfusion.documentPhoto.deletePhoto': 'ลบ',
+  'transfusion.documentPhoto.deleteConfirmTitle': 'ลบรูปภาพ?',
+  'transfusion.documentPhoto.deleteConfirmBody': 'บันทึกการให้เลือดจะยังคงอยู่ รูปภาพจะถูกลบอย่างถาวร',
+  'transfusion.documentPhoto.pickSourceTitle': 'เพิ่มเอกสารที่สแกน',
+  'transfusion.documentPhoto.takePhoto': 'ถ่ายรูป',
+  'transfusion.documentPhoto.chooseFromLibrary': 'เลือกจากคลังภาพ',
+  'transfusion.documentPhoto.viewFull': 'ดูรูปขนาดเต็ม',
+  'transfusion.documentPhoto.uploadError': 'อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่',
 
   // Patient — find a clinician (Thai polish later if needed)
   'patient.findClinician.entryButton': 'ค้นหาแพทย์ของฉัน',

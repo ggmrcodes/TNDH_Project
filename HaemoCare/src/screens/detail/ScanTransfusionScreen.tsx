@@ -68,6 +68,11 @@ export default function ScanTransfusionScreen() {
 
   const [phase, setPhase] = useState<Phase>('capture');
   const [imageUri, setImageUri] = useState<string | null>(null);
+  // Kept around after AI extraction so we can persist the same scanned
+  // image to the transfusion record once it's created. Null in the
+  // manual-entry path (no scan performed) — the patient can attach a
+  // photo later from the detail screen.
+  const [scannedBase64, setScannedBase64] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [aiFields, setAiFields] = useState<Set<keyof FormState>>(new Set());
@@ -124,6 +129,10 @@ export default function ScanTransfusionScreen() {
         base64 = resized.base64 ?? base64;
       }
       if (!base64) throw new ExtractionError('Could not read the picked image.');
+
+      // Stash the (possibly-resized) base64 so handleSave() can upload it
+      // to the transfusion-documents bucket once the row is created.
+      setScannedBase64(base64);
 
       const extracted = await extractTransfusionFromImage(base64, 'image/jpeg');
       applyExtraction(extracted);
@@ -190,6 +199,19 @@ export default function ScanTransfusionScreen() {
       const newTx = isMockMode
         ? await mockServices.createTransfusion(user.id, data)
         : await realTransfusionService.createTransfusion(user.id, data);
+
+      // Persist the scanned document photo (if any). Non-fatal — the
+      // transfusion record itself already saved; the patient can attach
+      // a photo later from the detail screen.
+      if (scannedBase64) {
+        try {
+          const svc = isMockMode ? mockServices : realTransfusionService;
+          const stored = await svc.uploadTransfusionDocumentPhoto(user.id, newTx.id, scannedBase64);
+          await svc.setTransfusionDocumentPhotoUrl(newTx.id, stored);
+        } catch (photoErr) {
+          console.error('save transfusion photo error', photoErr);
+        }
+      }
 
       // Persist pre-transfusion labs (Hb / Hct / Ferritin) into the new
       // pre_labs JSONB column whenever any of those fields was entered.

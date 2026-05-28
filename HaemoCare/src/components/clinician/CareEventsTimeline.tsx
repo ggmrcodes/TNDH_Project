@@ -1,11 +1,15 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { TranslationKey } from '../../i18n';
 import { formatDate } from '../../utils/dateHelpers';
 import type { CareEvent } from '../../utils/careEventsTimeline';
+import FullScreenImageViewer from '../common/FullScreenImageViewer';
+import * as realTransfusionService from '../../services/transfusionService';
+import * as mockServices from '../../mock/services';
 
 export interface CareEventsTimelineProps {
   events: CareEvent[];
@@ -42,7 +46,24 @@ export default function CareEventsTimeline({
   language,
 }: CareEventsTimelineProps) {
   const { t } = useLanguage();
+  const { isMockMode } = useAuth();
   const extra = Math.max(0, totalInWindow - events.length);
+  // Tap-to-view state for the per-row "scanned document" affordance on
+  // transfusion rows whose patient attached a photo.
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
+  const [viewerLoadingFor, setViewerLoadingFor] = useState<string | null>(null);
+
+  const openTransfusionPhoto = async (storedValue: string, txId: string) => {
+    if (viewerLoadingFor) return;
+    setViewerLoadingFor(txId);
+    try {
+      const svc = isMockMode ? mockServices : realTransfusionService;
+      const uri = await svc.getTransfusionDocumentPhotoSignedUrl(storedValue);
+      if (uri) setViewerUri(uri);
+    } finally {
+      setViewerLoadingFor(null);
+    }
+  };
 
   function renderRow(event: CareEvent): RenderedRow {
     if (event.kind === 'transfusion' && event.transfusion) {
@@ -122,6 +143,10 @@ export default function CareEventsTimeline({
           <View>
             {events.map((evt, i) => {
               const { icon, tint, line, reaction } = renderRow(evt);
+              const txPhoto =
+                evt.kind === 'transfusion' && evt.transfusion?.document_photo_url
+                  ? { stored: evt.transfusion.document_photo_url, id: evt.transfusion.id }
+                  : null;
               return (
                 <View key={i} style={styles.row}>
                   <View style={styles.iconWrap}>
@@ -131,6 +156,21 @@ export default function CareEventsTimeline({
                   <Text style={styles.line} numberOfLines={1} ellipsizeMode="tail">
                     {line}
                   </Text>
+                  {txPhoto && (
+                    <TouchableOpacity
+                      onPress={() => openTransfusionPhoto(txPhoto.stored, txPhoto.id)}
+                      hitSlop={8}
+                      style={styles.photoBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('transfusion.documentPhoto.viewFull' as TranslationKey)}
+                    >
+                      <Feather
+                        name="image"
+                        size={14}
+                        color={viewerLoadingFor === txPhoto.id ? COLORS.textLight : COLORS.primary}
+                      />
+                    </TouchableOpacity>
+                  )}
                   <Text style={styles.date}>{formatDate(evt.date, language)}</Text>
                 </View>
               );
@@ -145,6 +185,11 @@ export default function CareEventsTimeline({
           </View>
         )}
       </View>
+      <FullScreenImageViewer
+        visible={viewerUri != null}
+        uri={viewerUri}
+        onClose={() => setViewerUri(null)}
+      />
     </View>
   );
 }
@@ -189,6 +234,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     color: COLORS.text,
+  },
+  photoBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   date: { fontSize: 11, color: COLORS.textLight },
   empty: { ...TYPOGRAPHY.bodySmall, color: COLORS.textLight, fontStyle: 'italic' },
