@@ -27,6 +27,7 @@ import Svg, { Polyline, Circle, Line, Text as SvgText } from 'react-native-svg';
 import { format } from 'date-fns';
 import { th as thLocale, enUS } from 'date-fns/locale';
 import type { LabPoint } from '../../utils/labTrendsData';
+import { formatLabValue } from '../../utils/labTrendsData';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { TranslationKey } from '../../i18n';
 import { COLORS, TYPOGRAPHY } from '../../config/theme';
@@ -51,8 +52,6 @@ const PLOT_HEIGHT = 60;
 const PAD_X = 24;        // leaves room for min/max labels on the left
 const PAD_TOP = 8;
 const PAD_BOTTOM = 8;
-const GRID_COLOR = '#E4E4E4';
-const GRID_TEXT_COLOR = '#9CA3AF';
 const TREND_THRESHOLD = 0.05; // ±5% to count as up/down vs flat
 
 export default function LabSparkline({
@@ -91,7 +90,7 @@ export default function LabSparkline({
         <View style={styles.headerRow}>
           <Text style={styles.label}>{label}</Text>
           <Text style={styles.value} numberOfLines={1}>
-            {formatValue(last.value)}
+            {formatLabValue(last.value)}
             <Text style={styles.unit}> {unit}</Text>
           </Text>
         </View>
@@ -161,7 +160,7 @@ export default function LabSparkline({
             accessibilityLabel={trendLabel}
           />
           <Text style={styles.value} numberOfLines={1}>
-            {formatValue(last.value)}
+            {formatLabValue(last.value)}
             <Text style={styles.unit}> {unit}</Text>
           </Text>
         </View>
@@ -174,24 +173,24 @@ export default function LabSparkline({
             <Line
               x1={PAD_X} y1={PAD_TOP}
               x2={plotWidth} y2={PAD_TOP}
-              stroke={GRID_COLOR} strokeWidth={1} strokeDasharray="3,3"
+              stroke={COLORS.borderLight} strokeWidth={1} strokeDasharray="3,3"
             />
             <Line
               x1={PAD_X} y1={PLOT_HEIGHT - PAD_BOTTOM}
               x2={plotWidth} y2={PLOT_HEIGHT - PAD_BOTTOM}
-              stroke={GRID_COLOR} strokeWidth={1} strokeDasharray="3,3"
+              stroke={COLORS.borderLight} strokeWidth={1} strokeDasharray="3,3"
             />
             <SvgText
               x={PAD_X - 4} y={PAD_TOP + 4}
-              fontSize="9" fill={GRID_TEXT_COLOR} textAnchor="end"
+              fontSize="9" fill={COLORS.textLight} textAnchor="end"
             >
-              {formatValue(yMax)}
+              {formatLabValue(yMax)}
             </SvgText>
             <SvgText
               x={PAD_X - 4} y={PLOT_HEIGHT - PAD_BOTTOM + 4}
-              fontSize="9" fill={GRID_TEXT_COLOR} textAnchor="end"
+              fontSize="9" fill={COLORS.textLight} textAnchor="end"
             >
-              {formatValue(yMin)}
+              {formatLabValue(yMin)}
             </SvgText>
 
             {/* Trend line + a dot for every measurement so the user can see
@@ -230,11 +229,6 @@ export default function LabSparkline({
       </View>
     </Container>
   );
-}
-
-function formatValue(v: number): string {
-  if (Math.abs(v) >= 100) return Math.round(v).toString();
-  return v.toFixed(1);
 }
 
 function formatDateShort(ts: number, language: 'th' | 'en'): string {

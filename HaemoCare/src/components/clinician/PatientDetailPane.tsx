@@ -34,6 +34,7 @@ import {
   computeAdherenceSummary,
   AdherenceSummary,
 } from '../../analytics';
+import { worstRecentOutcome } from '../../analytics/triage';
 import ResponsiveContainer from '../common/ResponsiveContainer';
 import DiagnosisChip from '../passport/DiagnosisChip';
 import Disclaimer from '../common/Disclaimer';
@@ -205,12 +206,10 @@ export default function PatientDetailPane({
     return { txCount, logCount, flagged };
   }, [transfusions, logs]);
 
-  const worstRecentOutcome = useMemo((): 'normal' | 'monitor' | 'urgent' => {
+  const worstOutcome = useMemo((): 'normal' | 'monitor' | 'urgent' => {
     const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
     const recent = logs.filter(l => new Date(l.logged_at).getTime() >= cutoff);
-    if (recent.some(l => l.outcome === 'urgent')) return 'urgent';
-    if (recent.some(l => l.outcome === 'monitor')) return 'monitor';
-    return 'normal';
+    return worstRecentOutcome(recent);
   }, [logs]);
 
   const latestTxHasReaction = useMemo(() => {
@@ -225,12 +224,12 @@ export default function PatientDetailPane({
     if (!isClinicianView || !patientProfile) return null;
     const input: RiskInput = {
       bumpTiers: overdueState.isOverdue ? overdueState.bumpTiers : 0,
-      worstRecentOutcome,
+      worstRecentOutcome: worstOutcome,
       hasReactionOnFile: latestTxHasReaction,
       hbDaysUntilThreshold: hbResult.daysUntilThreshold ?? null,
     };
     return computeRiskScore(input);
-  }, [isClinicianView, patientProfile, overdueState, worstRecentOutcome, latestTxHasReaction, hbResult.daysUntilThreshold]);
+  }, [isClinicianView, patientProfile, overdueState, worstOutcome, latestTxHasReaction, hbResult.daysUntilThreshold]);
 
   const careEventsResult = useMemo(() => {
     if (!isClinicianView) return null;

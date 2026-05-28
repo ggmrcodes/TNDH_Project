@@ -4,6 +4,7 @@ import Svg, { Polyline, Line, Circle, Text as SvgText } from 'react-native-svg';
 import { Transfusion } from '../../types/database';
 import { HbDecayResult } from '../../analytics';
 import { COLORS, TYPOGRAPHY } from '../../config/theme';
+import { shortDayMonth } from '../../utils/dateHelpers';
 
 interface Props {
   transfusions: Transfusion[];
@@ -76,10 +77,10 @@ export default function HbTrendChart({
 
   // Build date tick labels (first, latest tx, projection target)
   const tickTimes: Array<{ ts: number; label: string }> = [
-    { ts: xMin, label: shortDate(xMin) },
-    { ts: latest.ts, label: shortDate(latest.ts) },
+    { ts: xMin, label: shortDayMonth(xMin) },
+    { ts: latest.ts, label: shortDayMonth(latest.ts) },
   ];
-  if (projectionTarget) tickTimes.push({ ts: projectionTarget.ts, label: shortDate(projectionTarget.ts) });
+  if (projectionTarget) tickTimes.push({ ts: projectionTarget.ts, label: shortDayMonth(projectionTarget.ts) });
 
   return (
     <View>
@@ -205,11 +206,6 @@ function LegendItem({ color, label, solid, dashed }: { color: string; label: str
       <Text style={styles.legendLabel}>{label}</Text>
     </View>
   );
-}
-
-function shortDate(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getDate()}/${d.getMonth() + 1}`;
 }
 
 const styles = StyleSheet.create({

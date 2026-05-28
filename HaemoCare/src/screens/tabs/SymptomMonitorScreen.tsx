@@ -23,12 +23,20 @@ import EmergencyContactSheet from '../../components/emergency/EmergencyContactSh
 import { useEmergencyContacts } from '../../hooks/useEmergencyContacts';
 import { TranslationKey } from '../../i18n';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
+import { outcomeColors } from '../../utils/statusColors';
+import { worstRecentOutcome } from '../../analytics/triage';
 
-const OUTCOME_COLORS: Record<Outcome, { bg: string; color: string; icon: string; gradient: [string, string] }> = {
-  normal: { bg: COLORS.statusNormalBg, color: COLORS.statusNormal, icon: 'check-circle', gradient: ['#0EA572', '#34D399'] },
-  monitor: { bg: COLORS.statusMonitorBg, color: COLORS.statusMonitor, icon: 'eye', gradient: ['#E8933A', '#FBB040'] },
-  urgent: { bg: COLORS.statusUrgentBg, color: COLORS.statusUrgent, icon: 'alert-triangle', gradient: ['#DC3B3B', '#F87171'] },
+const OUTCOME_META: Record<Outcome, { icon: string; gradient: [string, string] }> = {
+  normal:  { icon: 'check-circle',   gradient: ['#0EA572', '#34D399'] },
+  monitor: { icon: 'eye',             gradient: ['#E8933A', '#FBB040'] },
+  urgent:  { icon: 'alert-triangle',  gradient: ['#DC3B3B', '#F87171'] },
 };
+
+/** Merge the canonical status color pair with the view-specific icon/gradient. */
+function outcomeConfig(outcome: Outcome) {
+  const { fg: color, bg } = outcomeColors(outcome);
+  return { color, bg, ...OUTCOME_META[outcome] };
+}
 
 function HealthRing({ percentage, color, gradientColors }: { percentage: number; color: string; gradientColors: [string, string] }) {
   const size = 88;
@@ -86,13 +94,10 @@ export default function SymptomMonitorScreen() {
 
   const overallStatus = useMemo((): Outcome => {
     if (logs.length === 0) return 'normal';
-    const recent = logs.slice(0, 5);
-    if (recent.some(l => l.outcome === 'urgent')) return 'urgent';
-    if (recent.some(l => l.outcome === 'monitor')) return 'monitor';
-    return 'normal';
+    return worstRecentOutcome(logs.slice(0, 5));
   }, [logs]);
 
-  const cfg = OUTCOME_COLORS[overallStatus];
+  const cfg = outcomeConfig(overallStatus);
   const statusLabel =
     overallStatus === 'urgent' ? t('symptoms.status.attention')
     : overallStatus === 'monitor' ? t('symptoms.status.monitorClosely')
@@ -102,7 +107,7 @@ export default function SymptomMonitorScreen() {
   const remaining = latestTx ? hoursRemaining72(latestTx.date) : 0;
 
   const renderLogItem = ({ item }: { item: SymptomLog }) => {
-    const itemCfg = OUTCOME_COLORS[item.outcome];
+    const itemCfg = outcomeConfig(item.outcome);
     const symptoms = item.symptoms as string[];
     const sympSummary = symptoms.map(s => `${getSymptomLabel(s, t).split(' ')[0]} ${item.severity_scores[s] || 0}`).join(', ');
 

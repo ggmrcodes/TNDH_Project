@@ -19,7 +19,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import Svg, { Polyline, Line, Circle, Text as SvgText, Rect } from 'react-native-svg';
 import * as SecureStore from 'expo-secure-store';
 import type { LabPoint, LabWindow } from '../../utils/labTrendsData';
-import { buildLabTrendsSeries } from '../../utils/labTrendsData';
+import { buildLabTrendsSeries, formatLabValue } from '../../utils/labTrendsData';
+import { shortDayMonth } from '../../utils/dateHelpers';
 import type { Transfusion } from '../../types/database';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
@@ -195,7 +196,7 @@ function MetricPlot({ label, color, points, markers, xMin, xMax, width, emptyTex
     const out: Array<{ ts: number; label: string }> = [];
     for (let i = 0; i < count; i++) {
       const ts = xMin + (i / (count - 1)) * xRange;
-      out.push({ ts, label: shortDate(ts) });
+      out.push({ ts, label: shortDayMonth(ts) });
     }
     return out;
   }, [xMin, xRange]);
@@ -221,7 +222,7 @@ function MetricPlot({ label, color, points, markers, xMin, xMax, width, emptyTex
                 <React.Fragment key={`yt-${i}`}>
                   <Line x1={padL - 3} y1={y} x2={padL} y2={y} stroke={COLORS.borderLight} strokeWidth={1} />
                   <SvgText x={padL - 5} y={y + 3} fontSize={9} fill={COLORS.textLight} textAnchor="end">
-                    {formatTick(t)}
+                    {formatLabValue(t)}
                   </SvgText>
                 </React.Fragment>
               );
@@ -267,7 +268,7 @@ function MetricPlot({ label, color, points, markers, xMin, xMax, width, emptyTex
             <View style={styles.tooltip}>
               <View style={[styles.tooltipDot, { backgroundColor: color }]} />
               <Text style={styles.tooltipLabel}>{label}</Text>
-              <Text style={styles.tooltipValue}>{formatTick(tooltip.value)}</Text>
+              <Text style={styles.tooltipValue}>{formatLabValue(tooltip.value)}</Text>
               <Text style={styles.tooltipDate}>{new Date(tooltip.ts).toISOString().slice(0, 10)}</Text>
               <TouchableOpacity
                 onPress={() => setTooltip(null)}
@@ -286,16 +287,6 @@ function MetricPlot({ label, color, points, markers, xMin, xMax, width, emptyTex
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
-
-function shortDate(ts: number): string {
-  const d = new Date(ts);
-  return `${d.getDate()}/${d.getMonth() + 1}`;
-}
-
-function formatTick(v: number): string {
-  if (Math.abs(v) >= 100) return Math.round(v).toString();
-  return v.toFixed(1);
-}
 
 /** Generate ~`count` "nice" round ticks between min and max. */
 function niceTicks(min: number, max: number, count: number): number[] {
