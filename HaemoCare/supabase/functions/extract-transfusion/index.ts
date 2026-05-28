@@ -132,12 +132,15 @@ function jsonResponse(body: unknown, status: number): Response {
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
+  console.log('extract-transfusion: invoked', req.method);
+
   if (req.method !== 'POST') {
     return jsonResponse({ error: 'Method Not Allowed' }, 405);
   }
 
   const apiKey = Deno.env.get('GEMINI_API_KEY');
   if (!apiKey) {
+    console.error('extract-transfusion: GEMINI_API_KEY not set');
     return jsonResponse(
       { error: 'GEMINI_API_KEY not set on the Edge Function. Run: supabase secrets set GEMINI_API_KEY=...' },
       500,
@@ -147,18 +150,21 @@ Deno.serve(async (req: Request): Promise<Response> => {
   let payload: { base64?: unknown; mimeType?: unknown };
   try {
     payload = await req.json();
-  } catch {
+  } catch (e) {
+    console.error('extract-transfusion: invalid JSON body', (e as Error).message);
     return jsonResponse({ error: 'Invalid JSON body' }, 400);
   }
 
   const base64 = typeof payload?.base64 === 'string' ? payload.base64 : '';
   if (!base64) {
+    console.error('extract-transfusion: missing base64 field, payload keys:', Object.keys(payload ?? {}));
     return jsonResponse({ error: 'Missing or empty "base64" field' }, 400);
   }
   const mimeRaw = typeof payload?.mimeType === 'string' ? payload.mimeType : 'image/jpeg';
   const mime: AllowedMime = (ALLOWED_MIME as readonly string[]).includes(mimeRaw)
     ? (mimeRaw as AllowedMime)
     : 'image/jpeg';
+  console.log('extract-transfusion: payload ok', { base64Length: base64.length, mime });
 
   const geminiBody = {
     contents: [
@@ -179,6 +185,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     },
   };
 
+  console.log('extract-transfusion: calling Gemini');
   let res: Response;
   try {
     res = await fetch(`${GEMINI_URL}?key=${encodeURIComponent(apiKey)}`, {
@@ -187,12 +194,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
       body: JSON.stringify(geminiBody),
     });
   } catch (e) {
+    console.error('extract-transfusion: fetch to Gemini threw', (e as Error).message);
     return jsonResponse({ error: `Network error contacting Gemini: ${(e as Error).message}` }, 502);
   }
+  console.log('extract-transfusion: Gemini responded', res.status);
 
   if (!res.ok) {
     let detail = '';
     try { detail = (await res.text()).slice(0, 500); } catch { /* ignore */ }
+    console.error('extract-transfusion: Gemini error', res.status, detail);
     return jsonResponse(
       { error: `Gemini API returned ${res.status}`, detail },
       res.status >= 500 ? 502 : res.status,
@@ -202,6 +212,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const json = await res.json().catch(() => null) as any;
   const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (typeof text !== 'string' || !text) {
+    console.error('extract-transfusion: Gemini returned no text content', JSON.stringify(json).slice(0, 300));
     return jsonResponse({ error: 'Gemini returned no text content', raw: json }, 502);
   }
 
@@ -209,8 +220,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     parsed = JSON.parse(text);
   } catch {
+    console.error('extract-transfusion: Gemini returned non-JSON', text.slice(0, 300));
     return jsonResponse({ error: 'Gemini returned non-JSON content', text: text.slice(0, 300) }, 502);
   }
 
-  return jsonResponse({ extracted: normalize(parsed) }, 200);
+  const extracted = normalize(parsed);
+  console.log('extract-transfusion: returning extracted, confidence=', extracted.confidence);
+  return jsonResponse({ extracted }, 200);
 });
