@@ -341,20 +341,12 @@ export default function ClinicianDashboardScreen() {
         <QueueSortSelector value={sortKey} onChange={setSortKey} />
       </View>
       <FilterChips active={filter} onChange={setFilter} />
-      <FlatList
-        data={visibleSlices}
-        keyExtractor={(item) => item.profile.user_id}
-        renderItem={renderRow}
-        ListEmptyComponent={queueEmpty}
-        contentContainerStyle={{ paddingBottom: SPACING.xs }}
-        scrollEnabled={false}
-      />
       {(pendingLinks.length > 0 || incomingRequests.length > 0) && (
         <View style={styles.pendingSection}>
           {incomingRequests.length > 0 && (
             <>
               <Text style={styles.pendingSectionLabel}>
-                {t('clinician.incomingRequests.title' as TranslationKey).toUpperCase()}
+                {`${t('clinician.incomingRequests.title' as TranslationKey).toUpperCase()}  (${incomingRequests.length})`}
               </Text>
               {incomingRequests.map((r) => (
                 <IncomingPatientRequestRow
@@ -362,6 +354,7 @@ export default function ClinicianDashboardScreen() {
                   linkId={r.link.id}
                   patientDisplayId={r.patientDisplayId}
                   patientFullName={r.patientFullName}
+                  requestedAt={r.link.requested_at}
                   onResolved={refreshAssigned}
                 />
               ))}
@@ -370,13 +363,14 @@ export default function ClinicianDashboardScreen() {
           {pendingLinks.length > 0 && (
             <>
               <Text style={styles.pendingSectionLabel}>
-                {t('clinician.pendingSection.awaitingPatient' as TranslationKey).toUpperCase()}
+                {`${t('clinician.pendingSection.awaitingPatient' as TranslationKey).toUpperCase()}  (${pendingLinks.length})`}
               </Text>
               {pendingLinks.map(({ link, patientDisplayId }) => (
                 <PendingPatientRow
                   key={link.id}
                   linkId={link.id}
                   patientDisplayId={patientDisplayId}
+                  requestedAt={link.requested_at}
                   onCancelled={refreshAssigned}
                 />
               ))}
@@ -384,6 +378,14 @@ export default function ClinicianDashboardScreen() {
           )}
         </View>
       )}
+      <FlatList
+        data={visibleSlices}
+        keyExtractor={(item) => item.profile.user_id}
+        renderItem={renderRow}
+        ListEmptyComponent={queueEmpty}
+        contentContainerStyle={{ paddingBottom: SPACING.xs }}
+        scrollEnabled={false}
+      />
     </>
   );
 
@@ -676,13 +678,14 @@ const styles = StyleSheet.create({
   leftRailScroll: { gap: SPACING.sm, paddingTop: SPACING.sm, paddingBottom: SPACING.xl },
   alertsWrap: { paddingHorizontal: SPACING.md },
   addPatientRow: { paddingHorizontal: SPACING.md, paddingTop: SPACING.xs },
-  pendingSection: { paddingHorizontal: SPACING.sm, paddingTop: SPACING.sm, gap: SPACING.xs },
+  pendingSection: { paddingHorizontal: SPACING.sm, paddingTop: SPACING.sm, paddingBottom: SPACING.xs, gap: SPACING.xs },
   pendingSectionLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: COLORS.textLight,
+    fontSize: 12,
+    fontWeight: '800',
+    color: COLORS.textSecondary,
     letterSpacing: 1.2,
     paddingHorizontal: SPACING.sm,
+    paddingTop: SPACING.xs,
     paddingBottom: SPACING.xs,
   },
   searchRow: {

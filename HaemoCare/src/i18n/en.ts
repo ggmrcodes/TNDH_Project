@@ -598,7 +598,10 @@ const en = {
   'clinician.incomingRequests.errorTitle': 'Action failed',
   'clinician.incomingRequests.errorBody': 'Could not process this request. Please try again.',
   'clinician.incomingRequests.alreadyHandled': 'This request has already been handled. The list will refresh.',
+  'clinician.incomingRequests.receivedRelative': 'Received {ago}',
   'clinician.pendingSection.awaitingPatient': 'Awaiting patient',
+  'clinician.pendingSection.pendingPill': 'PENDING',
+  'clinician.pendingSection.sentRelative': 'Sent {ago}',
 
   // Clinician dashboard
   'clinician.dashboard.title': 'Clinician Dashboard',
