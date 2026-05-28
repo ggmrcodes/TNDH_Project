@@ -61,12 +61,15 @@ export default function HbTrendChart({
       threshold,
       latest.hb - decay.decayRatePerDay * ((xMax - latest.ts) / MS_PER_DAY)
     );
-    // If decay carries past xMax before hitting threshold, clamp to xMax
+    // If decay carries past xMax before hitting threshold, clamp to xMax.
+    // Guard daysToCross > 0: when latest Hb is already at/below the threshold
+    // daysToCross would be ≤ 0 and crossTs would land at or before latest.ts,
+    // drawing a backwards segment — skip the crossing in that case.
     const daysToCross = (latest.hb - threshold) / decay.decayRatePerDay;
     const crossTs = latest.ts + daysToCross * MS_PER_DAY;
-    if (crossTs <= xMax) {
+    if (daysToCross > 0 && crossTs <= xMax) {
       projectionTarget = { ts: crossTs, hb: threshold };
-    } else {
+    } else if (daysToCross > 0) {
       projectionTarget = { ts: xMax, hb: endHb };
     }
   }
