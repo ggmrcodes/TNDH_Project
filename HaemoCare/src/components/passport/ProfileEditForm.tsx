@@ -34,12 +34,19 @@ interface ProfileEditFormProps {
    * selection if both hospital + clinician are picked, otherwise null.
    */
   onDoctorSelection?: (info: { hospitalId: string; clinicianUserId: string } | null) => Promise<void>;
+  /**
+   * Edit-profile-only: extra content rendered inside the form's own
+   * ScrollView, above the Save button. Lets callers (e.g. EditProfileScreen)
+   * surface things like the connected-clinicians list without breaking the
+   * scroll/keyboard behavior the form already owns.
+   */
+  afterForm?: React.ReactNode;
 }
 
 const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;
 const RH_FACTORS = ['+', '-'] as const;
 
-export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLabel, onDoctorSelection }: ProfileEditFormProps) {
+export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLabel, onDoctorSelection, afterForm }: ProfileEditFormProps) {
   const { t } = useLanguage();
   const { isMockMode } = useAuth();
   const { isMobile } = useResponsive();
@@ -311,6 +318,8 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
           )}
         </View>
       )}
+
+      {afterForm}
 
       <Button
         label={submitLabel || t('common.save')}
