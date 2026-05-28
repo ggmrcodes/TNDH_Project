@@ -14,7 +14,7 @@ export function triageScore(input: TriageInput): number {
   if (input.worstRecentOutcome === 'urgent') score += 10000;
   if (input.bumpTiers === 2) score += 5000;
   else if (input.bumpTiers === 1) score += 2500;
-  if (input.worstRecentOutcome === 'monitor' && score < 1000) score += 1000;
+  if (input.worstRecentOutcome === 'monitor') score += 1000;
   if (input.hasReactionOnFile) score += 200;
   score += Math.min(input.daysOverdue, 365);
   return score;

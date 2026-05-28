@@ -201,7 +201,7 @@ export default function ClinicianDashboardScreen() {
     return {
       overdueCount: slices.filter(s => s.overdueState.isOverdue).length,
       monitorCount: slices.filter(s => s.worstRecentOutcome === 'monitor').length,
-      stableCount: slices.filter(s => !s.overdueState.isOverdue && s.worstRecentOutcome === 'normal').length,
+      stableCount: slices.filter(s => !s.overdueState.isOverdue && s.worstRecentOutcome === 'normal' && s.recentLogs.length > 0).length,
       cohortSize: slices.length,
       urgentLogs7d: slices.filter(s =>
         s.recentLogs.some(l => l.outcome === 'urgent' && new Date(l.logged_at).getTime() >= sevenDaysAgo)
@@ -298,7 +298,7 @@ export default function ClinicianDashboardScreen() {
       : <Text style={styles.empty}>{t('clinician.queue.empty' as TranslationKey)}</Text>;
   }
 
-  const clinicianName = clinicianProfile?.full_name?.trim() || (t('clinician.signOut' as TranslationKey) && 'Clinician');
+  const clinicianName = clinicianProfile?.full_name?.trim() || 'Clinician';
   const hospitalFromDirectory = clinicianProfile?.hospital_id
     ? hospitals.find(h => h.id === clinicianProfile.hospital_id)
     : null;
