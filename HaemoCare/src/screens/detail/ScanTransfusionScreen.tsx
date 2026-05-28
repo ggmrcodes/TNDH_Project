@@ -27,7 +27,6 @@ import type { PreTransfusionLabs } from '../../types/database';
 import {
   extractTransfusionFromImage,
   ExtractedTransfusion,
-  MissingApiKeyError,
   ExtractionError,
 } from '../../services/aiExtraction';
 import Disclaimer from '../../components/common/Disclaimer';
@@ -153,9 +152,7 @@ export default function ScanTransfusionScreen() {
       setPhase('review');
     } catch (e: any) {
       console.error('extract error', e);
-      if (e instanceof MissingApiKeyError) {
-        setErrorMsg(e.message);
-      } else if (e instanceof ExtractionError) {
+      if (e instanceof ExtractionError) {
         setErrorMsg(e.message);
       } else {
         setErrorMsg('Unexpected error — please try again.');
