@@ -462,6 +462,8 @@ const en = {
   'scan.confidence.low': 'Low quality — verify every field',
   'scan.disclaimer': 'AI-extracted from your photo. Correct anything wrong before saving.',
   'scan.retry': 'Try another photo',
+  'scan.notRecord.title': "This doesn't look like a transfusion document",
+  'scan.notRecord.body': "Take a clearer photo of your hospital slip or transfusion label, or enter the details by hand.",
   'scan.field.date': 'Date (YYYY-MM-DD)',
   'scan.field.preHb': 'Pre-Hb (g/dL)',
   'scan.field.postHb': 'Post-Hb (g/dL)',

@@ -15,6 +15,11 @@ import { supabase } from '../config/supabase';
 export type ExtractionConfidence = 'high' | 'medium' | 'low';
 
 export interface ExtractedTransfusion {
+  // False when the photo isn't actually a transfusion document (selfie,
+  // food, accidental capture, etc.). Defaults to true on older Edge
+  // Function deployments that don't yet return this field, so the
+  // review-screen flow keeps working during a partial roll-out.
+  is_transfusion_document: boolean;
   date_iso: string | null;
   hospital: string | null;
   units_received: number | null;

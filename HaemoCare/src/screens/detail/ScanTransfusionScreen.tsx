@@ -33,7 +33,7 @@ import Disclaimer from '../../components/common/Disclaimer';
 import Button from '../../components/common/Button';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
-type Phase = 'capture' | 'processing' | 'review' | 'error';
+type Phase = 'capture' | 'processing' | 'review' | 'error' | 'notRecord';
 
 interface FormState {
   date: string;
@@ -148,6 +148,15 @@ export default function ScanTransfusionScreen() {
       setScannedBase64(base64);
 
       const extracted = await extractTransfusionFromImage(base64, 'image/jpeg');
+      // Gemini classifies the photo: if it's not a transfusion document
+      // (selfie, food, accidental capture), bail out with a friendly
+      // screen instead of dumping the user on a review form full of
+      // nulls. The reason text from the model goes to the UI for clarity.
+      if (extracted.is_transfusion_document === false) {
+        setUnreadableReason(extracted.unreadable_reason || '');
+        setPhase('notRecord');
+        return;
+      }
       applyExtraction(extracted);
       setPhase('review');
     } catch (e: any) {
@@ -290,6 +299,28 @@ export default function ScanTransfusionScreen() {
           <ErrorStep message={errorMsg} onRetry={() => setPhase('capture')} t={t} />
         )}
 
+        {phase === 'notRecord' && (
+          <NotRecordStep
+            reason={unreadableReason}
+            onPick={pickAndExtract}
+            onEnterManually={() => {
+              setForm(EMPTY_FORM);
+              setAiFields(new Set());
+              setConfidence('medium');
+              setUnreadableReason('');
+              setImageUri(null);
+              setErrorMsg('');
+              setPhase('review');
+            }}
+            onCancel={() => {
+              setUnreadableReason('');
+              setImageUri(null);
+              setPhase('capture');
+            }}
+            t={t}
+          />
+        )}
+
         {phase === 'review' && (
           <ReviewStep
             form={form}
@@ -391,6 +422,62 @@ function ErrorStep({
       <Feather name="alert-circle" size={24} color={COLORS.statusUrgent} />
       <Text style={styles.errorText}>{message || t('scan.error.network')}</Text>
       <Button label={t('scan.retry')} onPress={onRetry} style={{ marginTop: SPACING.md }} />
+    </View>
+  );
+}
+
+function NotRecordStep({
+  reason,
+  onPick,
+  onEnterManually,
+  onCancel,
+  t,
+}: {
+  reason: string;
+  onPick: (s: 'camera' | 'library') => void;
+  onEnterManually: () => void;
+  onCancel: () => void;
+  t: (k: TranslationKey) => string;
+}) {
+  return (
+    <View style={styles.captureWrap}>
+      <View style={styles.heroIconWrap}>
+        <Feather name="image" size={28} color={COLORS.accent} />
+      </View>
+      <Text style={styles.stepTitle}>{t('scan.notRecord.title' as TranslationKey)}</Text>
+      <Text style={styles.stepBody}>{t('scan.notRecord.body' as TranslationKey)}</Text>
+      {reason ? <Text style={styles.notRecordReason}>{reason}</Text> : null}
+
+      {Platform.OS !== 'web' && (
+        <Button
+          label={t('scan.pickPhoto')}
+          onPress={() => onPick('camera')}
+          style={{ marginTop: SPACING.lg }}
+        />
+      )}
+      <Button
+        label={t('scan.pickLibrary')}
+        onPress={() => onPick('library')}
+        variant={Platform.OS === 'web' ? 'primary' : 'outline'}
+        style={{ marginTop: SPACING.sm }}
+      />
+
+      <View style={styles.manualDivider}>
+        <View style={styles.manualDividerLine} />
+        <Text style={styles.manualDividerText}>{t('common.or' as TranslationKey)}</Text>
+        <View style={styles.manualDividerLine} />
+      </View>
+
+      <Button label={t('scan.enterManually')} onPress={onEnterManually} variant="outline" />
+      <Text style={styles.manualHint}>{t('scan.enterManuallyHint')}</Text>
+
+      <TouchableOpacity
+        onPress={onCancel}
+        style={styles.notRecordCancelBtn}
+        accessibilityRole="button"
+      >
+        <Text style={styles.notRecordCancelText}>{t('common.cancel')}</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -621,6 +708,27 @@ const styles = StyleSheet.create({
   processText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary },
   errorWrap: { alignItems: 'center', gap: SPACING.sm, paddingVertical: SPACING.xl },
   errorText: { ...TYPOGRAPHY.body, color: COLORS.text, textAlign: 'center', paddingHorizontal: SPACING.md },
+  notRecordReason: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.xs,
+  },
+  notRecordCancelBtn: {
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    marginTop: SPACING.sm,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notRecordCancelText: {
+    ...TYPOGRAPHY.bodySmall,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
   reviewHeader: { flexDirection: 'row', gap: SPACING.md, alignItems: 'center' },
   thumb: { width: 56, height: 56, borderRadius: RADIUS.md, backgroundColor: COLORS.borderLight },
   confidencePill: {
