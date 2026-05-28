@@ -24,7 +24,12 @@ export default function PendingPatientRow({ linkId, patientDisplayId, onCancelle
     setCancelling(true);
     try {
       const svc = isMockMode ? mockService : realService;
-      await svc.cancelLinkRequest(linkId);
+      const result = await svc.cancelLinkRequest(linkId);
+      // If STATE_CHANGED the row is no longer pending — refresh regardless.
+      if (!result.ok && result.reason === 'STATE_CHANGED') {
+        onCancelled();
+        return;
+      }
       onCancelled();
     } catch {
       setCancelling(false);

@@ -598,6 +598,9 @@ const th: Record<TranslationKey, string> = {
   'clinician.incomingRequests.title': 'รอการอนุมัติของคุณ',
   'clinician.incomingRequests.approve': 'อนุมัติ',
   'clinician.incomingRequests.decline': 'ปฏิเสธ',
+  'clinician.incomingRequests.errorTitle': 'ดำเนินการไม่สำเร็จ',
+  'clinician.incomingRequests.errorBody': 'ไม่สามารถดำเนินการคำขอนี้ได้ กรุณาลองอีกครั้ง',
+  'clinician.incomingRequests.alreadyHandled': 'คำขอนี้ได้รับการดำเนินการแล้ว รายการจะรีเฟรช',
   'clinician.pendingSection.awaitingPatient': 'รอผู้ป่วยตอบรับ',
 
   // Clinician dashboard
