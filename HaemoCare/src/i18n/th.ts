@@ -463,6 +463,8 @@ const th: Record<TranslationKey, string> = {
   'scan.confidence.low': 'ภาพไม่ชัด — ตรวจสอบทุกช่อง',
   'scan.disclaimer': 'ข้อมูลสกัดโดย AI จากภาพ กรุณาแก้ไขก่อนบันทึก',
   'scan.retry': 'ลองภาพอื่น',
+  'scan.notRecord.title': 'รูปนี้ไม่ใช่เอกสารการให้เลือด',
+  'scan.notRecord.body': 'ถ่ายรูปเอกสารโรงพยาบาลหรือสติกเกอร์ถุงเลือดให้ชัดเจนขึ้น หรือกรอกข้อมูลเอง',
   'scan.field.date': 'วันที่ (YYYY-MM-DD)',
   'scan.field.preHb': 'Hb ก่อนให้เลือด (g/dL)',
   'scan.field.postHb': 'Hb หลังให้เลือด (g/dL)',

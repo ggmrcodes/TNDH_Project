@@ -35,6 +35,9 @@ const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GE
 const SYSTEM_PROMPT = [
   'You are a medical record extraction assistant for HaemoCare, an app for transfusion-dependent patients.',
   'You extract transfusion details from photos of hospital discharge slips, transfusion labels, lab reports, or handwritten clinical notes.',
+  'Before extracting, decide whether the image is actually a transfusion-related medical document and set is_transfusion_document accordingly.',
+  'Set is_transfusion_document to false for anything unrelated: selfies, photos of people, food, scenery, screenshots of other apps, blank/black images, random objects, generic test cards.',
+  'When is_transfusion_document is false, also set confidence to "low" and leave date_iso, hospital, units_received, pre_hb_g_dl, post_hb_g_dl, and reaction_noted as null; put a short reason in unreadable_reason (e.g. "not a medical document — appears to be a selfie").',
   'The source document may be in Thai or English. Extract values verbatim without translating.',
   'Prefer null over guessing. If a value is missing, unclear, or ambiguous, return null for that field.',
   'Respond strictly with JSON matching the requested schema. No prose.',
@@ -45,6 +48,10 @@ const SYSTEM_PROMPT = [
 const RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
+    is_transfusion_document: {
+      type: 'boolean',
+      description: 'True only if the image is a transfusion-related medical document (discharge slip, transfusion label, lab report, clinical note). False for selfies, food, scenery, blank images, random objects, screenshots of other apps, or anything not medical.',
+    },
     date_iso: {
       type: 'string',
       nullable: true,
@@ -93,13 +100,18 @@ const RESPONSE_SCHEMA = {
       description: 'If confidence is low, one short sentence explaining what could not be read. Empty if confidence is medium or high.',
     },
   },
-  required: ['confidence', 'reaction_detail', 'notes', 'unreadable_reason'],
+  required: ['is_transfusion_document', 'confidence', 'reaction_detail', 'notes', 'unreadable_reason'],
 } as const;
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'] as const;
 type AllowedMime = typeof ALLOWED_MIME[number];
 
 interface ExtractedTransfusion {
+  // True if the image is a transfusion-related medical document; false
+  // for selfies, food, scenery, blank images, etc. Defaults to true on
+  // older responses missing this field, so any non-explicit false from
+  // Gemini still routes to the review screen unchanged.
+  is_transfusion_document: boolean;
   date_iso: string | null;
   hospital: string | null;
   units_received: number | null;
@@ -114,6 +126,8 @@ interface ExtractedTransfusion {
 
 function normalize(raw: any): ExtractedTransfusion {
   return {
+    is_transfusion_document:
+      typeof raw?.is_transfusion_document === 'boolean' ? raw.is_transfusion_document : true,
     date_iso: typeof raw?.date_iso === 'string' ? raw.date_iso : null,
     hospital: typeof raw?.hospital === 'string' ? raw.hospital : null,
     units_received: typeof raw?.units_received === 'number' ? raw.units_received : null,
