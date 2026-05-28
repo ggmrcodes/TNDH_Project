@@ -138,6 +138,8 @@ const th: Record<TranslationKey, string> = {
   'profileSetup.addAntibody': 'เพิ่มแอนติบอดี',
   'profileSetup.knownReactions': 'ปฏิกิริยาจากการรับเลือดที่เคยเกิดขึ้น',
   'profileSetup.medications': 'ยาที่ใช้อยู่ปัจจุบัน',
+  'profileSetup.myHospital.title': 'โรงพยาบาลของฉัน',
+  'profileSetup.myHospital.hint': 'โรงพยาบาลที่คุณรับเลือดเป็นประจำ ใช้เป็นค่าเริ่มต้นในการบันทึกการให้เลือดใหม่',
   'profileSetup.complete': 'บันทึกโปรไฟล์',
   'profileSetup.connectDoctor.title': 'เชื่อมต่อกับแพทย์ของคุณ',
   'profileSetup.connectDoctor.optional': 'ไม่บังคับ — คุณสามารถเชื่อมต่อภายหลังจากหน้าพาสปอร์ตได้',
