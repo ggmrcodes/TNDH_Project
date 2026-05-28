@@ -70,6 +70,11 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
     profile?.thalassemia_subtype ?? null
   );
 
+  // The patient's primary hospital — a profile attribute, always editable.
+  // Distinct from the doctor-section `hospitalId` below (that one filters
+  // clinicians during the linking workflow and isn't persisted on the row).
+  const [myHospitalId, setMyHospitalId] = useState<string | null>(profile?.hospital_id ?? null);
+
   // Doctor section state (only active when onDoctorSelection prop is provided)
   const [hospitalId, setHospitalId] = useState<string | null>(null);
   const [selectedClinicianUserId, setSelectedClinicianUserId] = useState<string | null>(null);
@@ -127,6 +132,7 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
       recommended_visit_interval_days: weeksToDays(intervalWeeks),
       primary_diagnosis: primaryDiagnosis,
       thalassemia_subtype: thalassemiaSubtype,
+      hospital_id: myHospitalId,
     });
     // New: optional doctor selection callback
     if (onDoctorSelection) {
@@ -277,6 +283,14 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
         </TouchableOpacity>
       </View>
       <Text style={styles.hint}>{t('profileSetup.visitIntervalHint')}</Text>
+
+      <Text style={styles.label}>
+        {t('profileSetup.myHospital.title' as TranslationKey)}
+      </Text>
+      <Text style={styles.hint}>
+        {t('profileSetup.myHospital.hint' as TranslationKey)}
+      </Text>
+      <HospitalPicker value={myHospitalId} onChange={setMyHospitalId} />
 
       {onDoctorSelection && (
         <View style={styles.doctorSection}>

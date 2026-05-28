@@ -19,6 +19,7 @@ export const MOCK_PROFILE: Profile = {
   recommended_visit_interval_days: 14,
   primary_diagnosis: 'thalassemia',
   thalassemia_subtype: 'beta_major_cooleys',
+  hospital_id: null,
   created_at: '2025-01-15T00:00:00+07:00',
   updated_at: '2026-04-01T00:00:00+07:00',
 };

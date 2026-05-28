@@ -61,6 +61,7 @@ const baseProfile = (
   recommended_visit_interval_days: intervalDays,
   primary_diagnosis: primaryDiagnosis,
   thalassemia_subtype: thalassemiaSubtype,
+  hospital_id: null,
   created_at: '2026-01-15T09:00:00+07:00',
   updated_at: '2026-01-15T09:00:00+07:00',
 });

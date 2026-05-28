@@ -29,6 +29,11 @@ export interface Profile {
   recommended_visit_interval_days: number;
   primary_diagnosis: PrimaryDiagnosis | null;
   thalassemia_subtype: ThalassemiaSubtype | null;
+  // ── Patient's primary hospital. Nullable; references public.hospitals(id).
+  // Added 2026-06-10. Drives transfusion-record prefill and surfaces in
+  // Edit Profile / signup. Independent of clinician-linking (that's the
+  // clinician_patient_links table).
+  hospital_id: string | null;
   created_at: string;
   updated_at: string;
 }

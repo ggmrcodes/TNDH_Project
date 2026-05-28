@@ -136,6 +136,8 @@ const en = {
   'profileSetup.addAntibody': 'Add antibody',
   'profileSetup.knownReactions': 'Known Transfusion Reactions',
   'profileSetup.medications': 'Current Medications',
+  'profileSetup.myHospital.title': 'My hospital',
+  'profileSetup.myHospital.hint': 'The hospital where you usually receive transfusions. Used to prefill new transfusion records.',
   'profileSetup.complete': 'Complete Profile',
   'profileSetup.connectDoctor.title': 'Connect your doctor',
   'profileSetup.connectDoctor.optional': 'Optional — you can also do this later from your passport.',

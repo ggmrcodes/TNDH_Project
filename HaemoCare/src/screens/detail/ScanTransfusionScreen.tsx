@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useHospitals } from '../../hooks/useHospitals';
 import { TranslationKey } from '../../i18n';
 import * as mockServices from '../../mock/services';
 import * as realTransfusionService from '../../services/transfusionService';
@@ -63,8 +64,9 @@ const EMPTY_FORM: FormState = {
 
 export default function ScanTransfusionScreen() {
   const navigation = useNavigation<any>();
-  const { user, isMockMode } = useAuth();
+  const { user, profile, isMockMode } = useAuth();
   const { t } = useLanguage();
+  const { hospitals } = useHospitals();
 
   const [phase, setPhase] = useState<Phase>('capture');
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -74,6 +76,18 @@ export default function ScanTransfusionScreen() {
   // photo later from the detail screen.
   const [scannedBase64, setScannedBase64] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  // Prefill hospital from the patient's profile.hospital_id (one-shot
+  // after both profile + hospital directory load). Scan-extracted hospital
+  // overrides this; AI extraction runs separately and writes via setForm.
+  const hospitalPrefilled = useRef(false);
+  useEffect(() => {
+    if (hospitalPrefilled.current) return;
+    if (!profile || hospitals.length === 0 || !profile.hospital_id) return;
+    const myHospital = hospitals.find(h => h.id === profile.hospital_id);
+    if (!myHospital) return;
+    hospitalPrefilled.current = true;
+    setForm(prev => (prev.hospital ? prev : { ...prev, hospital: myHospital.name_th || myHospital.name_en || '' }));
+  }, [profile, hospitals]);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [aiFields, setAiFields] = useState<Set<keyof FormState>>(new Set());
   const [confidence, setConfidence] = useState<ExtractedTransfusion['confidence']>('medium');
