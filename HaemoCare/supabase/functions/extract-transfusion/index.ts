@@ -24,7 +24,12 @@
  *   the standard JS client adds it automatically via .functions.invoke().
  */
 
-const GEMINI_MODEL = 'gemini-2.0-flash';
+// gemini-2.0-flash is no longer available to new users (API returns 404
+// NOT_FOUND with "Please update your code to use a newer model"). Bumped
+// to 2.5-flash — same Flash tier, identical request/response shape, and
+// the responseSchema / systemInstruction features we rely on are
+// supported the same way.
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const SYSTEM_PROMPT = [
