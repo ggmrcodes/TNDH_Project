@@ -63,10 +63,21 @@ export async function extractTransfusionFromImage(
   );
 
   if (error) {
-    // FunctionsHttpError carries .context.status on supabase-js v2; fall
-    // back to plain message otherwise so the caller's UI shows something.
-    const status = (error as any)?.context?.status;
-    throw new ExtractionError(error.message || 'Extraction service error', status);
+    // supabase-js v2 FunctionsHttpError exposes the raw Response on
+    // `.context`. Read its body so the on-device error message shows the
+    // real server-side cause (e.g. "GEMINI_API_KEY not set", or a Gemini
+    // 4xx body) instead of the generic "non-2xx status code".
+    const ctx = (error as any)?.context;
+    const status: number | undefined = ctx?.status;
+    let detail = '';
+    if (ctx && typeof ctx.text === 'function') {
+      try { detail = (await ctx.text()).slice(0, 300); } catch { /* body already consumed */ }
+    }
+    const base = error.message || 'Extraction service error';
+    const message = detail
+      ? `${base}${status ? ` (HTTP ${status})` : ''}: ${detail}`
+      : `${base}${status ? ` (HTTP ${status})` : ''}`;
+    throw new ExtractionError(message, status);
   }
   if (!data?.extracted) {
     throw new ExtractionError('Extraction service returned no data.');
