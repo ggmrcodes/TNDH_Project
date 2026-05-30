@@ -1,6 +1,6 @@
 import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 // expo-secure-store has no web implementation. Using it on web throws every
@@ -41,3 +41,22 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: isWeb,
   },
 });
+
+// Pause the auth auto-refresh timer when the app is in the background and
+// resume it on foreground. Without this, supabase-js's refresh tick keeps
+// firing during suspension and can race the React Native bridge during
+// deep-link resumption — RCTNetworking's HTTP handler hasn't been
+// re-registered yet, so the fetch crashes with
+// "No suitable URL request handler found for https://<project>.supabase.co/
+//  auth/v1/token?grant_type=refresh_token".
+// This is the canonical Supabase RN recipe; native-only because AppState
+// is a no-op on web (the browser handles tab visibility itself).
+if (!isWeb) {
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+      supabase.auth.startAutoRefresh();
+    } else {
+      supabase.auth.stopAutoRefresh();
+    }
+  });
+}
