@@ -517,6 +517,7 @@ const th: Record<TranslationKey, string> = {
   'emergency.sheet.subtitle.urgent': 'แจ้งใครสักคนเกี่ยวกับอาการรุนแรงนี้',
   'emergency.sheet.subtitle.overdue': 'แจ้งคนใกล้ตัวว่าคุณเลยกำหนดแล้ว',
   'emergency.sheet.cancel': 'ยกเลิก',
+  'emergency.sheet.manage': 'จัดการผู้ติดต่อฉุกเฉิน',
   'emergency.action.call': 'โทร',
   'emergency.action.sms': 'ส่งข้อความ',
   'emergency.body.sos': '{name} ต้องการความช่วยเหลือ — ส่งจาก HaemoCare',
