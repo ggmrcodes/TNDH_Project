@@ -53,8 +53,6 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [bloodType, setBloodType] = useState(profile?.blood_type || '');
   const [rhFactor, setRhFactor] = useState(profile?.rh_factor || '');
-  const [antibodies, setAntibodies] = useState<string[]>(profile?.antibodies || []);
-  const [newAntibody, setNewAntibody] = useState('');
   const [knownReactions, setKnownReactions] = useState(profile?.known_reactions || '');
   const [medications, setMedications] = useState(profile?.medications || '');
   // Visit cadence is stored in days in the DB but presented in weeks in the UI —
@@ -109,24 +107,14 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
     }
   };
 
-  const addAntibody = () => {
-    const trimmed = newAntibody.trim();
-    if (trimmed && !antibodies.includes(trimmed)) {
-      setAntibodies([...antibodies, trimmed]);
-      setNewAntibody('');
-    }
-  };
-
-  const removeAntibody = (index: number) => {
-    setAntibodies(antibodies.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = async () => {
+    // `antibodies` is intentionally NOT included — patients no longer
+    // edit it from this form. The DB column + existing values are
+    // preserved by partial-update semantics in updateProfile().
     onSubmit({
       full_name: fullName.trim(),
       blood_type: bloodType as Profile['blood_type'],
       rh_factor: rhFactor as Profile['rh_factor'],
-      antibodies,
       known_reactions: knownReactions.trim(),
       medications: medications.trim(),
       recommended_visit_interval_days: weeksToDays(intervalWeeks),
@@ -209,28 +197,6 @@ export default function ProfileEditForm({ profile, onSubmit, isLoading, submitLa
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
-
-      <Text style={styles.label}>{t('profileSetup.antibodies')}</Text>
-      <View style={styles.chipRow}>
-        {antibodies.map((ab, i) => (
-          <TouchableOpacity key={i} onPress={() => removeAntibody(i)} style={styles.chip}>
-            <Text style={styles.chipText}>{ab} ✕</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <View style={styles.addRow}>
-        <TextInput
-          style={[styles.input, { flex: 1, marginBottom: 0 }]}
-          value={newAntibody}
-          onChangeText={setNewAntibody}
-          placeholder={t('profileSetup.addAntibody')}
-          placeholderTextColor={COLORS.textLight}
-          onSubmitEditing={addAntibody}
-        />
-        <TouchableOpacity onPress={addAntibody} style={styles.addBtn}>
-          <Text style={styles.addBtnText}>+</Text>
-        </TouchableOpacity>
       </View>
 
       <Text style={styles.label}>{t('profileSetup.knownReactions')}</Text>
@@ -416,43 +382,6 @@ const styles = StyleSheet.create({
   },
   segmentTextActive: {
     color: COLORS.primary,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.xs,
-    marginBottom: SPACING.xs,
-  },
-  chip: {
-    backgroundColor: COLORS.primaryLight,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm + 2,
-    borderRadius: RADIUS.full,
-  },
-  chipText: {
-    ...TYPOGRAPHY.bodySmall,
-    color: COLORS.primary,
-    fontWeight: '600',
-  },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.sm,
-  },
-  addBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addBtnText: {
-    color: COLORS.white,
-    fontSize: 24,
-    fontWeight: '600',
-    lineHeight: 26,
   },
   stepperRow: {
     flexDirection: 'row',
