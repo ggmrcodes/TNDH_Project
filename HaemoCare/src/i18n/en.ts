@@ -516,6 +516,7 @@ const en = {
   'emergency.sheet.subtitle.urgent': 'Notify someone about this urgent symptom',
   'emergency.sheet.subtitle.overdue': 'Notify someone you are overdue',
   'emergency.sheet.cancel': 'Cancel',
+  'emergency.sheet.manage': 'Manage emergency contacts',
   'emergency.action.call': 'Call',
   'emergency.action.sms': 'SMS',
   'emergency.body.sos': '{name} needs help — sent from HaemoCare.',

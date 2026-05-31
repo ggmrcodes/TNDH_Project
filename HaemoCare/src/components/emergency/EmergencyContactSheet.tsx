@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, Pressable, StyleSheet, Linking, ToastAndroid, Platform, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { TranslationKey } from '../../i18n';
@@ -39,6 +40,7 @@ function maskPhone(phone: string): string {
 export default function EmergencyContactSheet(props: EmergencyContactSheetProps) {
   const { visible, onClose, contacts, context, patientName, daysOverdue } = props;
   const { t } = useLanguage();
+  const navigation = useNavigation();
 
   const handleCall = async (phone: string) => {
     const url = `tel:${digitsOnly(phone)}`;
@@ -93,6 +95,15 @@ export default function EmergencyContactSheet(props: EmergencyContactSheetProps)
               </TouchableOpacity>
             </View>
           ))}
+          <TouchableOpacity
+            style={styles.manage}
+            onPress={() => { onClose(); navigation.navigate('EmergencyContacts' as never); }}
+            accessibilityRole="button"
+            accessibilityLabel={t('emergency.sheet.manage' as TranslationKey)}
+          >
+            <Feather name="edit-2" size={14} color={COLORS.primary} />
+            <Text style={styles.manageText}>{t('emergency.sheet.manage' as TranslationKey)}</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.cancel} onPress={onClose}>
             <Text style={styles.cancelText}>{t('emergency.sheet.cancel' as TranslationKey)}</Text>
           </TouchableOpacity>
@@ -124,6 +135,15 @@ const styles = StyleSheet.create({
   callBtn: { backgroundColor: COLORS.statusNormal ?? '#0EA572' },
   smsBtn: { backgroundColor: COLORS.primary ?? '#0B6E6E' },
   actionText: { color: COLORS.white, fontSize: 12, fontWeight: '700' },
-  cancel: { alignSelf: 'center', paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg, marginTop: SPACING.sm },
+  // Subtle edit link below the call/SMS rows. Discoverability fix —
+  // patient can jump straight to manage-contacts from the SOS sheet
+  // instead of backing out to Settings.
+  manage: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    alignSelf: 'center', paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.sm, minHeight: 44,
+  },
+  manageText: { color: COLORS.primary, fontSize: 14, fontWeight: '700' },
+  cancel: { alignSelf: 'center', paddingVertical: SPACING.sm, paddingHorizontal: SPACING.lg },
   cancelText: { color: COLORS.textLight, fontSize: 14, fontWeight: '600' },
 });
