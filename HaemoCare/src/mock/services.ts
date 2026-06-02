@@ -905,6 +905,52 @@ export async function createOrGetHospital(name: string): Promise<string> {
   return id;
 }
 
+// ── Admin hospital curation (mock parity) ─────────────────────
+// Mock mode skips the is_admin() RLS check — anyone playing in
+// mock mode can curate. The real service is server-gated.
+
+export async function adminListAllHospitals(): Promise<Hospital[]> {
+  return [...MOCK_HOSPITALS].sort((a, b) => {
+    if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;
+    return a.name_th.localeCompare(b.name_th);
+  });
+}
+
+export async function adminCreateHospital(input: {
+  name_th: string;
+  name_en: string;
+  code: string | null;
+  region: Hospital['region'];
+}): Promise<Hospital> {
+  const id = `mock-hospital-admin-${mockHospitalIdCounter++}`;
+  const row: Hospital = {
+    id,
+    name_th: input.name_th,
+    name_en: input.name_en,
+    code: input.code,
+    region: input.region,
+    is_active: true,
+    created_at: new Date().toISOString(),
+  };
+  MOCK_HOSPITALS.push(row);
+  return row;
+}
+
+export async function adminUpdateHospital(
+  id: string,
+  patch: Partial<{ name_th: string; name_en: string; code: string | null; region: Hospital['region'] }>,
+): Promise<Hospital> {
+  const h = MOCK_HOSPITALS.find(x => x.id === id);
+  if (!h) throw new Error('hospital not found');
+  Object.assign(h, patch);
+  return h;
+}
+
+export async function adminSetHospitalActive(id: string, isActive: boolean): Promise<void> {
+  const h = MOCK_HOSPITALS.find(x => x.id === id);
+  if (h) h.is_active = isActive;
+}
+
 // ── Patient-initiated linking (mock, clinician side) ─────────
 // Seeded: one incoming request from a mock patient to the demo clinician,
 // so the clinician dashboard demo shows the "Awaiting your approval" row.
