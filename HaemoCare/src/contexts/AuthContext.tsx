@@ -107,6 +107,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAdmin(!error && data === true);
   }, []);
 
+  // Fallback for the autoconfirm-off clinician-signup path. signUpClinician
+  // stashes the form fields in user_metadata via options.data because the
+  // auth.uid()-gated insert into clinician_profiles can't run before the
+  // user confirms their email + gets a real session. On the first
+  // authenticated session here we back-fill from that metadata so the
+  // row exists, role flips to 'clinician', and AppNavigator routes to
+  // PendingVerificationScreen instead of the patient ProfileCompletionScreen.
+  // Idempotent: returns early if a clinician_profiles row already exists.
+  const hydrateClinicianProfileFromMetadata = useCallback(async (u: User): Promise<void> => {
+    const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+    if (meta.intended_role !== 'clinician') return;
+
+    const { data: existing } = await supabase
+      .from('clinician_profiles')
+      .select('id')
+      .eq('user_id', u.id)
+      .maybeSingle();
+    if (existing) return;
+
+    const { error: insertError } = await supabase.from('clinician_profiles').insert({
+      user_id: u.id,
+      full_name: typeof meta.full_name === 'string' ? meta.full_name : '',
+      license_number: typeof meta.license_number === 'string' ? meta.license_number : '',
+      hospital_affiliation: typeof meta.hospital_affiliation === 'string' ? meta.hospital_affiliation : '',
+      hospital_id: typeof meta.hospital_id === 'string' ? meta.hospital_id : null,
+      verified: false,
+    });
+    if (insertError) {
+      // Non-fatal — log and leave; the user is still safer landing on
+      // PendingVerificationScreen than the patient form, and they can
+      // contact support if this persists.
+      console.error('hydrateClinicianProfileFromMetadata failed', insertError.message);
+      return;
+    }
+    await fetchClinicianProfile(u.id);
+  }, [fetchClinicianProfile]);
+
   const refreshProfile = useCallback(async () => {
     if (isMockMode) {
       if (clinicianProfile) {
@@ -127,7 +164,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(s);
         setUser(s?.user ?? null);
         if (s?.user) {
-          Promise.all([fetchProfile(s.user.id), fetchClinicianProfile(s.user.id), fetchIsAdmin()])
+          // hydrateClinicianProfileFromMetadata is chained AFTER the initial
+          // fetchClinicianProfile so it sees the (null) result and back-fills
+          // from user_metadata. It re-fetches on success so role flips.
+          Promise.all([
+            fetchProfile(s.user.id),
+            fetchClinicianProfile(s.user.id).then(() => hydrateClinicianProfileFromMetadata(s.user)),
+            fetchIsAdmin(),
+          ])
             .finally(() => setIsLoading(false));
         } else {
           setIsLoading(false);
@@ -152,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(s?.user ?? null);
       if (s?.user) {
         fetchProfile(s.user.id);
-        fetchClinicianProfile(s.user.id);
+        fetchClinicianProfile(s.user.id).then(() => hydrateClinicianProfileFromMetadata(s.user!));
         fetchIsAdmin();
       } else {
         setProfile(null);
@@ -166,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // `isMockModeRef.current` so it doesn't need to re-subscribe when mock
     // mode toggles — listing `isMockMode` here caused getSession to re-run
     // on every mock-mode flip, which wiped the just-set mock user.
-  }, [fetchProfile, fetchClinicianProfile, fetchIsAdmin]);
+  }, [fetchProfile, fetchClinicianProfile, fetchIsAdmin, hydrateClinicianProfileFromMetadata]);
 
   // Localhost web-only dev convenience: auto-sign-in as the mock clinician
   // so testing post-auth flows (dashboard layouts, clinician-only screens)
@@ -266,21 +310,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     hospitalAffiliation: string;
     hospitalId: string | null;
   }): Promise<{ error?: string }> => {
+    // Stash the clinician details in user_metadata via options.data. They
+    // survive email confirmation in raw_user_meta_data so the hydration
+    // fallback below can create the clinician_profiles row on first
+    // authenticated session if the autoconfirm-off path skipped it.
+    // Without this, doctors who require email confirmation end up with
+    // role===null after sign-in and get routed into the patient
+    // ProfileCompletionScreen by AppNavigator. With it, hydration runs
+    // → clinicianProfile becomes non-null → role==='clinician' →
+    // PendingVerificationScreen as designed.
     const { data, error } = await supabase.auth.signUp({
       email: input.email,
       password: input.password,
+      options: {
+        data: {
+          intended_role: 'clinician',
+          full_name: input.fullName,
+          license_number: input.licenseNumber,
+          hospital_affiliation: input.hospitalAffiliation,
+          hospital_id: input.hospitalId,
+        },
+      },
     });
     if (error) return { error: error.message };
 
     // signUp only returns a session when Supabase autoconfirm is enabled.
     // If it's disabled, we cannot insert under RLS (auth.uid() is null until
-    // the user confirms and signs in). In that case the profile row is created
-    // on first authenticated session via a fallback path — but the simple
-    // path (autoconfirm on) is the current production state, so we insert here.
+    // the user confirms and signs in). hydrateClinicianProfileFromMetadata
+    // (called from the session-fetch effect) covers that case from the
+    // user_metadata stashed above. The eager insert here is the
+    // autoconfirm-on happy path.
     const newUserId = data.user?.id;
     if (!newUserId) {
       // No user returned — surface a generic error.
       return { error: 'Account created, but we could not save your clinician details. Please contact support.' };
+    }
+    if (!data.session) {
+      // Email confirmation required — clinician_profiles insert would 401
+      // under RLS right now. The hydration fallback will create it after
+      // first authenticated session.
+      return {};
     }
 
     const { error: insertError } = await supabase.from('clinician_profiles').insert({
