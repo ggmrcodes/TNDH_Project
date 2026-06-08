@@ -514,6 +514,7 @@ export default function PatientDetailPane({
 
         {isClinicianView && careEventsResult && (
           <CareEventsTimeline
+            key={userId}
             events={careEventsResult.events}
             totalInWindow={careEventsResult.totalInWindow}
             language={language}

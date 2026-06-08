@@ -7,6 +7,9 @@ import {
   buildMonthGrid,
   getEventsForLocalDay,
   countHiddenNormalLogsInMonth,
+  findMostRecentActivityMonth,
+  cellTintForMonthCell,
+  type MonthCell,
 } from '../careEventsGrouping';
 import type { CareEvent } from '../careEventsTimeline';
 
@@ -488,5 +491,112 @@ describe('countHiddenNormalLogsInMonth', () => {
         { showNormals: true, urgentOnly: true }
       )
     ).toBe(1);
+  });
+});
+
+describe('findMostRecentActivityMonth', () => {
+  const TODAY_LOCAL = new Date(2026, 5, 9, 12, 0, 0); // 2026-06-09 local
+
+  function mkEv(yyyy: number, mm: number, dd: number): CareEvent {
+    const iso = new Date(yyyy, mm - 1, dd, 12, 0, 0).toISOString();
+    return {
+      id: `ev-${yyyy}-${mm}-${dd}`,
+      kind: 'symptom_log',
+      date: iso,
+      log: {
+        id: `log-${yyyy}-${mm}-${dd}`,
+        user_id: 'p1',
+        transfusion_id: null,
+        logged_at: iso,
+        symptoms: ['fatigue'],
+        severity_scores: { fatigue: 5 },
+        outcome: 'urgent',
+        notes: '',
+        created_at: iso,
+      },
+    };
+  }
+
+  it('returns today when there is no activity at all', () => {
+    expect(findMostRecentActivityMonth([], TODAY_LOCAL)).toEqual(TODAY_LOCAL);
+  });
+
+  it('returns today when this month has any activity', () => {
+    const res = findMostRecentActivityMonth(
+      [mkEv(2026, 6, 4), mkEv(2026, 5, 30)],
+      TODAY_LOCAL
+    );
+    expect(res).toEqual(TODAY_LOCAL);
+  });
+
+  it('returns the latest event date when this month has no activity', () => {
+    const res = findMostRecentActivityMonth(
+      [mkEv(2026, 5, 30), mkEv(2026, 5, 14), mkEv(2026, 4, 12)],
+      TODAY_LOCAL
+    );
+    expect(res.getFullYear()).toBe(2026);
+    expect(res.getMonth()).toBe(4); // May
+    expect(res.getDate()).toBe(30);
+  });
+
+  it('does not assume input order — finds the latest regardless of position', () => {
+    const res = findMostRecentActivityMonth(
+      [mkEv(2026, 1, 10), mkEv(2026, 5, 30), mkEv(2026, 3, 20)],
+      TODAY_LOCAL
+    );
+    expect(res.getMonth()).toBe(4); // May
+  });
+});
+
+describe('cellTintForMonthCell', () => {
+  function mkCell(partial: Partial<MonthCell>): MonthCell {
+    return {
+      dayKey: '2026-06-04',
+      date: new Date(2026, 5, 4).toISOString(),
+      dayNumber: 4,
+      inViewMonth: true,
+      isToday: false,
+      hasTransfusion: false,
+      hasAppointment: false,
+      hasReaction: false,
+      outcomes: new Set(),
+      eventCount: 0,
+      ...partial,
+    };
+  }
+
+  it('returns null for an empty day', () => {
+    expect(cellTintForMonthCell(mkCell({}))).toBeNull();
+  });
+
+  it('returns null for appointment-only (no severity, no TX) — corner glyph carries it', () => {
+    expect(cellTintForMonthCell(mkCell({ hasAppointment: true }))).toBeNull();
+  });
+
+  it('urgent beats monitor beats TX beats normal', () => {
+    expect(
+      cellTintForMonthCell(
+        mkCell({
+          outcomes: new Set(['urgent', 'monitor', 'normal']),
+          hasTransfusion: true,
+        })
+      )
+    ).toBe('urgent');
+    expect(
+      cellTintForMonthCell(
+        mkCell({
+          outcomes: new Set(['monitor', 'normal']),
+          hasTransfusion: true,
+        })
+      )
+    ).toBe('monitor');
+    expect(
+      cellTintForMonthCell(
+        mkCell({ outcomes: new Set(['normal']), hasTransfusion: true })
+      )
+    ).toBe('tx');
+    expect(
+      cellTintForMonthCell(mkCell({ outcomes: new Set(['normal']) }))
+    ).toBe('normal');
   });
 });
