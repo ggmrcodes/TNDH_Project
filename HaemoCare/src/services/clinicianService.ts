@@ -37,13 +37,29 @@ export async function getClinicianProfile(userId: string): Promise<ClinicianProf
 }
 
 export async function getAssignedPatients(clinicianId: string): Promise<Profile[]> {
-  const { data, error } = await supabase
+  // Two-step query instead of PostgREST's embedded `profiles!inner(*)`
+  // syntax: `clinician_patient_links.patient_user_id` FKs to
+  // auth.users(id), not profiles, so PostgREST has no direct
+  // relationship in its schema cache and the embedded form throws
+  // "Could not find a relationship between 'clinician_patient_links'
+  //  and 'profiles' in the schema cache" — proven on-device via the
+  // diagnostic alert in useAssignedPatients (PR #27). Manual join is
+  // cache-stability-proof.
+  const { data: links, error: linkErr } = await supabase
     .from('clinician_patient_links')
-    .select('patient_user_id, profiles!inner(*)')
+    .select('patient_user_id')
     .eq('clinician_id', clinicianId)
     .eq('status', 'active');
-  if (error) throw new Error(error.message);
-  return (data ?? []).flatMap((row: any) => (row.profiles ? [row.profiles as Profile] : []));
+  if (linkErr) throw new Error(linkErr.message);
+  const patientIds = (links ?? []).map((l) => l.patient_user_id);
+  if (patientIds.length === 0) return [];
+
+  const { data: profiles, error: profErr } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('user_id', patientIds);
+  if (profErr) throw new Error(profErr.message);
+  return (profiles ?? []) as Profile[];
 }
 
 export async function getTransfusionsForPatient(userId: string): Promise<Transfusion[]> {
