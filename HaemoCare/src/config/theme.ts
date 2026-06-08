@@ -33,12 +33,15 @@ export const COLORS = {
   // Clinical status — richer, more saturated
   statusNormal: '#0EA572',
   statusNormalBg: '#E9FBF3',
+  statusNormalTint: '#8FCFA4',   // mid-saturation — for whole-surface tints (e.g. calendar cells) where Bg is too faint to read
   statusNormalText: '#054D35',
   statusMonitor: '#E8933A',
   statusMonitorBg: '#FFF7ED',
+  statusMonitorTint: '#F4C77E',
   statusMonitorText: '#7A4510',
   statusUrgent: '#DC3B3B',
   statusUrgentBg: '#FEF0F0',
+  statusUrgentTint: '#F4A8A8',
   statusUrgentText: '#8B1A1A',
 
   // Misc

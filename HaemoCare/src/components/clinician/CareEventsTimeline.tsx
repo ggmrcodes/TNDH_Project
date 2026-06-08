@@ -53,10 +53,15 @@ function outcomeTint(outcome: 'normal' | 'monitor' | 'urgent'): string {
 }
 
 function cellBgFor(tint: CellTint): string {
-  if (tint === 'urgent') return COLORS.statusUrgentBg;
-  if (tint === 'monitor') return COLORS.statusMonitorBg;
-  if (tint === 'normal') return COLORS.statusNormalBg;
-  if (tint === 'tx') return COLORS.primaryLight;
+  // Mid-saturation Tint tier (not the very-faint Bg tier). The Bg colors
+  // are designed for small inline chips against a white surface; on a
+  // whole calendar cell at 42px they wash out to near-white. Tint sits
+  // between Bg and the saturated source, readable as a fill without
+  // overpowering the day number text.
+  if (tint === 'urgent') return COLORS.statusUrgentTint;
+  if (tint === 'monitor') return COLORS.statusMonitorTint;
+  if (tint === 'normal') return COLORS.statusNormalTint;
+  if (tint === 'tx') return COLORS.primaryMuted;
   return COLORS.surface;
 }
 
@@ -662,7 +667,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dayNumToday: { backgroundColor: COLORS.primary },
-  dayNum: { fontSize: 12, color: COLORS.text, fontWeight: '500' },
+  dayNum: { fontSize: 12, color: COLORS.text, fontWeight: '600' },
   dayNumDimmed: { color: COLORS.textLight },
   dayNumTodayText: { color: COLORS.white, fontWeight: '700' },
   reactionDot: {
