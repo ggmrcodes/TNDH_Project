@@ -11,6 +11,7 @@ import { computeOverdueState, OverdueState } from '../../utils/overdueVisit';
 import { sortTriageDescending, type TriageInput } from '../../utils/triageQueue';
 import * as mockServices from '../../mock/services';
 import * as realClinicianService from '../../services/clinicianService';
+import { supabase } from '../../config/supabase';
 import AlertsStrip from '../../components/clinician/AlertsStrip';
 import CohortOverviewCard from '../../components/clinician/CohortOverviewCard';
 import FilterChips, { FilterId } from '../../components/clinician/FilterChips';
@@ -58,6 +59,10 @@ export default function ClinicianDashboardScreen() {
   const { conversations, totalUnread } = useConversations();
   const { patients, pendingLinks, incomingRequests, loading, refresh: refreshAssigned } = useAssignedPatients();
   const [slices, setSlices] = useState<PatientSlice[]>([]);
+  // Bumped by the per-patient realtime subscription below whenever a
+  // linked patient logs/edits a transfusion / symptom / appointment.
+  // Added as a slices-effect dependency so the slice gets recomputed.
+  const [slicesTick, setSlicesTick] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterId>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -126,6 +131,41 @@ export default function ClinicianDashboardScreen() {
       if (!cancelled) setSlices(built);
     })();
     return () => { cancelled = true; };
+  }, [patients, isMockMode, slicesTick]);
+
+  // Live updates: subscribe to 'patient:{user_id}' for each assigned
+  // patient. The 2026-06-09-patient-data-realtime trigger broadcasts on
+  // every transfusion / symptom_logs / appointments INSERT/UPDATE/DELETE.
+  // Any broadcast bumps slicesTick, which triggers the slices effect
+  // above to re-fetch the patient's data and re-rank the queue.
+  //
+  // One channel per linked patient — typical clinician has a few patients,
+  // not hundreds, so the per-patient model keeps the topic naming simple
+  // (mirrors the per-link topic in 2026-06-06-link-realtime). If a
+  // clinician's caseload grows past ~50 patients and channel count
+  // becomes a problem, swap to an aggregated 'clinician_data:{id}' topic.
+  // Skipped in mock mode (no realtime infrastructure).
+  useEffect(() => {
+    if (isMockMode || patients.length === 0) return;
+    let cancelled = false;
+    const channels: ReturnType<typeof supabase.channel>[] = [];
+    (async () => {
+      await supabase.realtime.setAuth();
+      if (cancelled) return;
+      for (const p of patients) {
+        const channel = supabase
+          .channel('patient:' + p.user_id, { config: { private: true } })
+          .on('broadcast', { event: 'INSERT' }, () => setSlicesTick(t => t + 1))
+          .on('broadcast', { event: 'UPDATE' }, () => setSlicesTick(t => t + 1))
+          .on('broadcast', { event: 'DELETE' }, () => setSlicesTick(t => t + 1))
+          .subscribe();
+        channels.push(channel);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      for (const c of channels) supabase.removeChannel(c);
+    };
   }, [patients, isMockMode]);
 
   // Search → filter chip → sort.
