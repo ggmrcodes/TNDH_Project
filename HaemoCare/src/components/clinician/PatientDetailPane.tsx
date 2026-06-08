@@ -72,13 +72,26 @@ interface LoadedData {
 }
 
 const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
+// CareEventsTimeline is now a calendar widget — clinicians can navigate
+// any past month, so we fetch + display up to a year of history. The
+// older 60-day window was a holdover from the v1 list-style timeline
+// and made old symptoms invisible on past months of the calendar.
+const TIMELINE_WINDOW_DAYS = 365;
+const TIMELINE_WINDOW_MS = TIMELINE_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+// maxEvents existed to cap the v1 scrollable list; on the calendar each
+// event sits in its own day cell, so capping just hides history. Set
+// well above any realistic patient volume.
+const TIMELINE_MAX_EVENTS = 5000;
 
 async function loadPatientData(
   userId: string,
   isMockMode: boolean,
   isClinicianView: boolean
 ): Promise<LoadedData> {
-  const sinceISO = new Date(Date.now() - SIXTY_DAYS_MS).toISOString();
+  // Clinician view feeds the calendar widget — fetch a full year of
+  // past appointments. Patient view doesn't surface this fetch anyway.
+  const appointmentsWindowMs = isClinicianView ? TIMELINE_WINDOW_MS : SIXTY_DAYS_MS;
+  const sinceISO = new Date(Date.now() - appointmentsWindowMs).toISOString();
   if (isMockMode && isClinicianView) {
     const [txs, slogs, prof, appts, contacts] = await Promise.all([
       mockServices.getTransfusionsForPatient(userId),
@@ -272,6 +285,8 @@ export default function PatientDetailPane({
       logs,
       appointments: pastAppointments,
       today: new Date(),
+      windowDays: TIMELINE_WINDOW_DAYS,
+      maxEvents: TIMELINE_MAX_EVENTS,
     });
   }, [isClinicianView, transfusions, logs, pastAppointments]);
 
