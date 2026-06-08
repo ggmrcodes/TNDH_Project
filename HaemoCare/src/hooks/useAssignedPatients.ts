@@ -30,6 +30,17 @@ export function useAssignedPatients(): UseAssignedPatientsResult {
 
   useEffect(() => {
     if (!enabled) {
+      // Diagnostic: this is the "race condition" failure mode — if userId
+      // is null or role isn't 'clinician' at the time the dashboard mounts,
+      // the hook short-circuits and patients stays [] forever until the
+      // deps change. Surfaces hop 3 / hop 9 from the debugging plan.
+      console.log('[useAssignedPatients] short-circuit', {
+        enabled,
+        userId,
+        role,
+        isMockMode,
+        tick,
+      });
       setPatients([]);
       setPendingLinks([]);
       setIncomingRequests([]);
@@ -52,6 +63,27 @@ export function useAssignedPatients(): UseAssignedPatientsResult {
           : realClinicianService.getIncomingPatientRequests(userId!),
       ]);
       if (cancelled) return;
+      // Diagnostic: prints the post-fetch state. Differentiates rejection
+      // (network / auth / RLS) vs success-with-zero-rows (wrong project,
+      // wrong account, mock mode) vs success-with-data (UI bug downstream).
+      console.log('[useAssignedPatients] fetched', {
+        userId,
+        isMockMode,
+        active: activeResult.status === 'fulfilled'
+          ? {
+              ok: true,
+              count: activeResult.value.length,
+              ids: activeResult.value.map(p => p.user_id),
+              firstName: activeResult.value[0]?.full_name,
+            }
+          : { ok: false, error: String(activeResult.reason) },
+        pending: pendingResult.status === 'fulfilled'
+          ? { ok: true, count: pendingResult.value.length }
+          : { ok: false, error: String(pendingResult.reason) },
+        incoming: incomingResult.status === 'fulfilled'
+          ? { ok: true, count: incomingResult.value.length }
+          : { ok: false, error: String(incomingResult.reason) },
+      });
       if (activeResult.status === 'fulfilled') {
         setPatients(activeResult.value);
       } else {
