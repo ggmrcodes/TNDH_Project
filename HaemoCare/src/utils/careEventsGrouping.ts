@@ -1,3 +1,12 @@
+import {
+  addDays,
+  endOfMonth,
+  endOfWeek,
+  isSameDay,
+  isSameMonth,
+  startOfMonth,
+  startOfWeek,
+} from 'date-fns';
 import type { CareEvent } from './careEventsTimeline';
 import type { Transfusion } from '../types/database';
 
@@ -144,6 +153,113 @@ export function countHiddenNormalLogs(
  * the most recent `windowDays`. Used to paint the at-a-glance mini strip
  * at the top of the timeline card.
  */
+// ─── Monthly-grid calendar widget ─────────────────────────────────────
+// Calendar cells are indexed by LOCAL date (the clinician's wall-clock day),
+// not UTC, because that's how every calendar UI in the world reads. Pure
+// UTC keys (used by buildStripCells / groupEventsByDay) would mis-bucket
+// any event logged late-night across the TH offset, e.g. a 20:00 UTC log
+// on May 22 is May 23 03:00 local Bangkok.
+
+export interface MonthCell {
+  /** YYYY-MM-DD (local time). */
+  dayKey: string;
+  /** ISO of midnight-local for this day. */
+  date: string;
+  dayNumber: number;
+  inViewMonth: boolean;
+  isToday: boolean;
+  hasTransfusion: boolean;
+  hasAppointment: boolean;
+  hasReaction: boolean;
+  outcomes: Set<'normal' | 'monitor' | 'urgent'>;
+  eventCount: number;
+}
+
+function ymdLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Build a 42-cell monthly grid (always 6 rows × 7 cols so the card height
+ * is constant). Cells outside the `viewMonth` are still rendered so the
+ * grid stays full — the caller dims them.
+ *
+ * `weekStartsOn`: 0 = Sunday (default; iOS Calendar default in TH locale).
+ */
+export function buildMonthGrid(
+  viewMonth: Date,
+  today: Date,
+  events: CareEvent[],
+  weekStartsOn: 0 | 1 = 0
+): MonthCell[] {
+  const monthStart = startOfMonth(viewMonth);
+  const gridStart = startOfWeek(monthStart, { weekStartsOn });
+
+  const byKey = new Map<string, CareEvent[]>();
+  for (const ev of events) {
+    const key = ymdLocal(new Date(ev.date));
+    const arr = byKey.get(key);
+    if (arr) arr.push(ev);
+    else byKey.set(key, [ev]);
+  }
+
+  // Always emit 42 cells (6 rows × 7 cols) so the card height is constant
+  // regardless of where the month sits in the week.
+  const cells: MonthCell[] = [];
+  let cursor = gridStart;
+  while (cells.length < 42) {
+    const key = ymdLocal(cursor);
+    const dayEvents = byKey.get(key) ?? [];
+    const cell: MonthCell = {
+      dayKey: key,
+      date: cursor.toISOString(),
+      dayNumber: cursor.getDate(),
+      inViewMonth: isSameMonth(cursor, viewMonth),
+      isToday: isSameDay(cursor, today),
+      hasTransfusion: false,
+      hasAppointment: false,
+      hasReaction: false,
+      outcomes: new Set(),
+      eventCount: dayEvents.length,
+    };
+    for (const ev of dayEvents) {
+      if (ev.kind === 'transfusion') {
+        cell.hasTransfusion = true;
+        if (ev.transfusion?.reaction_noted) cell.hasReaction = true;
+      }
+      if (ev.kind === 'appointment') cell.hasAppointment = true;
+      if (ev.kind === 'symptom_log' && ev.log) cell.outcomes.add(ev.log.outcome);
+    }
+    cells.push(cell);
+    cursor = addDays(cursor, 1);
+  }
+  return cells;
+}
+
+/** Return all events whose local date matches `dayKey` (YYYY-MM-DD). */
+export function getEventsForLocalDay(events: CareEvent[], dayKey: string): CareEvent[] {
+  return events.filter((ev) => ymdLocal(new Date(ev.date)) === dayKey);
+}
+
+/** Count normal-outcome symptom logs in `viewMonth` that current filters hide. */
+export function countHiddenNormalLogsInMonth(
+  events: CareEvent[],
+  viewMonth: Date,
+  filters: Pick<TimelineFilters, 'showNormals' | 'urgentOnly'>
+): number {
+  if (filters.showNormals && !filters.urgentOnly) return 0;
+  let n = 0;
+  for (const ev of events) {
+    if (ev.kind !== 'symptom_log' || ev.log?.outcome !== 'normal') continue;
+    if (!isSameMonth(new Date(ev.date), viewMonth)) continue;
+    n += 1;
+  }
+  return n;
+}
+
 export function buildStripCells(
   events: CareEvent[],
   today: Date,

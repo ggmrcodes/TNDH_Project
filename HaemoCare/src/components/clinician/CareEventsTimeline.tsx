@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { format, addMonths, isSameMonth } from 'date-fns';
+import { th as thLocale, enUS } from 'date-fns/locale';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from '../../config/theme';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,14 +10,12 @@ import { TranslationKey } from '../../i18n';
 import { formatDate } from '../../utils/dateHelpers';
 import type { CareEvent } from '../../utils/careEventsTimeline';
 import {
-  groupEventsByDay,
-  applyTimelineFilters,
+  buildMonthGrid,
+  getEventsForLocalDay,
+  countHiddenNormalLogsInMonth,
   computeHbDelta,
-  countHiddenNormalLogs,
-  buildStripCells,
-  type DayGroup,
+  type MonthCell,
   type TimelineFilters,
-  type DayOutcome,
 } from '../../utils/careEventsGrouping';
 import FullScreenImageViewer from '../common/FullScreenImageViewer';
 import * as realTransfusionService from '../../services/transfusionService';
@@ -33,21 +33,26 @@ const OUTCOME_KEY: Record<'normal' | 'monitor' | 'urgent', TranslationKey> = {
   urgent: 'clinician.detail.timeline.outcome.urgent' as TranslationKey,
 };
 
-const WINDOW_OPTIONS: ReadonlyArray<{ days: number; key: TranslationKey }> = [
-  { days: 7, key: 'clinician.detail.timeline.window.7d' as TranslationKey },
-  { days: 30, key: 'clinician.detail.timeline.window.30d' as TranslationKey },
-  { days: 90, key: 'clinician.detail.timeline.window.90d' as TranslationKey },
+const WEEKDAY_KEYS: ReadonlyArray<TranslationKey> = [
+  'clinician.detail.timeline.cal.weekday.sun' as TranslationKey,
+  'clinician.detail.timeline.cal.weekday.mon' as TranslationKey,
+  'clinician.detail.timeline.cal.weekday.tue' as TranslationKey,
+  'clinician.detail.timeline.cal.weekday.wed' as TranslationKey,
+  'clinician.detail.timeline.cal.weekday.thu' as TranslationKey,
+  'clinician.detail.timeline.cal.weekday.fri' as TranslationKey,
+  'clinician.detail.timeline.cal.weekday.sat' as TranslationKey,
+];
+
+const OUTCOME_ORDER: ReadonlyArray<'urgent' | 'monitor' | 'normal'> = [
+  'urgent',
+  'monitor',
+  'normal',
 ];
 
 function outcomeTint(outcome: 'normal' | 'monitor' | 'urgent'): string {
   if (outcome === 'urgent') return COLORS.statusUrgent;
   if (outcome === 'monitor') return COLORS.statusMonitor;
   return COLORS.statusNormal;
-}
-
-function dayOutcomeTint(o: DayOutcome): string {
-  if (o == null) return COLORS.borderLight;
-  return outcomeTint(o);
 }
 
 export default function CareEventsTimeline({
@@ -58,62 +63,84 @@ export default function CareEventsTimeline({
   const { t } = useLanguage();
   const { isMockMode } = useAuth();
 
-  // Filters live in component state so each clinician can shape the view
-  // for the patient they're currently looking at. Defaults: 30-day window,
-  // normals auto-collapsed, no urgent-only filter.
+  const today = useMemo(() => new Date(), []);
+  const [viewMonth, setViewMonth] = useState<Date>(today);
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
+  const [showNormalsInline, setShowNormalsInline] = useState(false);
   const [filters, setFilters] = useState<TimelineFilters>({
     showNormals: false,
     urgentOnly: false,
-    windowDays: 30,
+    // windowDays is kept on the shape for type compat with the grouping
+    // helpers (the calendar replaces window-based filtering — see month nav).
+    windowDays: 0,
   });
-  // Tap-the-footer to surface hidden normals without flipping the config.
-  const [showNormalsInline, setShowNormalsInline] = useState(false);
-  // Day-group expand/collapse — opaque tokens keyed by dayKey.
-  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
-  // Collapse token for the latest day (which starts expanded by default).
-  const [collapsedLatest, setCollapsedLatest] = useState(false);
   const [configOpen, setConfigOpen] = useState(false);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
   const [viewerLoadingFor, setViewerLoadingFor] = useState<string | null>(null);
 
-  const today = useMemo(() => new Date(), []);
+  const effectiveShowNormals = filters.showNormals || showNormalsInline;
 
-  const effectiveFilters = useMemo<TimelineFilters>(
-    () => ({ ...filters, showNormals: filters.showNormals || showNormalsInline }),
-    [filters, showNormalsInline]
+  // Pre-filter events once. Used by both grid painting and day-detail
+  // expansion so the two views stay consistent.
+  const filteredEvents = useMemo(
+    () =>
+      events.filter((ev) => {
+        if (filters.urgentOnly) {
+          return ev.kind === 'symptom_log' && ev.log?.outcome === 'urgent';
+        }
+        if (
+          !effectiveShowNormals &&
+          ev.kind === 'symptom_log' &&
+          ev.log?.outcome === 'normal'
+        ) {
+          return false;
+        }
+        return true;
+      }),
+    [events, filters.urgentOnly, effectiveShowNormals]
   );
 
-  const visibleEvents = useMemo(
-    () => applyTimelineFilters(events, effectiveFilters, today),
-    [events, effectiveFilters, today]
+  const grid = useMemo(
+    () => buildMonthGrid(viewMonth, today, filteredEvents, 0),
+    [viewMonth, today, filteredEvents]
   );
-  const dayGroups = useMemo(() => groupEventsByDay(visibleEvents), [visibleEvents]);
-  const stripCells = useMemo(
-    () => buildStripCells(events, today, filters.windowDays),
-    [events, today, filters.windowDays]
+
+  const selectedEvents = useMemo(
+    () =>
+      selectedDayKey
+        ? getEventsForLocalDay(filteredEvents, selectedDayKey)
+        : [],
+    [selectedDayKey, filteredEvents]
   );
+
   const hiddenNormalCount = useMemo(
-    () => countHiddenNormalLogs(events, filters, today),
-    [events, filters, today]
+    () =>
+      countHiddenNormalLogsInMonth(events, viewMonth, {
+        showNormals: effectiveShowNormals,
+        urgentOnly: filters.urgentOnly,
+      }),
+    [events, viewMonth, effectiveShowNormals, filters.urgentOnly]
   );
-  const extraOlder = Math.max(0, totalInWindow - visibleEvents.length - hiddenNormalCount);
 
-  const isDayExpanded = (dayKey: string, idx: number): boolean => {
-    if (idx === 0) return !collapsedLatest;
-    return expandedDays.has(dayKey);
+  const locale = language === 'th' ? thLocale : enUS;
+  const monthLabel = format(viewMonth, 'MMMM yyyy', { locale });
+  const onCurrentMonth = isSameMonth(viewMonth, today);
+
+  const prevMonth = () => {
+    setViewMonth((m) => addMonths(m, -1));
+    setSelectedDayKey(null);
+  };
+  const nextMonth = () => {
+    setViewMonth((m) => addMonths(m, 1));
+    setSelectedDayKey(null);
+  };
+  const goToday = () => {
+    setViewMonth(today);
+    setSelectedDayKey(null);
   };
 
-  const toggleDay = (dayKey: string, idx: number) => {
-    if (idx === 0) {
-      setCollapsedLatest((v) => !v);
-      return;
-    }
-    setExpandedDays((prev) => {
-      const next = new Set(prev);
-      if (next.has(dayKey)) next.delete(dayKey);
-      else next.add(dayKey);
-      return next;
-    });
+  const onCellTap = (cell: MonthCell) => {
+    setSelectedDayKey((cur) => (cur === cell.dayKey ? null : cell.dayKey));
   };
 
   const openTransfusionPhoto = async (storedValue: string, txId: string) => {
@@ -128,34 +155,14 @@ export default function CareEventsTimeline({
     }
   };
 
-  // Localized symptom name with a graceful fallback when the i18n entry
-  // is missing (returned key starts with 'symptom.').
   const symptomLabel = (raw: string): string => {
     const translated = t(('symptom.' + raw) as TranslationKey);
     return translated.startsWith('symptom.') ? raw : translated;
   };
 
-  const summarizeDay = (g: DayGroup): string => {
-    const parts: string[] = [];
-    if (g.hasTransfusion) {
-      parts.push(t('clinician.detail.timeline.summary.tx' as TranslationKey));
-    }
-    if (g.hasAppointment) {
-      parts.push(t('clinician.detail.timeline.summary.appt' as TranslationKey));
-    }
-    if (g.symptomLogCount > 0) {
-      parts.push(
-        t('clinician.detail.timeline.summary.logs' as TranslationKey, {
-          count: g.symptomLogCount,
-        })
-      );
-    }
-    return parts.join(' · ');
-  };
-
   return (
     <View style={styles.section}>
-      {/* Header — title + filter pill + config gear */}
+      {/* Header — title + filter pill + gear */}
       <View style={styles.sectionHeader}>
         <Feather name="clock" size={14} color={COLORS.textLight} />
         <Text style={styles.sectionLabel}>
@@ -166,7 +173,9 @@ export default function CareEventsTimeline({
             onPress={() => setFilters((f) => ({ ...f, urgentOnly: !f.urgentOnly }))}
             style={[styles.filterPill, filters.urgentOnly && styles.filterPillActive]}
             accessibilityRole="button"
-            accessibilityLabel={t('clinician.detail.timeline.filter.urgentOnly' as TranslationKey)}
+            accessibilityLabel={t(
+              'clinician.detail.timeline.filter.urgentOnly' as TranslationKey
+            )}
             accessibilityState={{ selected: filters.urgentOnly }}
           >
             <Feather
@@ -174,7 +183,12 @@ export default function CareEventsTimeline({
               size={11}
               color={filters.urgentOnly ? COLORS.statusUrgentText : COLORS.textSecondary}
             />
-            <Text style={[styles.filterPillText, filters.urgentOnly && styles.filterPillTextActive]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                filters.urgentOnly && styles.filterPillTextActive,
+              ]}
+            >
               {t('clinician.detail.timeline.filter.urgentOnly' as TranslationKey)}
             </Text>
           </TouchableOpacity>
@@ -183,230 +197,307 @@ export default function CareEventsTimeline({
             style={styles.configBtn}
             hitSlop={6}
             accessibilityRole="button"
-            accessibilityLabel={t('clinician.detail.timeline.config.title' as TranslationKey)}
+            accessibilityLabel={t(
+              'clinician.detail.timeline.config.title' as TranslationKey
+            )}
           >
             <Feather name="sliders" size={14} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* 30-day mini strip — oldest at left, today at right */}
-      <View style={styles.strip}>
-        <View style={styles.stripBars}>
-          {stripCells.map((cell) => {
-            const tint = cell.hasTransfusion
-              ? COLORS.primary
-              : cell.worstOutcome != null
-                ? dayOutcomeTint(cell.worstOutcome)
-                : cell.hasAppointment
-                  ? COLORS.textSecondary
-                  : COLORS.borderLight;
-            return (
-              <View
-                key={cell.dayKey}
-                style={[
-                  styles.stripBar,
-                  { backgroundColor: tint },
-                  cell.isToday && styles.stripBarToday,
-                ]}
-              />
-            );
-          })}
-        </View>
-        <Text style={styles.stripLegend}>
-          {t('clinician.detail.timeline.window.label' as TranslationKey, {
-            days: filters.windowDays,
-          })}
-        </Text>
-      </View>
-
-      {/* Body — day-grouped collapsible rows */}
-      <View style={styles.sectionBody}>
-        {dayGroups.length === 0 ? (
-          <Text style={styles.empty}>
-            {filters.urgentOnly
-              ? t('clinician.detail.timeline.empty.urgentOnly' as TranslationKey)
-              : t('clinician.detail.timeline.empty' as TranslationKey)}
-          </Text>
-        ) : (
-          dayGroups.map((g, idx) => {
-            const expanded = isDayExpanded(g.dayKey, idx);
-            const summaryDot = g.hasUrgentLog
-              ? COLORS.statusUrgent
-              : g.worstOutcome != null
-                ? dayOutcomeTint(g.worstOutcome)
-                : g.hasTransfusion
-                  ? COLORS.primary
-                  : g.hasAppointment
-                    ? COLORS.textSecondary
-                    : COLORS.textLight;
-            return (
-              <View key={g.dayKey} style={styles.dayGroup}>
-                <TouchableOpacity
-                  onPress={() => toggleDay(g.dayKey, idx)}
-                  activeOpacity={0.7}
-                  style={styles.dayHeader}
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded }}
-                >
-                  <Feather
-                    name={expanded ? 'chevron-down' : 'chevron-right'}
-                    size={14}
-                    color={COLORS.textLight}
-                  />
-                  <View style={[styles.daySummaryDot, { backgroundColor: summaryDot }]} />
-                  <Text style={styles.dayDate}>{formatDate(g.date, language)}</Text>
-                  <Text style={styles.daySummaryText} numberOfLines={1}>
-                    {summarizeDay(g)}
-                  </Text>
-                </TouchableOpacity>
-
-                {expanded && (
-                  <View style={styles.dayBody}>
-                    {g.events.map((ev) => {
-                      const rowKey = g.dayKey + ':' + ev.id;
-
-                      if (ev.kind === 'transfusion' && ev.transfusion) {
-                        const tx = ev.transfusion;
-                        const delta = computeHbDelta(tx);
-                        const reaction = tx.reaction_noted === true;
-                        const photo = tx.document_photo_url
-                          ? { stored: tx.document_photo_url, id: tx.id }
-                          : null;
-                        return (
-                          <View key={rowKey} style={styles.row}>
-                            <View style={styles.iconWrap}>
-                              {reaction && <View style={styles.reactionDot} />}
-                              <Feather
-                                name="droplet"
-                                size={16}
-                                color={reaction ? COLORS.statusUrgent : COLORS.primary}
-                              />
-                            </View>
-                            <View style={styles.rowBody}>
-                              <Text style={styles.rowTitle} numberOfLines={1}>
-                                {t('clinician.detail.timeline.tx' as TranslationKey, {
-                                  units: tx.units_received ?? '—',
-                                  hospital: tx.hospital ?? '',
-                                })}
-                              </Text>
-                              {delta && (
-                                <View style={styles.hbRow}>
-                                  <View style={styles.hbChip}>
-                                    <Text style={styles.hbChipText}>
-                                      {(delta.delta >= 0 ? '+' : '') + delta.delta.toFixed(1)}
-                                    </Text>
-                                  </View>
-                                  <Text style={styles.hbSubtext} numberOfLines={1}>
-                                    {t('clinician.detail.timeline.tx.hbDetail' as TranslationKey, {
-                                      pre: delta.pre.toFixed(1),
-                                      post: delta.post.toFixed(1),
-                                    })}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                            {photo && (
-                              <TouchableOpacity
-                                onPress={() => openTransfusionPhoto(photo.stored, photo.id)}
-                                hitSlop={8}
-                                style={styles.photoBtn}
-                                accessibilityRole="button"
-                                accessibilityLabel={t('transfusion.documentPhoto.viewFull' as TranslationKey)}
-                              >
-                                <Feather
-                                  name="image"
-                                  size={14}
-                                  color={viewerLoadingFor === photo.id ? COLORS.textLight : COLORS.primary}
-                                />
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        );
-                      }
-
-                      if (ev.kind === 'symptom_log' && ev.log) {
-                        const log = ev.log;
-                        const tint = outcomeTint(log.outcome);
-                        const localized = (log.symptoms ?? []).map(symptomLabel);
-                        const hasSymptoms = localized.length > 0;
-                        return (
-                          <View key={rowKey} style={styles.row}>
-                            <View style={styles.iconWrap}>
-                              <Feather name="activity" size={16} color={tint} />
-                            </View>
-                            <View style={styles.rowBody}>
-                              <View style={styles.logTitleRow}>
-                                <Text style={[styles.outcomeBadge, { color: tint }]}>
-                                  {t(OUTCOME_KEY[log.outcome])}
-                                </Text>
-                                <Text style={styles.rowTitle} numberOfLines={2}>
-                                  {hasSymptoms
-                                    ? localized.join(' · ')
-                                    : t('clinician.detail.timeline.log.noSymptoms' as TranslationKey)}
-                                </Text>
-                              </View>
-                              {log.notes ? (
-                                <Text style={styles.rowSubtext} numberOfLines={2}>
-                                  {log.notes}
-                                </Text>
-                              ) : null}
-                            </View>
-                          </View>
-                        );
-                      }
-
-                      if (ev.kind === 'appointment' && ev.appointment) {
-                        return (
-                          <View key={rowKey} style={styles.row}>
-                            <View style={styles.iconWrap}>
-                              <Feather name="calendar" size={16} color={COLORS.textSecondary} />
-                            </View>
-                            <View style={styles.rowBody}>
-                              <Text style={styles.rowTitle} numberOfLines={1}>
-                                {t('clinician.detail.timeline.appt' as TranslationKey, {
-                                  hospital: ev.appointment.hospital ?? '',
-                                })}
-                              </Text>
-                            </View>
-                          </View>
-                        );
-                      }
-
-                      return null;
-                    })}
-                  </View>
-                )}
-              </View>
-            );
-          })
-        )}
-
-        {hiddenNormalCount > 0 && !showNormalsInline && !filters.showNormals && (
+      {/* Month nav */}
+      <View style={styles.monthNav}>
+        <TouchableOpacity
+          onPress={prevMonth}
+          style={styles.monthNavBtn}
+          hitSlop={8}
+          accessibilityRole="button"
+        >
+          <Feather name="chevron-left" size={18} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+        <Text style={styles.monthLabel}>{monthLabel}</Text>
+        <TouchableOpacity
+          onPress={nextMonth}
+          style={styles.monthNavBtn}
+          hitSlop={8}
+          accessibilityRole="button"
+        >
+          <Feather name="chevron-right" size={18} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+        {!onCurrentMonth && (
           <TouchableOpacity
-            onPress={() => setShowNormalsInline(true)}
-            style={styles.hiddenNormalsRow}
+            onPress={goToday}
+            style={styles.todayBtn}
+            hitSlop={8}
             accessibilityRole="button"
           >
-            <Feather name="eye" size={11} color={COLORS.textLight} />
-            <Text style={styles.hiddenNormalsText}>
-              {t('clinician.detail.timeline.hiddenNormals' as TranslationKey, {
-                count: hiddenNormalCount,
-              })}
+            <Text style={styles.todayBtnText}>
+              {t('clinician.detail.timeline.cal.today' as TranslationKey)}
             </Text>
           </TouchableOpacity>
         )}
-
-        {extraOlder > 0 && (
-          <View style={styles.moreRow}>
-            <Text style={styles.moreText}>
-              {t('clinician.detail.timeline.more' as TranslationKey, { count: extraOlder })}
-            </Text>
-          </View>
-        )}
       </View>
 
-      {/* Config sheet (bottom sheet modal) */}
+      {/* Weekday header */}
+      <View style={styles.weekdayRow}>
+        {WEEKDAY_KEYS.map((k, i) => (
+          <Text key={i} style={styles.weekdayLabel}>
+            {t(k)}
+          </Text>
+        ))}
+      </View>
+
+      {/* Grid */}
+      <View style={styles.grid}>
+        {Array.from({ length: 6 }).map((_, rowIdx) => (
+          <View key={rowIdx} style={styles.gridRow}>
+            {grid.slice(rowIdx * 7, rowIdx * 7 + 7).map((cell) => {
+              const isSelected = cell.dayKey === selectedDayKey;
+              const dimmed = !cell.inViewMonth;
+              return (
+                <TouchableOpacity
+                  key={cell.dayKey}
+                  onPress={() => onCellTap(cell)}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.cell,
+                    isSelected && styles.cellSelected,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={cell.dayKey}
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <View style={styles.cellTop}>
+                    <View
+                      style={[
+                        styles.dayNumWrap,
+                        cell.isToday && styles.dayNumToday,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.dayNum,
+                          dimmed && styles.dayNumDimmed,
+                          cell.isToday && styles.dayNumTodayText,
+                        ]}
+                      >
+                        {cell.dayNumber}
+                      </Text>
+                    </View>
+                    <View style={styles.cellTopRight}>
+                      {cell.hasReaction && <View style={styles.reactionDot} />}
+                      {cell.hasTransfusion && (
+                        <Feather name="droplet" size={9} color={COLORS.primary} />
+                      )}
+                      {cell.hasAppointment && (
+                        <Feather
+                          name="calendar"
+                          size={9}
+                          color={COLORS.textSecondary}
+                          style={{ marginLeft: 1 }}
+                        />
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.cellDots}>
+                    {OUTCOME_ORDER.filter((o) => cell.outcomes.has(o)).map((o) => (
+                      <View
+                        key={o}
+                        style={[styles.outcomeDot, { backgroundColor: outcomeTint(o) }]}
+                      />
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+
+      {/* Day detail */}
+      {selectedDayKey && (
+        <View style={styles.dayDetail}>
+          <View style={styles.dayDetailHeader}>
+            <Text style={styles.dayDetailTitle}>
+              {formatDate(selectedDayKey + 'T12:00:00Z', language)}
+            </Text>
+            <Text style={styles.dayDetailCount}>
+              {selectedEvents.length > 0
+                ? t('clinician.detail.timeline.cal.day.eventCount' as TranslationKey, {
+                    count: selectedEvents.length,
+                  })
+                : ''}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setSelectedDayKey(null)}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
+              <Feather name="x" size={16} color={COLORS.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          {selectedEvents.length === 0 ? (
+            <Text style={styles.dayDetailEmpty}>
+              {t('clinician.detail.timeline.cal.day.empty' as TranslationKey)}
+            </Text>
+          ) : (
+            <View style={styles.dayDetailBody}>
+              {selectedEvents.map((ev) => {
+                const rowKey = selectedDayKey + ':' + ev.id;
+
+                if (ev.kind === 'transfusion' && ev.transfusion) {
+                  const tx = ev.transfusion;
+                  const delta = computeHbDelta(tx);
+                  const reaction = tx.reaction_noted === true;
+                  const photo = tx.document_photo_url
+                    ? { stored: tx.document_photo_url, id: tx.id }
+                    : null;
+                  return (
+                    <View key={rowKey} style={styles.row}>
+                      <View style={styles.iconWrap}>
+                        {reaction && <View style={styles.rowReactionDot} />}
+                        <Feather
+                          name="droplet"
+                          size={16}
+                          color={reaction ? COLORS.statusUrgent : COLORS.primary}
+                        />
+                      </View>
+                      <View style={styles.rowBody}>
+                        <Text style={styles.rowTitle} numberOfLines={1}>
+                          {t('clinician.detail.timeline.tx' as TranslationKey, {
+                            units: tx.units_received ?? '—',
+                            hospital: tx.hospital ?? '',
+                          })}
+                        </Text>
+                        {delta && (
+                          <View style={styles.hbRow}>
+                            <View style={styles.hbChip}>
+                              <Text style={styles.hbChipText}>
+                                {(delta.delta >= 0 ? '+' : '') + delta.delta.toFixed(1)}
+                              </Text>
+                            </View>
+                            <Text style={styles.hbSubtext} numberOfLines={1}>
+                              {t(
+                                'clinician.detail.timeline.tx.hbDetail' as TranslationKey,
+                                {
+                                  pre: delta.pre.toFixed(1),
+                                  post: delta.post.toFixed(1),
+                                }
+                              )}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      {photo && (
+                        <TouchableOpacity
+                          onPress={() => openTransfusionPhoto(photo.stored, photo.id)}
+                          hitSlop={8}
+                          style={styles.photoBtn}
+                          accessibilityRole="button"
+                          accessibilityLabel={t(
+                            'transfusion.documentPhoto.viewFull' as TranslationKey
+                          )}
+                        >
+                          <Feather
+                            name="image"
+                            size={14}
+                            color={
+                              viewerLoadingFor === photo.id
+                                ? COLORS.textLight
+                                : COLORS.primary
+                            }
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                }
+
+                if (ev.kind === 'symptom_log' && ev.log) {
+                  const log = ev.log;
+                  const tint = outcomeTint(log.outcome);
+                  const localized = (log.symptoms ?? []).map(symptomLabel);
+                  const hasSymptoms = localized.length > 0;
+                  return (
+                    <View key={rowKey} style={styles.row}>
+                      <View style={styles.iconWrap}>
+                        <Feather name="activity" size={16} color={tint} />
+                      </View>
+                      <View style={styles.rowBody}>
+                        <View style={styles.logTitleRow}>
+                          <Text style={[styles.outcomeBadge, { color: tint }]}>
+                            {t(OUTCOME_KEY[log.outcome])}
+                          </Text>
+                          <Text style={styles.rowTitle} numberOfLines={2}>
+                            {hasSymptoms
+                              ? localized.join(' · ')
+                              : t(
+                                  'clinician.detail.timeline.log.noSymptoms' as TranslationKey
+                                )}
+                          </Text>
+                        </View>
+                        {log.notes ? (
+                          <Text style={styles.rowSubtext} numberOfLines={2}>
+                            {log.notes}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  );
+                }
+
+                if (ev.kind === 'appointment' && ev.appointment) {
+                  return (
+                    <View key={rowKey} style={styles.row}>
+                      <View style={styles.iconWrap}>
+                        <Feather name="calendar" size={16} color={COLORS.textSecondary} />
+                      </View>
+                      <View style={styles.rowBody}>
+                        <Text style={styles.rowTitle} numberOfLines={1}>
+                          {t('clinician.detail.timeline.appt' as TranslationKey, {
+                            hospital: ev.appointment.hospital ?? '',
+                          })}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                }
+
+                return null;
+              })}
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Hidden normals footer */}
+      {hiddenNormalCount > 0 && !showNormalsInline && !filters.showNormals && (
+        <TouchableOpacity
+          onPress={() => setShowNormalsInline(true)}
+          style={styles.hiddenNormalsRow}
+          accessibilityRole="button"
+        >
+          <Feather name="eye" size={11} color={COLORS.textLight} />
+          <Text style={styles.hiddenNormalsText}>
+            {t(
+              'clinician.detail.timeline.cal.hiddenNormalsMonth' as TranslationKey,
+              { count: hiddenNormalCount }
+            )}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Off-screen "older events" footer — kept for parity with the legacy
+          card; totalInWindow includes events outside the current month so
+          the count is informational, not navigational. */}
+      {totalInWindow > 0 && (
+        <Text style={styles.cohortNote}>
+          {t('clinician.detail.timeline.more' as TranslationKey, { count: totalInWindow })}
+        </Text>
+      )}
+
+      {/* Config bottom sheet */}
       <Modal
         visible={configOpen}
         transparent
@@ -418,7 +509,7 @@ export default function CareEventsTimeline({
           activeOpacity={1}
           onPress={() => setConfigOpen(false)}
         >
-          <View style={styles.sheet} onStartShouldSetResponder={() => true}>
+          <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>
                 {t('clinician.detail.timeline.config.title' as TranslationKey)}
@@ -427,29 +518,6 @@ export default function CareEventsTimeline({
                 <Feather name="x" size={18} color={COLORS.textSecondary} />
               </TouchableOpacity>
             </View>
-
-            <Text style={styles.sheetSectionLabel}>
-              {t('clinician.detail.timeline.config.windowLabel' as TranslationKey)}
-            </Text>
-            <View style={styles.windowRow}>
-              {WINDOW_OPTIONS.map((opt) => {
-                const active = filters.windowDays === opt.days;
-                return (
-                  <TouchableOpacity
-                    key={opt.days}
-                    onPress={() => setFilters((f) => ({ ...f, windowDays: opt.days }))}
-                    style={[styles.windowPill, active && styles.windowPillActive]}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                  >
-                    <Text style={[styles.windowPillText, active && styles.windowPillTextActive]}>
-                      {t(opt.key)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
             <TouchableOpacity
               onPress={() => setFilters((f) => ({ ...f, showNormals: !f.showNormals }))}
               style={styles.toggleRow}
@@ -478,6 +546,9 @@ export default function CareEventsTimeline({
     </View>
   );
 }
+
+const CELL_HEIGHT = 44;
+const DAY_NUM_SIZE = 20;
 
 const styles = StyleSheet.create({
   section: {
@@ -512,36 +583,94 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.sm,
   },
 
-  strip: { gap: 4 },
-  stripBars: {
+  monthNav: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  monthNavBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RADIUS.sm,
+  },
+  monthLabel: { flex: 1, fontSize: 14, color: COLORS.text, fontWeight: '600', textAlign: 'center' },
+  todayBtn: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.primaryLight,
+  },
+  todayBtnText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
+
+  weekdayRow: { flexDirection: 'row', gap: 2 },
+  weekdayLabel: {
+    flex: 1,
+    fontSize: 10,
+    color: COLORS.textLight,
+    textAlign: 'center',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+
+  grid: { gap: 2 },
+  gridRow: { flexDirection: 'row', gap: 2 },
+  cell: {
+    flex: 1,
+    height: CELL_HEIGHT,
+    borderRadius: RADIUS.sm,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    padding: 3,
+    justifyContent: 'space-between',
+  },
+  cellSelected: {
+    borderColor: COLORS.primary,
+    borderWidth: 1.5,
+  },
+  cellTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  cellTopRight: { flexDirection: 'row', alignItems: 'center', gap: 1 },
+  dayNumWrap: {
+    width: DAY_NUM_SIZE,
+    height: DAY_NUM_SIZE,
+    borderRadius: DAY_NUM_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayNumToday: { backgroundColor: COLORS.primary },
+  dayNum: { fontSize: 12, color: COLORS.text, fontWeight: '500' },
+  dayNumDimmed: { color: COLORS.textLight },
+  dayNumTodayText: { color: COLORS.white, fontWeight: '700' },
+  reactionDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: COLORS.statusUrgent,
+  },
+  cellDots: {
     flexDirection: 'row',
     gap: 2,
-    alignItems: 'stretch',
-    height: 24,
-  },
-  stripBar: { flex: 1, borderRadius: 1.5 },
-  stripBarToday: { borderWidth: 1.5, borderColor: COLORS.primary },
-  stripLegend: { fontSize: 10, color: COLORS.textLight, alignSelf: 'flex-end' },
-
-  sectionBody: { gap: SPACING.xs },
-  dayGroup: { gap: 4 },
-  dayHeader: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: SPACING.xs,
-    paddingVertical: 4,
+    minHeight: 5,
   },
-  daySummaryDot: { width: 8, height: 8, borderRadius: 4 },
-  dayDate: { fontSize: 13, color: COLORS.text, fontWeight: '500' },
-  daySummaryText: { flex: 1, fontSize: 12, color: COLORS.textSecondary },
+  outcomeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
 
-  dayBody: {
-    paddingLeft: SPACING.md,
+  dayDetail: {
+    backgroundColor: COLORS.surfaceElevated,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    padding: SPACING.sm,
     gap: SPACING.xs,
-    borderLeftWidth: 1.5,
-    borderLeftColor: COLORS.borderLight,
-    marginLeft: SPACING.xs * 2,
   },
+  dayDetailHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  dayDetailTitle: { fontSize: 13, color: COLORS.text, fontWeight: '600', flex: 1 },
+  dayDetailCount: { fontSize: 11, color: COLORS.textLight },
+  dayDetailEmpty: { fontSize: 12, color: COLORS.textLight, fontStyle: 'italic' },
+  dayDetailBody: { gap: SPACING.xs },
 
   row: {
     flexDirection: 'row',
@@ -557,7 +686,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginTop: 2,
   },
-  reactionDot: {
+  rowReactionDot: {
     position: 'absolute',
     top: -1,
     right: -1,
@@ -569,16 +698,21 @@ const styles = StyleSheet.create({
   },
   rowBody: { flex: 1 },
   rowTitle: { fontSize: 13, color: COLORS.text, lineHeight: 18, flexShrink: 1 },
-  logTitleRow: { flexDirection: 'row', alignItems: 'baseline', gap: SPACING.xs, flexWrap: 'wrap' },
-  outcomeBadge: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+  logTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: SPACING.xs,
+    flexWrap: 'wrap',
+  },
+  outcomeBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
   rowSubtext: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
 
-  hbRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-    marginTop: 4,
-  },
+  hbRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs, marginTop: 4 },
   hbChip: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.xs + 2,
@@ -601,14 +735,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: SPACING.xs,
+    paddingTop: SPACING.xs,
     paddingHorizontal: SPACING.xs,
   },
   hiddenNormalsText: { fontSize: 11, color: COLORS.textLight, fontStyle: 'italic' },
 
-  empty: { ...TYPOGRAPHY.bodySmall, color: COLORS.textLight, fontStyle: 'italic' },
-  moreRow: { paddingVertical: SPACING.xs },
-  moreText: { fontSize: 11, color: COLORS.textLight, fontStyle: 'italic' },
+  cohortNote: { fontSize: 10, color: COLORS.textLight, fontStyle: 'italic', textAlign: 'center' },
 
   // Config sheet
   sheetBackdrop: {
@@ -629,22 +761,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sheetTitle: { ...TYPOGRAPHY.h3, color: COLORS.text },
-  sheetSectionLabel: {
-    fontSize: 12,
-    color: COLORS.textLight,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  windowRow: { flexDirection: 'row', gap: SPACING.xs },
-  windowPill: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.borderLight,
-  },
-  windowPillActive: { backgroundColor: COLORS.primaryLight },
-  windowPillText: { fontSize: 13, color: COLORS.textSecondary },
-  windowPillTextActive: { color: COLORS.primary, fontWeight: '700' },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
