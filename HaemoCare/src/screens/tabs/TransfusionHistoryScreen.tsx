@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, FlatList, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, FlatList, Text, StyleSheet, SafeAreaView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
@@ -26,6 +26,15 @@ export default function TransfusionHistoryScreen() {
   const { isDesktop } = useResponsive();
   const [transfusions, setTransfusions] = useState<Transfusion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    if (!user) return;
+    const data = isMockMode
+      ? await mockServices.getTransfusions()
+      : await realTransfusionService.getTransfusions(user.id);
+    setTransfusions(data);
+  }, [user, isMockMode]);
 
   useFocusEffect(
     useCallback(() => {
@@ -33,14 +42,16 @@ export default function TransfusionHistoryScreen() {
       let cancelled = false;
       (async () => {
         setLoading(true);
-        const data = isMockMode
-          ? await mockServices.getTransfusions()
-          : await realTransfusionService.getTransfusions(user.id);
-        if (!cancelled) { setTransfusions(data); setLoading(false); }
+        try { await loadData(); } finally { if (!cancelled) setLoading(false); }
       })();
       return () => { cancelled = true; };
-    }, [user, isMockMode])
+    }, [user, loadData])
   );
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try { await loadData(); } finally { setRefreshing(false); }
+  }, [loadData]);
 
   const totalUnits = transfusions.reduce((sum, tx) => sum + (tx.units_received ?? 0), 0);
   const reactionCount = transfusions.filter(tx => tx.reaction_noted).length;
@@ -123,6 +134,9 @@ export default function TransfusionHistoryScreen() {
 
         <FlatList
           data={transfusions}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
+          }
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}

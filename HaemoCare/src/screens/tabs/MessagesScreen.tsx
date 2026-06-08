@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, RefreshControl } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../config/theme';
@@ -11,7 +11,14 @@ import { TranslationKey } from '../../i18n';
 export default function MessagesScreen() {
   const { t } = useLanguage();
   const navigation = useNavigation<any>();
-  const { conversations, loading } = useConversations();
+  const { conversations, loading, refresh } = useConversations();
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    refresh();
+    await new Promise((r) => setTimeout(r, 700));
+    setRefreshing(false);
+  }, [refresh]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -20,6 +27,9 @@ export default function MessagesScreen() {
       <FlatList
         data={conversations}
         keyExtractor={(c) => c.linkId}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
+        }
         renderItem={({ item }) => (
           <ConversationRow
             conversation={item}

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, FlatList, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, FlatList, Text, StyleSheet, SafeAreaView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
@@ -75,6 +75,16 @@ export default function SymptomMonitorScreen() {
   const [logs, setLogs] = useState<SymptomLog[]>([]);
   const [latestTx, setLatestTx] = useState<Transfusion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    if (!user) return;
+    const [logsData, tx] = isMockMode
+      ? await Promise.all([mockServices.getSymptomLogs(user.id, 20), mockServices.getLatestTransfusion()])
+      : await Promise.all([realSymptomService.getSymptomLogs(user.id, 20), realTransfusionService.getLatestTransfusion(user.id)]);
+    setLogs(logsData);
+    setLatestTx(tx);
+  }, [user, isMockMode]);
 
   useFocusEffect(
     useCallback(() => {
@@ -83,14 +93,17 @@ export default function SymptomMonitorScreen() {
       let cancelled = false;
       (async () => {
         setLoading(true);
-        const [logsData, tx] = isMockMode
-          ? await Promise.all([mockServices.getSymptomLogs(user.id, 20), mockServices.getLatestTransfusion()])
-          : await Promise.all([realSymptomService.getSymptomLogs(user.id, 20), realTransfusionService.getLatestTransfusion(user.id)]);
-        if (!cancelled) { setLogs(logsData); setLatestTx(tx); setLoading(false); }
+        try { await loadData(); } finally { if (!cancelled) setLoading(false); }
       })();
       return () => { cancelled = true; };
-    }, [user, isMockMode, refreshOverdue])
+    }, [user, refreshOverdue, loadData])
   );
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    refreshOverdue();
+    try { await loadData(); } finally { setRefreshing(false); }
+  }, [loadData, refreshOverdue]);
 
   const overallStatus = useMemo((): Outcome => {
     if (logs.length === 0) return 'normal';
@@ -150,6 +163,9 @@ export default function SymptomMonitorScreen() {
           data={logs}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
+          }
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <>

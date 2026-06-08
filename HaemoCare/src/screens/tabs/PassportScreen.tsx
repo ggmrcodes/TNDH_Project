@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { ScrollView, View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
@@ -53,11 +53,23 @@ function GradientBackground({ borderRadius }: { borderRadius?: number }) {
 
 export default function PassportScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { profile, user, isMockMode, signOut } = useAuth();
+  const { profile, user, isMockMode, signOut, refreshProfile } = useAuth();
   const { t, language } = useLanguage();
   const { isMobile, isDesktop } = useResponsive();
-  const { contacts } = useEmergencyContacts();
-  const { connected } = useConnectedClinicians();
+  const { contacts, refresh: refreshContacts } = useEmergencyContacts();
+  const { connected, refresh: refreshConnected } = useConnectedClinicians();
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([refreshProfile()]);
+      refreshContacts();
+      refreshConnected();
+      await new Promise((r) => setTimeout(r, 500));
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshProfile, refreshContacts, refreshConnected]);
   const { status: updateStatus } = useUpdateContext();
   const [showQR, setShowQR] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -141,7 +153,14 @@ export default function PassportScreen() {
             <LanguageToggle />
           </View>
         </View>
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
+          }
+        >
           <UpdateBanner status={updateStatus} />
           {/* Hero Card with SVG gradient */}
           <View style={[styles.hero, isDesktop && styles.heroDesktop]}>
