@@ -4,6 +4,9 @@ import {
   computeHbDelta,
   countHiddenNormalLogs,
   buildStripCells,
+  buildMonthGrid,
+  getEventsForLocalDay,
+  countHiddenNormalLogsInMonth,
 } from '../careEventsGrouping';
 import type { CareEvent } from '../careEventsTimeline';
 
@@ -268,5 +271,222 @@ describe('buildStripCells', () => {
       30
     );
     expect(cells.every((c) => c.worstOutcome == null)).toBe(true);
+  });
+});
+
+describe('buildMonthGrid', () => {
+  // Use noon local time to dodge timezone edge cases that would flip the
+  // local date for events logged near midnight UTC.
+  const VIEW_MONTH = new Date(2026, 5, 1, 12, 0, 0); // June 2026 local
+  const TODAY_LOCAL = new Date(2026, 5, 9, 12, 0, 0); // June 9 2026 local
+
+  function mkLogLocal(
+    yyyy: number,
+    mm: number,
+    dd: number,
+    outcome: 'normal' | 'monitor' | 'urgent',
+    symptoms: string[] = ['fatigue']
+  ): CareEvent {
+    const d = new Date(yyyy, mm - 1, dd, 12, 0, 0);
+    const iso = d.toISOString();
+    return {
+      id: `log-${yyyy}-${mm}-${dd}-${outcome}`,
+      kind: 'symptom_log',
+      date: iso,
+      log: {
+        id: `log-${yyyy}-${mm}-${dd}`,
+        user_id: 'p1',
+        transfusion_id: null,
+        logged_at: iso,
+        symptoms,
+        severity_scores: Object.fromEntries(symptoms.map((s) => [s, 5])),
+        outcome,
+        notes: '',
+        created_at: iso,
+      },
+    };
+  }
+
+  function mkTxLocal(yyyy: number, mm: number, dd: number, reaction = false): CareEvent {
+    const d = new Date(yyyy, mm - 1, dd, 12, 0, 0);
+    const iso = d.toISOString();
+    return {
+      id: `tx-${yyyy}-${mm}-${dd}`,
+      kind: 'transfusion',
+      date: iso,
+      transfusion: {
+        id: `tx-${yyyy}-${mm}-${dd}`,
+        user_id: 'p1',
+        date: iso,
+        hospital: 'PMK',
+        units_received: 2,
+        reaction_noted: reaction,
+        reaction_detail: '',
+        notes: '',
+        pre_hb_g_dl: 7,
+        post_hb_g_dl: 10,
+        created_at: iso,
+      },
+    };
+  }
+
+  it('returns exactly 42 cells (6 weeks × 7 days)', () => {
+    const grid = buildMonthGrid(VIEW_MONTH, TODAY_LOCAL, []);
+    expect(grid).toHaveLength(42);
+  });
+
+  it('marks isToday on exactly one cell (the local today)', () => {
+    const grid = buildMonthGrid(VIEW_MONTH, TODAY_LOCAL, []);
+    const todays = grid.filter((c) => c.isToday);
+    expect(todays).toHaveLength(1);
+    expect(todays[0].dayNumber).toBe(9);
+    expect(todays[0].inViewMonth).toBe(true);
+  });
+
+  it('marks inViewMonth false for spillover days from the prev/next month', () => {
+    const grid = buildMonthGrid(VIEW_MONTH, TODAY_LOCAL, []);
+    const inMonth = grid.filter((c) => c.inViewMonth);
+    expect(inMonth).toHaveLength(30); // June has 30 days
+    expect(grid.filter((c) => !c.inViewMonth).length).toBe(12);
+  });
+
+  it('paints transfusion + outcomes on the right local-date cells', () => {
+    // June 2026 Sun-first grid spans May 31 → July 11. Use spillover days
+    // that actually sit inside that span.
+    const grid = buildMonthGrid(
+      VIEW_MONTH,
+      TODAY_LOCAL,
+      [
+        mkTxLocal(2026, 6, 4),
+        mkLogLocal(2026, 5, 31, 'urgent'),
+        mkLogLocal(2026, 5, 31, 'monitor'),
+        mkLogLocal(2026, 7, 1, 'normal'),
+      ]
+    );
+    const byKey = Object.fromEntries(grid.map((c) => [c.dayKey, c]));
+    expect(byKey['2026-06-04'].hasTransfusion).toBe(true);
+    expect(byKey['2026-06-04'].outcomes.size).toBe(0);
+    expect(byKey['2026-05-31'].outcomes.has('urgent')).toBe(true);
+    expect(byKey['2026-05-31'].outcomes.has('monitor')).toBe(true);
+    expect(byKey['2026-05-31'].inViewMonth).toBe(false);
+    expect(byKey['2026-07-01'].outcomes.has('normal')).toBe(true);
+    expect(byKey['2026-07-01'].inViewMonth).toBe(false);
+  });
+
+  it('hasReaction flips true when a transfusion has reaction_noted', () => {
+    const grid = buildMonthGrid(
+      VIEW_MONTH,
+      TODAY_LOCAL,
+      [mkTxLocal(2026, 6, 4, true)]
+    );
+    expect(grid.find((c) => c.dayKey === '2026-06-04')?.hasReaction).toBe(true);
+  });
+
+  it('weekStartsOn=1 (Monday) puts Monday in column 0', () => {
+    // June 1 2026 is a Monday — perfect anchor.
+    const grid = buildMonthGrid(VIEW_MONTH, TODAY_LOCAL, [], 1);
+    expect(grid[0].dayNumber).toBe(1);
+    expect(grid[0].inViewMonth).toBe(true);
+  });
+
+  it('weekStartsOn=0 (Sunday) puts the Sunday before the 1st in column 0', () => {
+    // June 1 2026 is a Monday, so Sunday May 31 leads the grid.
+    const grid = buildMonthGrid(VIEW_MONTH, TODAY_LOCAL, [], 0);
+    expect(grid[0].dayNumber).toBe(31);
+    expect(grid[0].inViewMonth).toBe(false);
+    expect(grid[1].dayNumber).toBe(1);
+    expect(grid[1].inViewMonth).toBe(true);
+  });
+});
+
+describe('getEventsForLocalDay', () => {
+  it('returns events whose local date matches the key', () => {
+    const iso = new Date(2026, 5, 4, 14, 0, 0).toISOString();
+    const tx: CareEvent = {
+      id: 'tx-x',
+      kind: 'transfusion',
+      date: iso,
+      transfusion: {
+        id: 'tx-x',
+        user_id: 'p1',
+        date: iso,
+        hospital: 'PMK',
+        units_received: 2,
+        reaction_noted: false,
+        reaction_detail: '',
+        notes: '',
+        created_at: iso,
+      },
+    };
+    expect(getEventsForLocalDay([tx], '2026-06-04')).toHaveLength(1);
+    expect(getEventsForLocalDay([tx], '2026-06-03')).toHaveLength(0);
+  });
+});
+
+describe('countHiddenNormalLogsInMonth', () => {
+  function mkLogLocalMonthly(
+    yyyy: number,
+    mm: number,
+    dd: number,
+    outcome: 'normal' | 'monitor' | 'urgent'
+  ): CareEvent {
+    const d = new Date(yyyy, mm - 1, dd, 12, 0, 0);
+    const iso = d.toISOString();
+    return {
+      id: `log-${yyyy}-${mm}-${dd}-${outcome}`,
+      kind: 'symptom_log',
+      date: iso,
+      log: {
+        id: `log-${yyyy}-${mm}-${dd}`,
+        user_id: 'p1',
+        transfusion_id: null,
+        logged_at: iso,
+        symptoms: ['fatigue'],
+        severity_scores: { fatigue: 4 },
+        outcome,
+        notes: '',
+        created_at: iso,
+      },
+    };
+  }
+
+  const VIEW = new Date(2026, 5, 1, 12, 0, 0);
+
+  it('returns zero when normals are visible', () => {
+    expect(
+      countHiddenNormalLogsInMonth(
+        [mkLogLocalMonthly(2026, 6, 4, 'normal')],
+        VIEW,
+        { showNormals: true, urgentOnly: false }
+      )
+    ).toBe(0);
+  });
+
+  it('counts only in-month normals when showNormals=false', () => {
+    expect(
+      countHiddenNormalLogsInMonth(
+        [
+          mkLogLocalMonthly(2026, 6, 4, 'normal'),
+          mkLogLocalMonthly(2026, 6, 14, 'normal'),
+          mkLogLocalMonthly(2026, 5, 22, 'normal'), // out of view
+          mkLogLocalMonthly(2026, 6, 10, 'urgent'),
+        ],
+        VIEW,
+        { showNormals: false, urgentOnly: false }
+      )
+    ).toBe(2);
+  });
+
+  it('counts normals in-month when urgentOnly hides everything else', () => {
+    expect(
+      countHiddenNormalLogsInMonth(
+        [
+          mkLogLocalMonthly(2026, 6, 4, 'normal'),
+          mkLogLocalMonthly(2026, 6, 14, 'monitor'),
+        ],
+        VIEW,
+        { showNormals: true, urgentOnly: true }
+      )
+    ).toBe(1);
   });
 });
