@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import * as realClinicianService from '../services/clinicianService';
 import * as mockServices from '../mock/services';
@@ -27,13 +28,14 @@ export function useAssignedPatients(): UseAssignedPatientsResult {
 
   const userId = user?.id ?? null;
   const enabled = role === 'clinician' && userId != null;
+  // Diagnostic: --no-dev bundles strip console output from Metro / pm2,
+  // so we surface the first hook outcome via Alert (always renders).
+  // Fires once per session per surface, then never again.
+  const alertedShortCircuit = useRef(false);
+  const alertedFetch = useRef(false);
 
   useEffect(() => {
     if (!enabled) {
-      // Diagnostic: this is the "race condition" failure mode — if userId
-      // is null or role isn't 'clinician' at the time the dashboard mounts,
-      // the hook short-circuits and patients stays [] forever until the
-      // deps change. Surfaces hop 3 / hop 9 from the debugging plan.
       console.log('[useAssignedPatients] short-circuit', {
         enabled,
         userId,
@@ -41,6 +43,13 @@ export function useAssignedPatients(): UseAssignedPatientsResult {
         isMockMode,
         tick,
       });
+      if (!alertedShortCircuit.current) {
+        alertedShortCircuit.current = true;
+        Alert.alert(
+          '[useAssignedPatients] short-circuit',
+          `enabled: ${enabled}\nuserId: ${userId ?? 'null'}\nrole: ${role ?? 'null'}\nmock: ${isMockMode}`,
+        );
+      }
       setPatients([]);
       setPendingLinks([]);
       setIncomingRequests([]);
@@ -63,27 +72,32 @@ export function useAssignedPatients(): UseAssignedPatientsResult {
           : realClinicianService.getIncomingPatientRequests(userId!),
       ]);
       if (cancelled) return;
-      // Diagnostic: prints the post-fetch state. Differentiates rejection
-      // (network / auth / RLS) vs success-with-zero-rows (wrong project,
-      // wrong account, mock mode) vs success-with-data (UI bug downstream).
+      const activeSummary = activeResult.status === 'fulfilled'
+        ? `ok count=${activeResult.value.length}${activeResult.value[0] ? ` first=${activeResult.value[0].full_name}` : ''}`
+        : `ERR ${String(activeResult.reason).slice(0, 180)}`;
+      const pendingSummary = pendingResult.status === 'fulfilled'
+        ? `ok count=${pendingResult.value.length}`
+        : `ERR ${String(pendingResult.reason).slice(0, 80)}`;
+      const incomingSummary = incomingResult.status === 'fulfilled'
+        ? `ok count=${incomingResult.value.length}`
+        : `ERR ${String(incomingResult.reason).slice(0, 80)}`;
       console.log('[useAssignedPatients] fetched', {
         userId,
         isMockMode,
-        active: activeResult.status === 'fulfilled'
-          ? {
-              ok: true,
-              count: activeResult.value.length,
-              ids: activeResult.value.map(p => p.user_id),
-              firstName: activeResult.value[0]?.full_name,
-            }
-          : { ok: false, error: String(activeResult.reason) },
-        pending: pendingResult.status === 'fulfilled'
-          ? { ok: true, count: pendingResult.value.length }
-          : { ok: false, error: String(pendingResult.reason) },
-        incoming: incomingResult.status === 'fulfilled'
-          ? { ok: true, count: incomingResult.value.length }
-          : { ok: false, error: String(incomingResult.reason) },
+        active: activeSummary,
+        pending: pendingSummary,
+        incoming: incomingSummary,
       });
+      if (!alertedFetch.current) {
+        alertedFetch.current = true;
+        Alert.alert(
+          '[useAssignedPatients] fetched',
+          `userId: ${userId?.slice(0, 8) ?? 'null'}…\nmock: ${isMockMode}\n` +
+          `active:   ${activeSummary}\n` +
+          `pending:  ${pendingSummary}\n` +
+          `incoming: ${incomingSummary}`,
+        );
+      }
       if (activeResult.status === 'fulfilled') {
         setPatients(activeResult.value);
       } else {
