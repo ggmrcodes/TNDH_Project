@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../config/supabase';
 import * as realClinicianService from '../services/clinicianService';
 import * as mockServices from '../mock/services';
 import type { Profile } from '../types/database';
@@ -81,6 +82,33 @@ export function useAssignedPatients(): UseAssignedPatientsResult {
     })();
     return () => { cancelled = true; };
   }, [enabled, userId, isMockMode, tick]);
+
+  // Live updates: subscribe to the clinician's private 'links:{userId}'
+  // topic. The trigger in 2026-06-06-link-realtime.sql broadcasts to
+  // BOTH parties of every link change, so when a patient taps Accept (or
+  // declines / revokes) the UPDATE broadcast lands here and we refresh.
+  // Also covers the clinician-side INSERT case (just added a patient by
+  // HC code → broadcast → refresh → "AWAITING PATIENT" row appears).
+  // Mirrors the patient-side subscription in usePatientLinkRequests.ts.
+  // Skipped in mock mode (no realtime).
+  useEffect(() => {
+    if (isMockMode || !enabled || !userId) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      await supabase.realtime.setAuth();
+      if (cancelled) return;
+      channel = supabase
+        .channel('links:' + userId, { config: { private: true } })
+        .on('broadcast', { event: 'INSERT' }, () => { refresh(); })
+        .on('broadcast', { event: 'UPDATE' }, () => { refresh(); })
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [enabled, userId, isMockMode, refresh]);
 
   return { patients, pendingLinks, incomingRequests, loading, error, refresh };
 }
