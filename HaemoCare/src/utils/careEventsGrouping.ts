@@ -244,6 +244,48 @@ export function getEventsForLocalDay(events: CareEvent[], dayKey: string): CareE
   return events.filter((ev) => ymdLocal(new Date(ev.date)) === dayKey);
 }
 
+/**
+ * Pick the month the calendar should open on. Returns today's month when
+ * today's month has any activity; otherwise the month containing the most
+ * recent event. Falls back to today's date when there is no activity at
+ * all. The returned Date is a stable in-month anchor (the latest event,
+ * or `today`) — caller can pass it to startOfMonth as needed.
+ */
+export function findMostRecentActivityMonth(
+  events: CareEvent[],
+  today: Date
+): Date {
+  if (events.length === 0) return today;
+  const hasActivityThisMonth = events.some((ev) =>
+    isSameMonth(new Date(ev.date), today)
+  );
+  if (hasActivityThisMonth) return today;
+  let latest: Date | null = null;
+  for (const ev of events) {
+    const d = new Date(ev.date);
+    if (!latest || d.getTime() > latest.getTime()) latest = d;
+  }
+  return latest ?? today;
+}
+
+/**
+ * Worst-event background-tint key for a calendar cell. Severity beats
+ * transfusion (a TX day with an urgent log still reads as urgent — the
+ * 💧 glyph in the cell corner tells the clinician it was also a TX day).
+ *
+ * Returns one of: 'urgent' | 'monitor' | 'tx' | 'normal' | null
+ * — null means "render the bare surface, no tint."
+ */
+export type CellTint = 'urgent' | 'monitor' | 'tx' | 'normal' | null;
+
+export function cellTintForMonthCell(cell: MonthCell): CellTint {
+  if (cell.outcomes.has('urgent')) return 'urgent';
+  if (cell.outcomes.has('monitor')) return 'monitor';
+  if (cell.hasTransfusion) return 'tx';
+  if (cell.outcomes.has('normal')) return 'normal';
+  return null;
+}
+
 /** Count normal-outcome symptom logs in `viewMonth` that current filters hide. */
 export function countHiddenNormalLogsInMonth(
   events: CareEvent[],

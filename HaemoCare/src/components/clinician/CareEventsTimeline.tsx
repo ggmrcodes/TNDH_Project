@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { format, addMonths, isSameMonth } from 'date-fns';
@@ -14,8 +14,11 @@ import {
   getEventsForLocalDay,
   countHiddenNormalLogsInMonth,
   computeHbDelta,
+  findMostRecentActivityMonth,
+  cellTintForMonthCell,
   type MonthCell,
   type TimelineFilters,
+  type CellTint,
 } from '../../utils/careEventsGrouping';
 import FullScreenImageViewer from '../common/FullScreenImageViewer';
 import * as realTransfusionService from '../../services/transfusionService';
@@ -43,16 +46,18 @@ const WEEKDAY_KEYS: ReadonlyArray<TranslationKey> = [
   'clinician.detail.timeline.cal.weekday.sat' as TranslationKey,
 ];
 
-const OUTCOME_ORDER: ReadonlyArray<'urgent' | 'monitor' | 'normal'> = [
-  'urgent',
-  'monitor',
-  'normal',
-];
-
 function outcomeTint(outcome: 'normal' | 'monitor' | 'urgent'): string {
   if (outcome === 'urgent') return COLORS.statusUrgent;
   if (outcome === 'monitor') return COLORS.statusMonitor;
   return COLORS.statusNormal;
+}
+
+function cellBgFor(tint: CellTint): string {
+  if (tint === 'urgent') return COLORS.statusUrgentBg;
+  if (tint === 'monitor') return COLORS.statusMonitorBg;
+  if (tint === 'normal') return COLORS.statusNormalBg;
+  if (tint === 'tx') return COLORS.primaryLight;
+  return COLORS.surface;
 }
 
 export default function CareEventsTimeline({
@@ -64,7 +69,27 @@ export default function CareEventsTimeline({
   const { isMockMode } = useAuth();
 
   const today = useMemo(() => new Date(), []);
-  const [viewMonth, setViewMonth] = useState<Date>(today);
+  // Open on the most-recent-activity month so the clinician sees content
+  // immediately. If today's month is empty but last month was busy, we
+  // land on last month and the "Today" button surfaces for quick return.
+  const [viewMonth, setViewMonth] = useState<Date>(() =>
+    findMostRecentActivityMonth(events, today)
+  );
+  // True once the clinician has used prev/next/Today. Locks out further
+  // auto-jumps so realtime event arrivals don't yank them off their
+  // chosen month mid-task.
+  const userNavigatedRef = useRef(false);
+  // Track the events array identity so we can re-jump when the parent
+  // supplies an entirely different patient's events (the parent also
+  // passes a key={userId} so the component fully remounts on patient
+  // switch; this effect is the safety net for in-place hydration).
+  useEffect(() => {
+    if (userNavigatedRef.current) return;
+    if (events.length === 0) return;
+    const target = findMostRecentActivityMonth(events, today);
+    setViewMonth((prev) => (isSameMonth(prev, target) ? prev : target));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [events]);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const [showNormalsInline, setShowNormalsInline] = useState(false);
   const [filters, setFilters] = useState<TimelineFilters>({
@@ -127,14 +152,17 @@ export default function CareEventsTimeline({
   const onCurrentMonth = isSameMonth(viewMonth, today);
 
   const prevMonth = () => {
+    userNavigatedRef.current = true;
     setViewMonth((m) => addMonths(m, -1));
     setSelectedDayKey(null);
   };
   const nextMonth = () => {
+    userNavigatedRef.current = true;
     setViewMonth((m) => addMonths(m, 1));
     setSelectedDayKey(null);
   };
   const goToday = () => {
+    userNavigatedRef.current = true;
     setViewMonth(today);
     setSelectedDayKey(null);
   };
@@ -255,6 +283,10 @@ export default function CareEventsTimeline({
             {grid.slice(rowIdx * 7, rowIdx * 7 + 7).map((cell) => {
               const isSelected = cell.dayKey === selectedDayKey;
               const dimmed = !cell.inViewMonth;
+              const tint = cellTintForMonthCell(cell);
+              const bg = cellBgFor(tint);
+              // Slightly fade tinted cells in spillover months so the
+              // current month still reads as the focal area.
               return (
                 <TouchableOpacity
                   key={cell.dayKey}
@@ -262,6 +294,8 @@ export default function CareEventsTimeline({
                   activeOpacity={0.7}
                   style={[
                     styles.cell,
+                    { backgroundColor: bg },
+                    dimmed && styles.cellDimmed,
                     isSelected && styles.cellSelected,
                   ]}
                   accessibilityRole="button"
@@ -299,14 +333,6 @@ export default function CareEventsTimeline({
                         />
                       )}
                     </View>
-                  </View>
-                  <View style={styles.cellDots}>
-                    {OUTCOME_ORDER.filter((o) => cell.outcomes.has(o)).map((o) => (
-                      <View
-                        key={o}
-                        style={[styles.outcomeDot, { backgroundColor: outcomeTint(o) }]}
-                      />
-                    ))}
                   </View>
                 </TouchableOpacity>
               );
@@ -616,12 +642,12 @@ const styles = StyleSheet.create({
     flex: 1,
     height: CELL_HEIGHT,
     borderRadius: RADIUS.sm,
-    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.borderLight,
     padding: 3,
     justifyContent: 'space-between',
   },
+  cellDimmed: { opacity: 0.55 },
   cellSelected: {
     borderColor: COLORS.primary,
     borderWidth: 1.5,
@@ -645,19 +671,6 @@ const styles = StyleSheet.create({
     borderRadius: 2.5,
     backgroundColor: COLORS.statusUrgent,
   },
-  cellDots: {
-    flexDirection: 'row',
-    gap: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minHeight: 5,
-  },
-  outcomeDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-
   dayDetail: {
     backgroundColor: COLORS.surfaceElevated,
     borderRadius: RADIUS.md,
