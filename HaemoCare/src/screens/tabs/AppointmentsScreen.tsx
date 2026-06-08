@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, FlatList, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, FlatList, Text, StyleSheet, SafeAreaView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Feather } from '@expo/vector-icons';
@@ -28,25 +28,37 @@ export default function AppointmentsScreen() {
   const { isDesktop } = useResponsive();
   const [upcoming, setUpcoming] = useState<Appointment[]>([]);
   const [past, setPast] = useState<Appointment[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const { overdueState, refresh: refreshOverdue } = useOverdueState();
   const { contacts } = useEmergencyContacts();
   const [notifySheetVisible, setNotifySheetVisible] = useState(false);
 
+  const loadData = useCallback(async () => {
+    if (!user) return;
+    const [u, p] = isMockMode
+      ? await Promise.all([mockServices.getUpcomingAppointments(), mockServices.getPastAppointments()])
+      : await Promise.all([realApptService.getUpcomingAppointments(user.id), realApptService.getPastAppointments(user.id)]);
+    setUpcoming(u);
+    setPast(p);
+  }, [user, isMockMode]);
+
   useFocusEffect(
     useCallback(() => {
       refreshOverdue();
-      if (!user) return;
       let cancelled = false;
       (async () => {
-        const [u, p] = isMockMode
-          ? await Promise.all([mockServices.getUpcomingAppointments(), mockServices.getPastAppointments()])
-          : await Promise.all([realApptService.getUpcomingAppointments(user.id), realApptService.getPastAppointments(user.id)]);
-        if (!cancelled) { setUpcoming(u); setPast(p); }
+        try { await loadData(); } catch { /* swallow — empty arrays already set */ }
       })();
       return () => { cancelled = true; };
-    }, [user, isMockMode, refreshOverdue])
+    }, [loadData, refreshOverdue])
   );
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    refreshOverdue();
+    try { await loadData(); } finally { setRefreshing(false); }
+  }, [loadData, refreshOverdue]);
 
   const nextAppt = upcoming[0];
   const nextDays = nextAppt ? daysUntil(nextAppt.scheduled_date) : 0;
@@ -110,6 +122,9 @@ export default function AppointmentsScreen() {
           data={[...upcoming, ...past]}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
+          }
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <>

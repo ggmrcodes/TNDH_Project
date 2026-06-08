@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, RefreshControl } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, TYPOGRAPHY } from '../../config/theme';
@@ -11,7 +11,17 @@ import { TranslationKey } from '../../i18n';
 export default function ClinicianInboxScreen() {
   const { t } = useLanguage();
   const navigation = useNavigation<any>();
-  const { conversations, loading } = useConversations();
+  const { conversations, loading, refresh } = useConversations();
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    refresh();
+    // Spinner stays for ~700ms — the hook's refetch is async but its
+    // refresh() is fire-and-forget (just bumps tick). 700ms gives the
+    // user enough feedback that something happened without locking the UI.
+    await new Promise((r) => setTimeout(r, 700));
+    setRefreshing(false);
+  }, [refresh]);
   return (
     <SafeAreaView style={styles.safe}>
       <Text style={styles.title}>{t('chat.title' as TranslationKey)}</Text>
@@ -19,6 +29,9 @@ export default function ClinicianInboxScreen() {
       <FlatList
         data={conversations}
         keyExtractor={(c) => c.linkId}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
+        }
         renderItem={({ item }) => (
           <ConversationRow
             conversation={item}

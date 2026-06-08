@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Platform, RefreshControl } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
@@ -58,6 +58,14 @@ export default function ClinicianDashboardScreen() {
   const navigation = useNavigation<any>();
   const { conversations, totalUnread } = useConversations();
   const { patients, pendingLinks, incomingRequests, loading, refresh: refreshAssigned } = useAssignedPatients();
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    refreshAssigned();
+    setSlicesTick((t) => t + 1);
+    await new Promise((r) => setTimeout(r, 700));
+    setRefreshing(false);
+  }, [refreshAssigned]);
   const [slices, setSlices] = useState<PatientSlice[]>([]);
   // Bumped by the per-patient realtime subscription below whenever a
   // linked patient logs/edits a transfusion / symptom / appointment.
@@ -513,7 +521,12 @@ export default function ClinicianDashboardScreen() {
               isWide && styles.leftRailWide,
             ]}
           >
-            <ScrollView contentContainerStyle={styles.leftRailScroll}>
+            <ScrollView
+              contentContainerStyle={styles.leftRailScroll}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
+              }
+            >
               {renderQueueContent()}
             </ScrollView>
           </View>
@@ -588,7 +601,12 @@ export default function ClinicianDashboardScreen() {
                   <Feather name="x" size={20} color={COLORS.textSecondary} />
                 </TouchableOpacity>
               </View>
-              <ScrollView contentContainerStyle={styles.leftRailScroll}>
+              <ScrollView
+                contentContainerStyle={styles.leftRailScroll}
+                refreshControl={
+                  <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
+                }
+              >
                 {renderQueueContent()}
               </ScrollView>
             </View>
