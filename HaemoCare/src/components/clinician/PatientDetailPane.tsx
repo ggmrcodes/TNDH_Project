@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../config/supabase';
 import { useLanguage } from '../../contexts/LanguageContext';
 import {
   Appointment,
@@ -139,6 +140,12 @@ export default function PatientDetailPane({
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [contactsExpanded, setContactsExpanded] = useState(false);
+  // Bumped by the realtime subscription below whenever the selected
+  // patient mutates any of transfusions / symptom_logs / appointments /
+  // profiles / medication_reminders (per 2026-06-09-patient-data-realtime
+  // and -extras migrations). Adding it to the focus-effect deps causes
+  // the data re-fetch to re-run on every broadcast.
+  const [liveTick, setLiveTick] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -161,8 +168,35 @@ export default function PatientDetailPane({
       return () => {
         cancelled = true;
       };
-    }, [userId, isMockMode, isClinicianView])
+    }, [userId, isMockMode, isClinicianView, liveTick])
   );
+
+  // Live updates: subscribe to 'patient:{userId}' for the currently
+  // selected patient. Server-side triggers in 2026-06-09-patient-data-
+  // realtime[-extras].sql broadcast on every INSERT/UPDATE/DELETE on
+  // transfusions, symptom_logs, appointments, profiles, and
+  // medication_reminders. Any broadcast bumps liveTick → focus effect
+  // re-fetches → trends / timelines / adherence cards re-render.
+  // Skipped in mock mode (no realtime).
+  useEffect(() => {
+    if (isMockMode || !userId) return;
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    (async () => {
+      await supabase.realtime.setAuth();
+      if (cancelled) return;
+      channel = supabase
+        .channel('patient:' + userId, { config: { private: true } })
+        .on('broadcast', { event: 'INSERT' }, () => setLiveTick((t) => t + 1))
+        .on('broadcast', { event: 'UPDATE' }, () => setLiveTick((t) => t + 1))
+        .on('broadcast', { event: 'DELETE' }, () => setLiveTick((t) => t + 1))
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [userId, isMockMode]);
 
   const hbResult: HbDecayResult = useMemo(() => projectHbDecay(transfusions), [transfusions]);
 
