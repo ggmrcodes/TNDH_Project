@@ -64,6 +64,10 @@ export interface PreTransfusionLabsFormProps {
   /** Pre-fill values for the reactions section. Ignored if
    * `includeReactions` is false. */
   initialReaction?: { noted: boolean; detail: string } | null;
+  /** Suppress the title + "Optional" subtitle. Used by the clinician
+   * lab-history panel where each row already carries its own header
+   * (date + hospital), so the form's title would just duplicate. */
+  hideHeader?: boolean;
 }
 
 interface FieldState {
@@ -85,6 +89,7 @@ export default function PreTransfusionLabsForm({
   showClinicianEditNotice,
   includeReactions,
   initialReaction,
+  hideHeader,
 }: PreTransfusionLabsFormProps) {
   const { t } = useLanguage();
 
@@ -249,10 +254,12 @@ export default function PreTransfusionLabsForm({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('preLabs.title' as TranslationKey)}</Text>
-        <Text style={styles.subtitle}>{t('preLabs.optional' as TranslationKey)}</Text>
-      </View>
+      {!hideHeader && (
+        <View style={styles.header}>
+          <Text style={styles.title}>{t('preLabs.title' as TranslationKey)}</Text>
+          <Text style={styles.subtitle}>{t('preLabs.optional' as TranslationKey)}</Text>
+        </View>
+      )}
 
       {showClinicianEditNotice && (
         <View style={styles.notice}>

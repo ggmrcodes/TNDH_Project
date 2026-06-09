@@ -589,6 +589,7 @@ const en = {
   'preLabs.reactions.detailPlaceholder': 'e.g., chills 15 min after start, resolved with paracetamol',
   'transfusion.clinicianEdited.byNamed': 'Reviewed by {name} · {ago}',
   'transfusion.clinicianEdited.byUnknown': 'Reviewed by your care team · {ago}',
+  'preLabs.history.count': '{count} transfusion(s)',
 
   // Transfusion document photo (the source scan kept with the record)
   'transfusion.documentPhoto.title': 'Scanned document',
