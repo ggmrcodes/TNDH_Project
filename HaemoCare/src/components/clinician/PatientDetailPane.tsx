@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
@@ -44,6 +44,7 @@ import HbTrendChart from '../charts/HbTrendChart';
 import SymptomDotPlot from '../charts/SymptomDotPlot';
 import AdherenceRing from '../charts/AdherenceRing';
 import LabTrendsChart from '../charts/LabTrendsChart';
+import { digitsOnly } from '../../utils/emergencySms';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
 
 const SYMPTOM_LABELS: Record<string, string> = {
@@ -389,13 +390,38 @@ export default function PatientDetailPane({
             </TouchableOpacity>
             {contactsExpanded && patientProfile.share_full_name && emergencyContacts.length > 0 && (
               <View style={styles.contactList}>
-                {emergencyContacts.map(ec => (
-                  <View key={ec.id} style={styles.contactRow}>
-                    <Text style={[styles.contactItem, styles.contactName]}>{ec.name}</Text>
-                    <Text style={styles.contactItem}>{ec.role_label}</Text>
-                    <Text style={styles.contactItem}>{ec.phone}</Text>
-                  </View>
-                ))}
+                {emergencyContacts.map(ec => {
+                  const dialable = digitsOnly(ec.phone).length >= 4;
+                  const onCall = () => {
+                    if (!dialable) return;
+                    Linking.openURL('tel:' + digitsOnly(ec.phone)).catch(() => {});
+                  };
+                  return (
+                    <TouchableOpacity
+                      key={ec.id}
+                      onPress={onCall}
+                      activeOpacity={0.6}
+                      disabled={!dialable}
+                      style={styles.contactRow}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${ec.name} ${ec.role_label} ${ec.phone}`}
+                      accessibilityHint={
+                        dialable
+                          ? t('clinician.detail.contactsCallHint' as TranslationKey)
+                          : undefined
+                      }
+                    >
+                      <Text style={[styles.contactItem, styles.contactName]}>{ec.name}</Text>
+                      <Text style={styles.contactItem}>{ec.role_label}</Text>
+                      <Text style={[styles.contactItem, dialable && styles.contactPhoneDialable]}>
+                        {ec.phone}
+                      </Text>
+                      {dialable && (
+                        <Feather name="phone" size={14} color={COLORS.primary} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             )}
           </View>
@@ -652,10 +678,17 @@ const styles = StyleSheet.create({
   contactRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'center',
     gap: SPACING.sm,
-    paddingVertical: 2,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
+    borderRadius: RADIUS.sm,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    backgroundColor: COLORS.surface,
   },
   contactName: { fontWeight: '600', color: COLORS.text },
+  contactPhoneDialable: { color: COLORS.primary, fontWeight: '600' },
   header: { gap: 4, marginBottom: SPACING.xs },
   title: { ...TYPOGRAPHY.h2, color: COLORS.text },
   subtitle: { ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary },
