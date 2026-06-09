@@ -592,6 +592,7 @@ const en = {
   'preLabs.history.count': '{count} transfusion(s)',
   'clinician.medications.activeTitle': 'Active medications ({count})',
   'clinician.medications.otherReportedTitle': 'Other reported medications',
+  'clinician.detail.contactsCallHint': 'Tap to call this emergency contact',
 
   // Transfusion document photo (the source scan kept with the record)
   'transfusion.documentPhoto.title': 'Scanned document',
