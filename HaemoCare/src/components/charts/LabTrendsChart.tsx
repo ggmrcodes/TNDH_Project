@@ -17,6 +17,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import Svg, { Polyline, Line, Circle, Text as SvgText, Rect } from 'react-native-svg';
+import { Feather } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import type { LabPoint, LabWindow } from '../../utils/labTrendsData';
 import { buildLabTrendsSeries, formatLabValue } from '../../utils/labTrendsData';
@@ -46,6 +47,16 @@ export interface LabTrendsChartProps {
   width?: number;
   /** Cap on points per series (down-sampled in `buildLabTrendsSeries`). */
   maxPoints?: number;
+  /** When set, the Hb subplot renders a dashed red horizontal line at
+   * this value + a right-edge severity chip. The y-axis auto-extends
+   * to include this value when no data point reaches it. */
+  hbFloor?: number;
+  /** Same shape, ferritin ceiling (amber). */
+  ferritinCeiling?: number;
+  /** Tapping the gear icon in the chart header fires this. Caller is
+   * expected to open ThresholdEditSheet. When undefined, the gear icon
+   * is suppressed (used for patient-side embeddings). */
+  onEditThresholds?: () => void;
 }
 
 type SeriesKey = 'hb' | 'hct' | 'ferritin';
@@ -66,6 +77,9 @@ export default function LabTrendsChart({
   labels,
   width = 340,
   maxPoints = 200,
+  hbFloor,
+  ferritinCeiling,
+  onEditThresholds,
 }: LabTrendsChartProps) {
   const [window, setWindow] = useState<LabWindow>('6mo');
 
@@ -111,36 +125,69 @@ export default function LabTrendsChart({
   return (
     <View style={styles.container}>
       {/* Window selector — shared across all three plots */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.windowRow}>
-        {ALL_WINDOWS.map(w => (
+      <View style={styles.headerRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.windowRow}>
+          {ALL_WINDOWS.map(w => (
+            <TouchableOpacity
+              key={w}
+              style={[styles.windowChip, window === w && styles.windowChipActive]}
+              onPress={() => persistWindow(w)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ selected: window === w }}
+            >
+              <Text style={[styles.windowChipText, window === w && styles.windowChipTextActive]}>
+                {labels.windows[w]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+        {onEditThresholds && (
           <TouchableOpacity
-            key={w}
-            style={[styles.windowChip, window === w && styles.windowChipActive]}
-            onPress={() => persistWindow(w)}
-            activeOpacity={0.7}
+            onPress={onEditThresholds}
+            style={styles.thresholdBtn}
+            hitSlop={6}
             accessibilityRole="button"
-            accessibilityState={{ selected: window === w }}
           >
-            <Text style={[styles.windowChipText, window === w && styles.windowChipTextActive]}>
-              {labels.windows[w]}
-            </Text>
+            <Feather name="sliders" size={14} color={COLORS.textSecondary} />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        )}
+      </View>
 
-      {SERIES_ORDER.map(k => (
-        <MetricPlot
-          key={k}
-          label={labels[k]}
-          color={SERIES_COLORS[k]}
-          points={series[k]}
-          markers={series.transfusionMarkers}
-          xMin={xMin}
-          xMax={xMax}
-          width={width}
-          emptyText={labels.empty}
-        />
-      ))}
+      {SERIES_ORDER.map(k => {
+        let threshold: MetricPlotProps['threshold'] = undefined;
+        if (k === 'hb' && hbFloor !== undefined) {
+          threshold = {
+            value: hbFloor,
+            label: hbFloor.toFixed(1),
+            lineColor: COLORS.statusUrgent,
+            chipBgColor: COLORS.statusUrgentBg,
+            chipTextColor: COLORS.statusUrgentText,
+          };
+        } else if (k === 'ferritin' && ferritinCeiling !== undefined) {
+          threshold = {
+            value: ferritinCeiling,
+            label: String(Math.round(ferritinCeiling)),
+            lineColor: COLORS.statusMonitor,
+            chipBgColor: COLORS.statusMonitorBg,
+            chipTextColor: COLORS.statusMonitorText,
+          };
+        }
+        return (
+          <MetricPlot
+            key={k}
+            label={labels[k]}
+            color={SERIES_COLORS[k]}
+            points={series[k]}
+            markers={series.transfusionMarkers}
+            xMin={xMin}
+            xMax={xMax}
+            width={width}
+            emptyText={labels.empty}
+            threshold={threshold}
+          />
+        );
+      })}
 
       {hasAnyMarkers && <Text style={styles.markerHint}>{labels.markerHint}</Text>}
     </View>
@@ -158,9 +205,17 @@ interface MetricPlotProps {
   xMax: number;
   width: number;
   emptyText: string;
+  threshold?: {
+    value: number;
+    /** Pre-formatted chip label (e.g., '7.0'). */
+    label: string;
+    lineColor: string;
+    chipBgColor: string;
+    chipTextColor: string;
+  };
 }
 
-function MetricPlot({ label, color, points, markers, xMin, xMax, width, emptyText }: MetricPlotProps) {
+function MetricPlot({ label, color, points, markers, xMin, xMax, width, emptyText, threshold }: MetricPlotProps) {
   const [tooltip, setTooltip] = useState<LabPoint | null>(null);
 
   const padL = 40;
@@ -176,17 +231,19 @@ function MetricPlot({ label, color, points, markers, xMin, xMax, width, emptyTex
 
   // Real y-domain from this metric's own values (5% margin; pad a flat series).
   const { yMin, yMax } = useMemo(() => {
-    if (points.length === 0) return { yMin: 0, yMax: 1 };
     const values = points.map(p => p.value);
-    const lo = Math.min(...values);
-    const hi = Math.max(...values);
+    const candidates: number[] = [...values];
+    if (threshold !== undefined) candidates.push(threshold.value);
+    if (candidates.length === 0) return { yMin: 0, yMax: 1 };
+    const lo = Math.min(...candidates);
+    const hi = Math.max(...candidates);
     if (lo === hi) {
       const pad = Math.max(1, Math.abs(lo) * 0.1);
       return { yMin: lo - pad, yMax: hi + pad };
     }
     const margin = (hi - lo) * 0.05;
     return { yMin: lo - margin, yMax: hi + margin };
-  }, [points]);
+  }, [points, threshold?.value]);
 
   const yRange = yMax - yMin || 1;
   const yScale = (v: number) => padT + (1 - (v - yMin) / yRange) * plotH;
@@ -227,6 +284,47 @@ function MetricPlot({ label, color, points, markers, xMin, xMax, width, emptyTex
                 </React.Fragment>
               );
             })}
+
+            {/* threshold line + chip */}
+            {threshold !== undefined && (() => {
+              const ty = yScale(threshold.value);
+              const chipW = 36;
+              const chipH = 14;
+              const chipX = padL + plotW - chipW;
+              const chipY = ty - chipH / 2;
+              return (
+                <>
+                  <Line
+                    x1={padL}
+                    x2={padL + plotW - chipW - 2}
+                    y1={ty}
+                    y2={ty}
+                    stroke={threshold.lineColor}
+                    strokeWidth={1.5}
+                    strokeDasharray="4,3"
+                  />
+                  <Rect
+                    x={chipX}
+                    y={chipY}
+                    width={chipW}
+                    height={chipH}
+                    rx={4}
+                    ry={4}
+                    fill={threshold.chipBgColor}
+                  />
+                  <SvgText
+                    x={chipX + chipW / 2}
+                    y={ty + 4}
+                    fontSize={9}
+                    fontWeight="700"
+                    fill={threshold.chipTextColor}
+                    textAnchor="middle"
+                  >
+                    {threshold.label}
+                  </SvgText>
+                </>
+              );
+            })()}
 
             {/* transfusion markers */}
             {markers.map((m, i) => {
@@ -361,4 +459,12 @@ const styles = StyleSheet.create({
   tooltipDate: { fontSize: 10, color: COLORS.textLight },
   tooltipClose: { fontSize: 16, fontWeight: '700', color: COLORS.textLight, paddingHorizontal: 4 },
   markerHint: { ...TYPOGRAPHY.caption, color: COLORS.textLight, fontStyle: 'italic' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  thresholdBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RADIUS.sm,
+  },
 });
