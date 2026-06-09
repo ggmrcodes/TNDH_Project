@@ -45,21 +45,40 @@ export async function getAssignedPatients(clinicianId: string): Promise<Profile[
   //  and 'profiles' in the schema cache" — proven on-device via the
   // diagnostic alert in useAssignedPatients (PR #27). Manual join is
   // cache-stability-proof.
+  //
+  // We also pull `share_full_name` from the link and use it to override
+  // the per-profile field on the returned rows. Rationale: the per-link
+  // consent (set at link-create time via PatientFindClinicianScreen) is
+  // the authoritative answer to "does THIS clinician see the patient's
+  // name." The profile-level `share_full_name` is a global default
+  // toggled from Privacy Settings — patients commonly skip that toggle
+  // even after consenting at link-create, so the queue keeps showing
+  // HC-XXXXXX instead of the patient's name. Surfacing the link's
+  // value here means the queue + detail-pane renderers automatically
+  // respect link consent without needing link rows plumbed through.
   const { data: links, error: linkErr } = await supabase
     .from('clinician_patient_links')
-    .select('patient_user_id')
+    .select('patient_user_id, share_full_name')
     .eq('clinician_id', clinicianId)
     .eq('status', 'active');
   if (linkErr) throw new Error(linkErr.message);
-  const patientIds = (links ?? []).map((l) => l.patient_user_id);
-  if (patientIds.length === 0) return [];
+  const linkRows = links ?? [];
+  if (linkRows.length === 0) return [];
 
+  const patientIds = linkRows.map((l) => l.patient_user_id);
   const { data: profiles, error: profErr } = await supabase
     .from('profiles')
     .select('*')
     .in('user_id', patientIds);
   if (profErr) throw new Error(profErr.message);
-  return (profiles ?? []) as Profile[];
+
+  const shareByPatient = new Map(
+    linkRows.map((l) => [l.patient_user_id, l.share_full_name === true])
+  );
+  return (profiles ?? []).map((p) => ({
+    ...p,
+    share_full_name: shareByPatient.get(p.user_id) ?? false,
+  })) as Profile[];
 }
 
 export async function getTransfusionsForPatient(userId: string): Promise<Transfusion[]> {
@@ -103,7 +122,25 @@ export async function getProfileForPatient(userId: string): Promise<Profile | nu
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return (data as Profile | null) ?? null;
+  const profile = (data as Profile | null) ?? null;
+  if (!profile) return null;
+
+  // Mirror getAssignedPatients: override profile.share_full_name with
+  // the per-link consent for the calling clinician's active session.
+  // See the long-form rationale in getAssignedPatients.
+  const { data: sessionData } = await supabase.auth.getSession();
+  const clinicianId = sessionData.session?.user.id ?? null;
+  if (!clinicianId) return profile;
+
+  const { data: linkRow } = await supabase
+    .from('clinician_patient_links')
+    .select('share_full_name')
+    .eq('clinician_id', clinicianId)
+    .eq('patient_user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle();
+  if (!linkRow) return profile;
+  return { ...profile, share_full_name: linkRow.share_full_name === true };
 }
 
 export async function getMostRecentPastAppointmentForPatient(
