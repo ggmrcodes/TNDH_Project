@@ -590,6 +590,8 @@ const th: Record<TranslationKey, string> = {
   'preLabs.reactions.title': 'การตอบสนองระหว่างถ่ายเลือด',
   'preLabs.reactions.noted': 'พบการตอบสนองระหว่างถ่ายเลือด',
   'preLabs.reactions.detailPlaceholder': 'เช่น มีอาการหนาวสั่นหลังเริ่ม 15 นาที หายหลังกินพาราเซตามอล',
+  'transfusion.clinicianEdited.byNamed': 'ตรวจสอบโดย {name} · {ago}',
+  'transfusion.clinicianEdited.byUnknown': 'ตรวจสอบโดยทีมแพทย์ของคุณ · {ago}',
 
   // Transfusion document photo (the source scan kept with the record)
   'transfusion.documentPhoto.title': 'เอกสารที่สแกน',

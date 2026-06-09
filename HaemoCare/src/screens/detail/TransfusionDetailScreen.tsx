@@ -21,7 +21,9 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import FullScreenImageViewer from '../../components/common/FullScreenImageViewer';
 import PreTransfusionLabsForm from '../../components/transfusions/PreTransfusionLabsForm';
 import PreTransfusionLabsDisplay from '../../components/transfusions/PreTransfusionLabsDisplay';
+import ClinicianEditedBadge from '../../components/transfusions/ClinicianEditedBadge';
 import { isEmptyLabs } from '../../utils/preTransfusionLabs';
+import { useConnectedClinicians } from '../../hooks/useConnectedClinicians';
 import { confirm } from '../../utils/confirm';
 import { TranslationKey } from '../../i18n';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -38,6 +40,15 @@ export default function TransfusionDetailScreen() {
   const [transfusion, setTransfusion] = useState<Transfusion | null>(null);
   const [logs, setLogs] = useState<SymptomLog[]>([]);
   const [editingLabs, setEditingLabs] = useState(false);
+  const { connected: connectedClinicians } = useConnectedClinicians();
+
+  // Resolve the editor's display name from the patient's active clinician
+  // links; null if the clinician was unlinked after the edit.
+  const clinicianEditorName: string | null = transfusion?.clinician_edited_by
+    ? connectedClinicians.find(
+        (c) => c.clinicianUserId === transfusion.clinician_edited_by
+      )?.clinicianFullName ?? null
+    : null;
   // Resolved (signed / data:) URL for the scanned-document photo. Re-fetched
   // whenever document_photo_url changes (e.g. after replace).
   const [photoDisplayUri, setPhotoDisplayUri] = useState<string | null>(null);
@@ -217,6 +228,12 @@ export default function TransfusionDetailScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={[styles.content, !isMobile && { maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' as const, width: '100%' as any }]}>
+        {transfusion.clinician_edited_at && (
+          <ClinicianEditedBadge
+            editedAt={transfusion.clinician_edited_at}
+            clinicianName={clinicianEditorName}
+          />
+        )}
         <Card style={styles.card}>
           <View style={styles.row}>
             <Ionicons name="calendar" size={20} color={COLORS.primary} />

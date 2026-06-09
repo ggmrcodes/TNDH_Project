@@ -548,16 +548,26 @@ function findTxIndex(transfusionId: string): { source: 'self' | 'patient'; idx: 
 function applyMockLabsUpdate(
   located: NonNullable<ReturnType<typeof findTxIndex>>,
   labs: PreTransfusionLabs,
-  reactions?: { noted: boolean; detail: string }
+  reactions?: { noted: boolean; detail: string },
+  clinicianStamp?: { actorUserId: string }
 ): Transfusion {
   const reactionPatch = reactions
     ? { reaction_noted: reactions.noted, reaction_detail: reactions.detail }
+    : {};
+  // Mirror the server's BEFORE UPDATE trigger: when the actor isn't the
+  // patient (i.e. a clinician edit), stamp clinician_edited_at + _by.
+  const stampPatch = clinicianStamp
+    ? {
+        clinician_edited_at: new Date().toISOString(),
+        clinician_edited_by: clinicianStamp.actorUserId,
+      }
     : {};
   if (located.source === 'self') {
     transfusions[located.idx] = {
       ...transfusions[located.idx],
       pre_labs: labs,
       ...reactionPatch,
+      ...stampPatch,
     };
     return transfusions[located.idx];
   }
@@ -567,6 +577,7 @@ function applyMockLabsUpdate(
     ...linked.transfusions[located.idx],
     pre_labs: labs,
     ...reactionPatch,
+    ...stampPatch,
   };
   return linked.transfusions[located.idx];
 }
@@ -599,7 +610,13 @@ export async function savePreLabsForTransfusion(
     changed_by_user_id: actorUserId,
     changed_at: new Date().toISOString(),
   });
-  return applyMockLabsUpdate(located, labs, reactions);
+  // findTxIndex sets `source: 'patient'` when the transfusion belongs
+  // to a MOCK_LINKED_PATIENTS row — that means a clinician is editing
+  // someone else's record. Mirror the server-side trigger's auto-stamp
+  // in that case. `source: 'self'` is the patient editing their own.
+  const stamp =
+    located.source === 'patient' ? { actorUserId: actorUserId } : undefined;
+  return applyMockLabsUpdate(located, labs, reactions, stamp);
 }
 
 export async function listLabAuditEntries(
