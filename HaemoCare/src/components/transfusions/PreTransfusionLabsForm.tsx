@@ -40,12 +40,14 @@ import type { PreTransfusionLabs } from '../../types/database';
 export interface PreTransfusionLabsFormProps {
   initial?: PreTransfusionLabs | null;
   /** Persist labs. Caller composes the full payload (recorded_by_user_id,
-   * etc.) from `actorUserId` and `valuesAndPhotoUrl`. */
+   * etc.) from `actorUserId` and `valuesAndPhotoUrl`. When
+   * `includeReactions` is set, `values.reactions` is populated. */
   onSubmit: (values: {
     hb: number | null;
     hct: number | null;
     ferritin: number | null;
     lab_slip_photo_url: string | null;
+    reactions?: { noted: boolean; detail: string };
   }) => Promise<void>;
   /** Optional photo-upload handler. Receives the compressed JPEG bytes
    * (ArrayBuffer); should return the storage path / URL to persist.
@@ -55,6 +57,13 @@ export interface PreTransfusionLabsFormProps {
   /** When the form opens for a clinician overwriting a patient value, the
    * caller should set this so the prompt explains the audit-log behavior. */
   showClinicianEditNotice?: boolean;
+  /** When true, render the reaction-noted toggle + detail textarea below
+   * the lab fields, and include the values in onSubmit. Wired by the
+   * clinician panel only — patient-side flows leave this off. */
+  includeReactions?: boolean;
+  /** Pre-fill values for the reactions section. Ignored if
+   * `includeReactions` is false. */
+  initialReaction?: { noted: boolean; detail: string } | null;
 }
 
 interface FieldState {
@@ -74,6 +83,8 @@ export default function PreTransfusionLabsForm({
   onUploadPhoto,
   onCancel,
   showClinicianEditNotice,
+  includeReactions,
+  initialReaction,
 }: PreTransfusionLabsFormProps) {
   const { t } = useLanguage();
 
@@ -84,6 +95,12 @@ export default function PreTransfusionLabsForm({
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [reactionNoted, setReactionNoted] = useState<boolean>(
+    initialReaction?.noted ?? false
+  );
+  const [reactionDetail, setReactionDetail] = useState<string>(
+    initialReaction?.detail ?? ''
+  );
 
   const fieldLabel = (field: LabField): string => {
     switch (field) {
@@ -191,12 +208,27 @@ export default function PreTransfusionLabsForm({
       return;
     }
 
-    const payload = {
+    const payload: {
+      hb: number | null;
+      hct: number | null;
+      ferritin: number | null;
+      lab_slip_photo_url: string | null;
+      reactions?: { noted: boolean; detail: string };
+    } = {
       hb: hbR.value ?? null,
       hct: hctR.value ?? null,
       ferritin: ferR.value ?? null,
       lab_slip_photo_url: photoUri,
     };
+    if (includeReactions) {
+      payload.reactions = {
+        noted: reactionNoted,
+        // Auto-clear free-text when the toggle is off — keeps stale
+        // "chills 15 min in" lying around if the clinician decides
+        // there wasn't really a reaction after all.
+        detail: reactionNoted ? reactionDetail.trim() : '',
+      };
+    }
     // Defensive: never let bad numbers slip past the form even if the
     // per-field parsers reported clean (e.g. future code path bypass).
     const xErrors = validateLabs(payload);
@@ -253,6 +285,46 @@ export default function PreTransfusionLabsForm({
         errorMessage={formatError(ferritin.error)}
         testID="preLabs.ferritin.input"
       />
+
+      {includeReactions && (
+        <View style={styles.reactionsBlock}>
+          <View style={styles.reactionsDivider} />
+          <View style={styles.reactionsHeader}>
+            <Feather name="alert-triangle" size={14} color={COLORS.statusMonitor} />
+            <Text style={styles.reactionsTitle}>
+              {t('preLabs.reactions.title' as TranslationKey)}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setReactionNoted((v) => !v)}
+            activeOpacity={0.7}
+            style={styles.reactionsToggleRow}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: reactionNoted }}
+          >
+            <Feather
+              name={reactionNoted ? 'check-square' : 'square'}
+              size={16}
+              color={reactionNoted ? COLORS.primary : COLORS.textSecondary}
+            />
+            <Text style={styles.reactionsToggleText}>
+              {t('preLabs.reactions.noted' as TranslationKey)}
+            </Text>
+          </TouchableOpacity>
+          {reactionNoted && (
+            <TextInput
+              style={styles.reactionsTextarea}
+              value={reactionDetail}
+              onChangeText={setReactionDetail}
+              placeholder={t('preLabs.reactions.detailPlaceholder' as TranslationKey)}
+              placeholderTextColor={COLORS.textLight}
+              multiline
+              numberOfLines={3}
+              testID="preLabs.reactions.detail"
+            />
+          )}
+        </View>
+      )}
 
       <View style={styles.photoRow}>
         <Feather name="paperclip" size={16} color={COLORS.primary} />
@@ -378,6 +450,33 @@ const styles = StyleSheet.create({
   },
   unit: { ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, marginLeft: SPACING.xs },
   fieldError: { ...TYPOGRAPHY.caption, color: COLORS.statusUrgent, fontWeight: '600' },
+  reactionsBlock: { gap: SPACING.xs, marginTop: SPACING.xs },
+  reactionsDivider: {
+    height: 1,
+    backgroundColor: COLORS.borderLight,
+    marginVertical: SPACING.xs,
+  },
+  reactionsHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
+  reactionsTitle: { ...TYPOGRAPHY.label, color: COLORS.textSecondary },
+  reactionsToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    paddingVertical: SPACING.xs,
+  },
+  reactionsToggleText: { ...TYPOGRAPHY.body, color: COLORS.text },
+  reactionsTextarea: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    minHeight: 64,
+    textAlignVertical: 'top',
+    backgroundColor: COLORS.surface,
+    ...TYPOGRAPHY.body,
+    color: COLORS.text,
+  },
   photoRow: {
     flexDirection: 'row',
     alignItems: 'center',
