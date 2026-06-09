@@ -558,7 +558,12 @@ export default function ClinicianDashboardScreen() {
             >
               {/* === medication adherence widget (brief #1) === */}
               <View style={styles.adherenceWrap}>
-                <MedicationAdherenceCard patientUserId={selectedId} />
+                <MedicationAdherenceCard
+                  patientUserId={selectedId}
+                  profileMedications={
+                    patients.find((p) => p.user_id === selectedId)?.medications ?? null
+                  }
+                />
               </View>
               {/* === pre-transfusion labs panel (brief #3) === */}
               <PreTransfusionLabsPanel

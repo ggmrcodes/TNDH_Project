@@ -590,6 +590,8 @@ const en = {
   'transfusion.clinicianEdited.byNamed': 'Reviewed by {name} · {ago}',
   'transfusion.clinicianEdited.byUnknown': 'Reviewed by your care team · {ago}',
   'preLabs.history.count': '{count} transfusion(s)',
+  'clinician.medications.activeTitle': 'Active medications ({count})',
+  'clinician.medications.otherReportedTitle': 'Other reported medications',
 
   // Transfusion document photo (the source scan kept with the record)
   'transfusion.documentPhoto.title': 'Scanned document',

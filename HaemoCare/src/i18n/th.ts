@@ -593,6 +593,8 @@ const th: Record<TranslationKey, string> = {
   'transfusion.clinicianEdited.byNamed': 'ตรวจสอบโดย {name} · {ago}',
   'transfusion.clinicianEdited.byUnknown': 'ตรวจสอบโดยทีมแพทย์ของคุณ · {ago}',
   'preLabs.history.count': '{count} ครั้ง',
+  'clinician.medications.activeTitle': 'ยาที่ใช้อยู่ ({count})',
+  'clinician.medications.otherReportedTitle': 'ยาอื่นที่ผู้ป่วยรายงาน',
 
   // Transfusion document photo (the source scan kept with the record)
   'transfusion.documentPhoto.title': 'เอกสารที่สแกน',

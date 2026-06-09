@@ -1,8 +1,20 @@
 /**
- * Per-patient medication adherence widget for the clinician dashboard.
- * Shows taken/missed counts for the last 7 days plus a sparkline of daily
- * taken counts. Renders an empty state when the patient has no active
- * reminders configured.
+ * Per-patient medication widget for the clinician dashboard.
+ *
+ * Three sections, in order:
+ *
+ *  1. Adherence stats — taken/missed counts for the last 7 days + a
+ *     sparkline of daily taken counts.
+ *  2. Active reminders list — medication_reminders rows the patient
+ *     has set up (name · dosage · frequency · times). The doctor used
+ *     to see only the adherence numbers without knowing WHAT meds the
+ *     patient was on; this section fixes that.
+ *  3. Other reported medications — patient's free-text
+ *     `profile.medications` field (passed in by the parent). Covers
+ *     patients who type their meds in their profile but never set up
+ *     structured reminders.
+ *
+ * Renders nothing when ALL three sources are empty.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -20,6 +32,10 @@ import type { MedicationAdherenceEvent, MedicationReminder } from '../../types/d
 export interface MedicationAdherenceCardProps {
   patientUserId: string;
   days?: number;
+  /** Free-text from `profiles.medications` — typed by the patient on
+   * signup or in Edit Profile. Passed in from the dashboard so the
+   * card stays a single source of truth for "what's the patient on?" */
+  profileMedications?: string | null;
 }
 
 interface Aggregated {
@@ -28,6 +44,14 @@ interface Aggregated {
   perDayTaken: number[]; // length === days
   hasReminders: boolean;
 }
+
+const FREQUENCY_KEY: Record<MedicationReminder['frequency'], TranslationKey> = {
+  daily: 'medications.frequencyDaily' as TranslationKey,
+  twice_daily: 'medications.frequencyTwice' as TranslationKey,
+  three_times: 'medications.frequencyThrice' as TranslationKey,
+  weekly: 'medications.frequencyWeekly' as TranslationKey,
+  as_needed: 'medications.frequencyAsNeeded' as TranslationKey,
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -59,10 +83,12 @@ function aggregateEvents(
 export default function MedicationAdherenceCard({
   patientUserId,
   days = 7,
+  profileMedications,
 }: MedicationAdherenceCardProps) {
   const { isMockMode } = useAuth();
   const { t } = useLanguage();
   const [data, setData] = useState<Aggregated | null>(null);
+  const [reminders, setReminders] = useState<MedicationReminder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -74,7 +100,7 @@ export default function MedicationAdherenceCard({
       cutoff.setHours(0, 0, 0, 0);
       cutoff.setDate(cutoff.getDate() - (days - 1));
       try {
-        const [reminders, events]: [MedicationReminder[], MedicationAdherenceEvent[]] = isMockMode
+        const [reminderRows, events]: [MedicationReminder[], MedicationAdherenceEvent[]] = isMockMode
           ? await Promise.all([
               mockServices.getMedicationRemindersForPatient(patientUserId),
               mockServices.getAdherenceEventsForPatient(patientUserId, cutoff.toISOString()),
@@ -85,16 +111,51 @@ export default function MedicationAdherenceCard({
             ]);
         if (cancelled) return;
         const agg = aggregateEvents(events, days, now);
-        const hasReminders = reminders.some(r => r.is_active);
-        setData({ ...agg, hasReminders });
+        const activeReminders = reminderRows.filter((r) => r.is_active);
+        setReminders(activeReminders);
+        setData({ ...agg, hasReminders: activeReminders.length > 0 });
       } catch {
-        if (!cancelled) setData({ takenCount: 0, skippedCount: 0, perDayTaken: new Array(days).fill(0), hasReminders: false });
+        if (!cancelled) {
+          setReminders([]);
+          setData({
+            takenCount: 0,
+            skippedCount: 0,
+            perDayTaken: new Array(days).fill(0),
+            hasReminders: false,
+          });
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
   }, [patientUserId, isMockMode, days]);
+
+  const hasReminders = reminders.length > 0;
+  const profileMedsTrimmed = (profileMedications ?? '').trim();
+  const hasProfileMeds = profileMedsTrimmed.length > 0;
+  const hasAnyAdherenceSignal =
+    !!data && (data.takenCount > 0 || data.skippedCount > 0);
+
+  // Render nothing only when ALL sources are empty — otherwise we have
+  // SOMETHING to tell the doctor about this patient's meds.
+  if (!loading && !hasReminders && !hasProfileMeds && !hasAnyAdherenceSignal) {
+    return (
+      <View style={styles.card}>
+        <View style={styles.headerRow}>
+          <View style={styles.iconBg}>
+            <Feather name="check-circle" size={14} color={COLORS.primary} />
+          </View>
+          <Text style={styles.label}>
+            {t('clinician.adherence.title' as TranslationKey).toUpperCase()}
+          </Text>
+        </View>
+        <Text style={styles.empty}>
+          {t('clinician.adherence.empty' as TranslationKey)}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.card}>
@@ -109,28 +170,98 @@ export default function MedicationAdherenceCard({
 
       {loading ? (
         <Text style={styles.empty}>{t('common.loading' as TranslationKey)}</Text>
-      ) : !data || (!data.hasReminders && data.takenCount === 0 && data.skippedCount === 0) ? (
-        <Text style={styles.empty}>{t('clinician.adherence.empty' as TranslationKey)}</Text>
       ) : (
         <View style={styles.body}>
-          <View style={styles.statsRow}>
-            <View style={styles.stat}>
-              <Text style={[styles.statValue, { color: COLORS.statusNormal }]}>{data.takenCount}</Text>
-              <Text style={styles.statLabel}>{t('clinician.adherence.takenLabel' as TranslationKey).toUpperCase()}</Text>
+          {(hasReminders || hasAnyAdherenceSignal) && data && (
+            <View style={styles.statsRow}>
+              <View style={styles.stat}>
+                <Text style={[styles.statValue, { color: COLORS.statusNormal }]}>
+                  {data.takenCount}
+                </Text>
+                <Text style={styles.statLabel}>
+                  {t('clinician.adherence.takenLabel' as TranslationKey).toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.stat}>
+                <Text style={[styles.statValue, { color: COLORS.statusMonitor }]}>
+                  {data.skippedCount}
+                </Text>
+                <Text style={styles.statLabel}>
+                  {t('clinician.adherence.missedLabel' as TranslationKey).toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.sparklineWrap}>
+                <Sparkline values={data.perDayTaken} />
+                <Text style={styles.sparklineLabel}>
+                  {t('clinician.adherence.windowLabel' as TranslationKey, { days })}
+                </Text>
+              </View>
             </View>
-            <View style={styles.stat}>
-              <Text style={[styles.statValue, { color: COLORS.statusMonitor }]}>{data.skippedCount}</Text>
-              <Text style={styles.statLabel}>{t('clinician.adherence.missedLabel' as TranslationKey).toUpperCase()}</Text>
-            </View>
-            <View style={styles.sparklineWrap}>
-              <Sparkline values={data.perDayTaken} />
-              <Text style={styles.sparklineLabel}>
-                {t('clinician.adherence.windowLabel' as TranslationKey, { days })}
+          )}
+
+          {hasReminders && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                {t('clinician.medications.activeTitle' as TranslationKey, {
+                  count: reminders.length,
+                })}
               </Text>
+              <View style={styles.reminderList}>
+                {reminders.map((r) => (
+                  <ReminderRow key={r.id} reminder={r} t={t} />
+                ))}
+              </View>
             </View>
-          </View>
+          )}
+
+          {hasProfileMeds && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                {t('clinician.medications.otherReportedTitle' as TranslationKey)}
+              </Text>
+              <Text style={styles.profileMedsText}>{profileMedsTrimmed}</Text>
+            </View>
+          )}
         </View>
       )}
+    </View>
+  );
+}
+
+function ReminderRow({
+  reminder,
+  t,
+}: {
+  reminder: MedicationReminder;
+  t: ReturnType<typeof useLanguage>['t'];
+}) {
+  const freq = t(FREQUENCY_KEY[reminder.frequency]);
+  // Show up to 3 reminder times; rest collapsed to "+N more".
+  const times = reminder.reminder_times ?? [];
+  const visibleTimes = times.slice(0, 3).join(', ');
+  const overflow = times.length - 3;
+  const timeText = overflow > 0 ? `${visibleTimes} +${overflow}` : visibleTimes;
+
+  return (
+    <View style={styles.reminderRow}>
+      <View style={styles.reminderIconWrap}>
+        <Feather name="circle" size={6} color={COLORS.primary} />
+      </View>
+      <View style={styles.reminderTextWrap}>
+        <Text style={styles.reminderName} numberOfLines={1}>
+          {reminder.medication_name}
+          {reminder.dosage ? ` · ${reminder.dosage}` : ''}
+        </Text>
+        <Text style={styles.reminderMeta} numberOfLines={1}>
+          {freq}
+          {timeText ? ` · ${timeText}` : ''}
+        </Text>
+        {reminder.instructions ? (
+          <Text style={styles.reminderInstructions} numberOfLines={1}>
+            {reminder.instructions}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -202,4 +333,33 @@ const styles = StyleSheet.create({
   sparklineWrap: { flex: 1, alignItems: 'flex-end', gap: 2 },
   sparklineLabel: { fontSize: 10, color: COLORS.textLight, fontWeight: '500' },
   empty: { ...TYPOGRAPHY.bodySmall, color: COLORS.textLight, fontStyle: 'italic' },
+  section: { gap: SPACING.xs, paddingTop: SPACING.xs },
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.textLight,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  reminderList: { gap: SPACING.xs },
+  reminderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: SPACING.xs,
+    paddingVertical: 2,
+  },
+  reminderIconWrap: {
+    width: 14,
+    alignItems: 'center',
+    paddingTop: 7,
+  },
+  reminderTextWrap: { flex: 1, gap: 1 },
+  reminderName: { ...TYPOGRAPHY.bodySmall, color: COLORS.text, fontWeight: '600' },
+  reminderMeta: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
+  reminderInstructions: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textLight,
+    fontStyle: 'italic',
+  },
+  profileMedsText: { ...TYPOGRAPHY.bodySmall, color: COLORS.text, lineHeight: 18 },
 });
