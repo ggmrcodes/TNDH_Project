@@ -59,6 +59,12 @@ export interface Transfusion {
   // For mock-mode this is a data: URI. NULL for legacy rows and for
   // manual-entry records with no attached photo. Added 2026-06-09.
   document_photo_url?: string | null;
+  // ── Clinician-edit stamps (added 2026-06-09). Server-set by the
+  // BEFORE UPDATE trigger on every clinician edit; null when no
+  // clinician has touched this transfusion yet. Surfaced on the
+  // patient view as "Reviewed by Dr. X · 2 days ago".
+  clinician_edited_at?: string | null;
+  clinician_edited_by?: string | null;
   created_at: string;
 }
 
