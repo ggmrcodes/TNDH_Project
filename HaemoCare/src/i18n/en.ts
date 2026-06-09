@@ -584,6 +584,9 @@ const en = {
   'preLabs.error.save': 'Could not save labs. Please try again.',
   'preLabs.error.upload': 'Could not upload photo. Labs were not saved.',
   'preLabs.clinicianEditPrompt': 'Update this patient-reported value? The previous value will be kept in the audit log.',
+  'preLabs.reactions.title': 'Reaction notes',
+  'preLabs.reactions.noted': 'Reaction noted during transfusion',
+  'preLabs.reactions.detailPlaceholder': 'e.g., chills 15 min after start, resolved with paracetamol',
 
   // Transfusion document photo (the source scan kept with the record)
   'transfusion.documentPhoto.title': 'Scanned document',

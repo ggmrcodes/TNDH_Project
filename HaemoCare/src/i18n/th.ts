@@ -587,6 +587,9 @@ const th: Record<TranslationKey, string> = {
   'preLabs.error.save': 'บันทึกค่าเลือดไม่สำเร็จ กรุณาลองใหม่',
   'preLabs.error.upload': 'อัปโหลดรูปไม่สำเร็จ ยังไม่ได้บันทึกค่าเลือด',
   'preLabs.clinicianEditPrompt': 'แก้ไขค่าที่ผู้ป่วยบันทึกไว้? ค่าเดิมจะถูกเก็บไว้ในประวัติการแก้ไข',
+  'preLabs.reactions.title': 'การตอบสนองระหว่างถ่ายเลือด',
+  'preLabs.reactions.noted': 'พบการตอบสนองระหว่างถ่ายเลือด',
+  'preLabs.reactions.detailPlaceholder': 'เช่น มีอาการหนาวสั่นหลังเริ่ม 15 นาที หายหลังกินพาราเซตามอล',
 
   // Transfusion document photo (the source scan kept with the record)
   'transfusion.documentPhoto.title': 'เอกสารที่สแกน',

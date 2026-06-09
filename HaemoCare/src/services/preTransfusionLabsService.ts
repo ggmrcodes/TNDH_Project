@@ -19,16 +19,25 @@ export const LAB_SLIPS_BUCKET = 'transfusion-lab-slips';
 /** Write a new `pre_labs` payload onto a transfusion. Also appends an
  * audit-log entry so the previous value is preserved per the brief.
  *
+ * Clinician-edit path additionally writes `reaction_noted` /
+ * `reaction_detail` when `reactions` is supplied. Reactions are not
+ * audited in v1 (observational text, not safety-critical labs). The
+ * column-lock trigger in 2026-06-09-clinician-transfusion-write.sql
+ * enforces that clinician UPDATEs touch only pre_labs + the two
+ * reaction columns.
+ *
  * @param transfusionId  transfusion to update
  * @param patientUserId  owner of the transfusion (used for audit + bucket path)
  * @param actorUserId    auth.uid() of whoever is making the change
  * @param labs           full payload to persist (replaces existing pre_labs)
+ * @param reactions      optional reaction_noted + reaction_detail update
  */
 export async function savePreLabs(
   transfusionId: string,
   patientUserId: string,
   actorUserId: string,
-  labs: PreTransfusionLabs
+  labs: PreTransfusionLabs,
+  reactions?: { noted: boolean; detail: string }
 ): Promise<Transfusion> {
   // Defensive: never persist bad numbers, regardless of caller.
   const errors = validateLabs(labs);
@@ -65,9 +74,19 @@ export async function savePreLabs(
     .insert(auditPayload);
   if (auditError) throw new Error(auditError.message);
 
+  const updatePayload: {
+    pre_labs: PreTransfusionLabs;
+    reaction_noted?: boolean;
+    reaction_detail?: string;
+  } = { pre_labs: labs };
+  if (reactions !== undefined) {
+    updatePayload.reaction_noted = reactions.noted;
+    updatePayload.reaction_detail = reactions.detail;
+  }
+
   const { data: updated, error: updateError } = await supabase
     .from('transfusions')
-    .update({ pre_labs: labs })
+    .update(updatePayload)
     .eq('id', transfusionId)
     .select()
     .single();

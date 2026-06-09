@@ -102,6 +102,7 @@ export default function PreTransfusionLabsPanel({
     hct: number | null;
     ferritin: number | null;
     lab_slip_photo_url: string | null;
+    reactions?: { noted: boolean; detail: string };
   }) => {
     const actorId = user?.id ?? 'mock-clinician-001';
     const payload: PreTransfusionLabs = {
@@ -119,7 +120,8 @@ export default function PreTransfusionLabsPanel({
       const updated = await mockServices.savePreLabsForTransfusion(
         latestTx.id,
         actorId,
-        payload
+        payload,
+        values.reactions
       );
       setLatestTx(updated);
     } else {
@@ -127,7 +129,8 @@ export default function PreTransfusionLabsPanel({
         latestTx.id,
         latestTx.user_id,
         actorId,
-        payload
+        payload,
+        values.reactions
       );
       setLatestTx(updated);
     }
@@ -157,6 +160,11 @@ export default function PreTransfusionLabsPanel({
           onSubmit={handleSubmit}
           onCancel={() => setEditing(false)}
           showClinicianEditNotice={!isEmptyLabs(latestTx.pre_labs)}
+          includeReactions
+          initialReaction={{
+            noted: latestTx.reaction_noted ?? false,
+            detail: latestTx.reaction_detail ?? '',
+          }}
         />
       ) : (
         <PreTransfusionLabsDisplay

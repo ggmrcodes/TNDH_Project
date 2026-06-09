@@ -547,22 +547,35 @@ function findTxIndex(transfusionId: string): { source: 'self' | 'patient'; idx: 
 
 function applyMockLabsUpdate(
   located: NonNullable<ReturnType<typeof findTxIndex>>,
-  labs: PreTransfusionLabs
+  labs: PreTransfusionLabs,
+  reactions?: { noted: boolean; detail: string }
 ): Transfusion {
+  const reactionPatch = reactions
+    ? { reaction_noted: reactions.noted, reaction_detail: reactions.detail }
+    : {};
   if (located.source === 'self') {
-    transfusions[located.idx] = { ...transfusions[located.idx], pre_labs: labs };
+    transfusions[located.idx] = {
+      ...transfusions[located.idx],
+      pre_labs: labs,
+      ...reactionPatch,
+    };
     return transfusions[located.idx];
   }
   const linked = MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === located.patientUserId);
   if (!linked) throw new Error('Linked patient missing');
-  linked.transfusions[located.idx] = { ...linked.transfusions[located.idx], pre_labs: labs };
+  linked.transfusions[located.idx] = {
+    ...linked.transfusions[located.idx],
+    pre_labs: labs,
+    ...reactionPatch,
+  };
   return linked.transfusions[located.idx];
 }
 
 export async function savePreLabsForTransfusion(
   transfusionId: string,
   actorUserId: string,
-  labs: PreTransfusionLabs
+  labs: PreTransfusionLabs,
+  reactions?: { noted: boolean; detail: string }
 ): Promise<Transfusion> {
   const errors = validateLabs(labs);
   if (errors.length > 0) {
@@ -586,7 +599,7 @@ export async function savePreLabsForTransfusion(
     changed_by_user_id: actorUserId,
     changed_at: new Date().toISOString(),
   });
-  return applyMockLabsUpdate(located, labs);
+  return applyMockLabsUpdate(located, labs, reactions);
 }
 
 export async function listLabAuditEntries(
