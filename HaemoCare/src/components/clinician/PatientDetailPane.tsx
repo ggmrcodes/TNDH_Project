@@ -60,6 +60,11 @@ const SYMPTOM_LABELS: Record<string, string> = {
 export interface PatientDetailPaneProps {
   userId: string;
   isClinicianView?: boolean;
+  /** External refresh tick — bump from a parent to re-fetch all
+   * patient data (used by the dashboard's right-pane pull-to-refresh).
+   * Realtime updates also trigger an internal liveTick re-fetch; this
+   * prop is for explicit user-initiated refresh. */
+  refreshSignal?: number;
 }
 
 interface LoadedData {
@@ -142,6 +147,7 @@ async function loadPatientData(
 export default function PatientDetailPane({
   userId,
   isClinicianView = false,
+  refreshSignal,
 }: PatientDetailPaneProps) {
   const { isMockMode } = useAuth();
   const { t, language } = useLanguage();
@@ -181,7 +187,7 @@ export default function PatientDetailPane({
       return () => {
         cancelled = true;
       };
-    }, [userId, isMockMode, isClinicianView, liveTick])
+    }, [userId, isMockMode, isClinicianView, liveTick, refreshSignal])
   );
 
   // Live updates: subscribe to 'patient:{userId}' for the currently

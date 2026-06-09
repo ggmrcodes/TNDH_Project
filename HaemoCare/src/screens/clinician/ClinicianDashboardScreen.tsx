@@ -66,6 +66,17 @@ export default function ClinicianDashboardScreen() {
     await new Promise((r) => setTimeout(r, 700));
     setRefreshing(false);
   }, [refreshAssigned]);
+  // Independent refresh state for the right-pane (patient detail) scroll.
+  // Bumping rightPaneRefreshSignal triggers re-fetch in the child panels
+  // that read it as a prop dep (PreTransfusionLabsPanel + PatientDetailPane).
+  const [rightPaneRefreshing, setRightPaneRefreshing] = useState(false);
+  const [rightPaneRefreshSignal, setRightPaneRefreshSignal] = useState(0);
+  const handleRightPaneRefresh = useCallback(async () => {
+    setRightPaneRefreshing(true);
+    setRightPaneRefreshSignal((s) => s + 1);
+    await new Promise((r) => setTimeout(r, 700));
+    setRightPaneRefreshing(false);
+  }, []);
   const [slices, setSlices] = useState<PatientSlice[]>([]);
   // Bumped by the per-patient realtime subscription below whenever a
   // linked patient logs/edits a transfusion / symptom / appointment.
@@ -537,6 +548,13 @@ export default function ClinicianDashboardScreen() {
             <ScrollView
               contentContainerStyle={styles.rightPaneScroll}
               showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={rightPaneRefreshing}
+                  onRefresh={handleRightPaneRefresh}
+                  tintColor={COLORS.primary}
+                />
+              }
             >
               {/* === medication adherence widget (brief #1) === */}
               <View style={styles.adherenceWrap}>
@@ -546,8 +564,13 @@ export default function ClinicianDashboardScreen() {
               <PreTransfusionLabsPanel
                 patientUserId={selectedId}
                 clinicianDisplayName={clinicianProfile?.full_name ?? undefined}
+                refreshSignal={rightPaneRefreshSignal}
               />
-              <PatientDetailPane userId={selectedId} isClinicianView />
+              <PatientDetailPane
+                userId={selectedId}
+                isClinicianView
+                refreshSignal={rightPaneRefreshSignal}
+              />
             </ScrollView>
           ) : (
             <ScrollView contentContainerStyle={styles.emptyDetail}>
