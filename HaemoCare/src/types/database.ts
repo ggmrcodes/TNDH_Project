@@ -34,6 +34,15 @@ export interface Profile {
   // Edit Profile / signup. Independent of clinician-linking (that's the
   // clinician_patient_links table).
   hospital_id: string | null;
+  // ── Per-patient lab reference threshold overrides (added 2026-06-09).
+  // Used by LabTrendsChart on the clinician dashboard. NULL means use
+  // the program defaults from src/utils/clinicalThresholds.ts
+  // (Hb floor 7.0 g/dL, Ferritin ceiling 1000 ng/mL). Clinician-only
+  // edit path; the BEFORE UPDATE trigger in
+  // 2026-06-09-clinician-edit-profile-thresholds.sql enforces that
+  // clinician writes touch only these two columns.
+  hb_threshold_override?: number | null;
+  ferritin_threshold_override?: number | null;
   created_at: string;
   updated_at: string;
 }

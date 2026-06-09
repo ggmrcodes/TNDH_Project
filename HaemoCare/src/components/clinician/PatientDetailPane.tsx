@@ -46,6 +46,8 @@ import AdherenceRing from '../charts/AdherenceRing';
 import LabTrendsChart from '../charts/LabTrendsChart';
 import { digitsOnly } from '../../utils/emergencySms';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../config/theme';
+import ThresholdEditSheet from './ThresholdEditSheet';
+import { getEffectiveLabThresholds } from '../../utils/clinicalThresholds';
 
 const SYMPTOM_LABELS: Record<string, string> = {
   fever: 'Fever',
@@ -160,6 +162,7 @@ export default function PatientDetailPane({
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
   const [contactsExpanded, setContactsExpanded] = useState(false);
+  const [thresholdSheetOpen, setThresholdSheetOpen] = useState(false);
   // Bumped by the realtime subscription below whenever the selected
   // patient mutates any of transfusions / symptom_logs / appointments /
   // profiles / medication_reminders (per 2026-06-09-patient-data-realtime
@@ -297,6 +300,11 @@ export default function PatientDetailPane({
     });
   }, [isClinicianView, transfusions, logs, pastAppointments]);
 
+  const effectiveThresholds = useMemo(
+    () => getEffectiveLabThresholds(patientProfile),
+    [patientProfile]
+  );
+
   const primaryHospital = useMemo(() => {
     if (!isClinicianView || transfusions.length === 0) return null;
     const freq: Record<string, number> = {};
@@ -317,6 +325,21 @@ export default function PatientDetailPane({
     if (candidates.length === 0) return null;
     return new Date(Math.max(...candidates)).toISOString();
   }, [isClinicianView, transfusions, logs, pastAppointments]);
+
+  const handleSaveThresholds = useCallback(
+    async (next: {
+      hb_threshold_override: number | null;
+      ferritin_threshold_override: number | null;
+    }) => {
+      if (!patientProfile) return;
+      const updated = isMockMode
+        ? await mockServices.updateProfileThresholdsForPatient(patientProfile.user_id, next)
+        : await realClinicianService.updateProfileThresholds(patientProfile.user_id, next);
+      setPatientProfile(updated);
+      setThresholdSheetOpen(false);
+    },
+    [isMockMode, patientProfile]
+  );
 
   if (loading) return <LoadingSpinner />;
 
@@ -501,6 +524,9 @@ export default function PatientDetailPane({
               },
               markerHint: t('labTrends.markerHint' as TranslationKey),
             }}
+            hbFloor={effectiveThresholds.hbFloor}
+            ferritinCeiling={effectiveThresholds.ferritinCeiling}
+            onEditThresholds={isClinicianView ? () => setThresholdSheetOpen(true) : undefined}
           />
         </Section>
 
@@ -573,6 +599,15 @@ export default function PatientDetailPane({
           <Text style={styles.footerText}>Observations only. Share with your care team.</Text>
         </View>
       </ScrollView>
+      {isClinicianView && patientProfile && (
+        <ThresholdEditSheet
+          visible={thresholdSheetOpen}
+          onClose={() => setThresholdSheetOpen(false)}
+          initialHbOverride={patientProfile.hb_threshold_override ?? null}
+          initialFerritinOverride={patientProfile.ferritin_threshold_override ?? null}
+          onSave={handleSaveThresholds}
+        />
+      )}
     </ResponsiveContainer>
   );
 }

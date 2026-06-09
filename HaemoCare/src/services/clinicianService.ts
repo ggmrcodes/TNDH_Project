@@ -143,6 +143,33 @@ export async function getProfileForPatient(userId: string): Promise<Profile | nu
   return { ...profile, share_full_name: linkRow.share_full_name === true };
 }
 
+/**
+ * Clinician-side update of the patient's lab reference thresholds.
+ * The BEFORE UPDATE trigger from
+ * 2026-06-09-clinician-edit-profile-thresholds.sql rejects any column
+ * change other than the two threshold overrides, so this service can
+ * stay narrow and trust the DB to enforce scope.
+ *
+ * Passing `null` for either field clears the override; the chart will
+ * fall back to the default from clinicalThresholds.ts.
+ */
+export async function updateProfileThresholds(
+  patientUserId: string,
+  thresholds: {
+    hb_threshold_override: number | null;
+    ferritin_threshold_override: number | null;
+  }
+): Promise<Profile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(thresholds)
+    .eq('user_id', patientUserId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Profile;
+}
+
 export async function getMostRecentPastAppointmentForPatient(
   userId: string
 ): Promise<Appointment | null> {

@@ -398,6 +398,19 @@ export async function getProfileForPatient(userId: string): Promise<Profile | nu
   return MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.profile ?? null;
 }
 
+export async function updateProfileThresholdsForPatient(
+  patientUserId: string,
+  thresholds: {
+    hb_threshold_override: number | null;
+    ferritin_threshold_override: number | null;
+  }
+): Promise<Profile> {
+  const linked = MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === patientUserId);
+  if (!linked) throw new Error('Linked patient missing');
+  linked.profile = { ...linked.profile, ...thresholds };
+  return linked.profile;
+}
+
 export async function getTransfusionsForPatient(userId: string): Promise<Transfusion[]> {
   return MOCK_LINKED_PATIENTS.find(p => p.profile.user_id === userId)?.transfusions ?? [];
 }

@@ -3,6 +3,9 @@ import {
   isHematuriaColor,
   URINE_COLOR_OPTIONS,
   SYMPTOM_CATALOG,
+  HB_DEFAULT_FLOOR_G_DL,
+  FERRITIN_DEFAULT_CEILING_NG_ML,
+  getEffectiveLabThresholds,
 } from '../clinicalThresholds';
 import type { UrineColor } from '../../types/database';
 
@@ -158,5 +161,69 @@ describe('evaluateSymptoms — pre-existing rules still hold', () => {
   it('empty input + null urine color is normal', () => {
     const r = evaluateSymptoms({}, null);
     expect(r.outcome).toBe('normal');
+  });
+});
+
+describe('lab threshold defaults', () => {
+  it('Hb default floor is 7.0 g/dL', () => {
+    expect(HB_DEFAULT_FLOOR_G_DL).toBe(7.0);
+  });
+
+  it('Ferritin default ceiling is 1000 ng/mL', () => {
+    expect(FERRITIN_DEFAULT_CEILING_NG_ML).toBe(1000);
+  });
+});
+
+describe('getEffectiveLabThresholds', () => {
+  it('returns defaults when profile is null', () => {
+    expect(getEffectiveLabThresholds(null)).toEqual({
+      hbFloor: 7.0,
+      ferritinCeiling: 1000,
+    });
+  });
+
+  it('returns defaults when both overrides are null', () => {
+    expect(
+      getEffectiveLabThresholds({
+        hb_threshold_override: null,
+        ferritin_threshold_override: null,
+      }),
+    ).toEqual({ hbFloor: 7.0, ferritinCeiling: 1000 });
+  });
+
+  it('returns defaults when both overrides are undefined (legacy rows)', () => {
+    expect(
+      getEffectiveLabThresholds({
+        hb_threshold_override: undefined,
+        ferritin_threshold_override: undefined,
+      } as { hb_threshold_override?: number | null; ferritin_threshold_override?: number | null }),
+    ).toEqual({ hbFloor: 7.0, ferritinCeiling: 1000 });
+  });
+
+  it('returns the override when both are set', () => {
+    expect(
+      getEffectiveLabThresholds({
+        hb_threshold_override: 9.0,
+        ferritin_threshold_override: 800,
+      }),
+    ).toEqual({ hbFloor: 9.0, ferritinCeiling: 800 });
+  });
+
+  it('returns mixed (Hb override + Ferritin default) when only Hb is set', () => {
+    expect(
+      getEffectiveLabThresholds({
+        hb_threshold_override: 9.0,
+        ferritin_threshold_override: null,
+      }),
+    ).toEqual({ hbFloor: 9.0, ferritinCeiling: 1000 });
+  });
+
+  it('returns mixed (Hb default + Ferritin override) when only Ferritin is set', () => {
+    expect(
+      getEffectiveLabThresholds({
+        hb_threshold_override: null,
+        ferritin_threshold_override: 800,
+      }),
+    ).toEqual({ hbFloor: 7.0, ferritinCeiling: 800 });
   });
 });

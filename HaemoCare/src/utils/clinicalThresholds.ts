@@ -1,4 +1,42 @@
 import { Outcome, UrineColor } from '../types/database';
+import type { Profile } from '../types/database';
+
+// ── Lab reference thresholds for LabTrendsChart ─────────────────────────
+//
+// Program-default thresholds for the clinician dashboard's
+// LabTrendsChart. Per-patient overrides live on profiles
+// (hb_threshold_override / ferritin_threshold_override). See:
+//   - spec: docs/superpowers/specs/2026-06-09-lab-trends-reference-thresholds-design.md
+//   - schema: supabase/migrations/2026-06-09-profile-threshold-overrides.sql
+//
+// HB_DEFAULT_FLOOR_G_DL is intentionally identical to the threshold
+// HbTrendChart uses for decay projection, so the two charts on the
+// dashboard agree on "transfuse below this."
+
+/** Default Hb floor — "transfuse-when-below" threshold for the chart. */
+export const HB_DEFAULT_FLOOR_G_DL = 7.0;
+
+/** Default Ferritin ceiling — iron-overload red flag. */
+export const FERRITIN_DEFAULT_CEILING_NG_ML = 1000;
+
+export interface EffectiveLabThresholds {
+  hbFloor: number;
+  ferritinCeiling: number;
+}
+
+/**
+ * Resolve the effective Hb floor + Ferritin ceiling for a patient.
+ * Falls back to program defaults when the per-patient override is
+ * null or undefined (e.g. legacy rows or never-set).
+ */
+export function getEffectiveLabThresholds(
+  profile: Pick<Profile, 'hb_threshold_override' | 'ferritin_threshold_override'> | null
+): EffectiveLabThresholds {
+  return {
+    hbFloor: profile?.hb_threshold_override ?? HB_DEFAULT_FLOOR_G_DL,
+    ferritinCeiling: profile?.ferritin_threshold_override ?? FERRITIN_DEFAULT_CEILING_NG_ML,
+  };
+}
 
 export interface SymptomDefinition {
   key: string;
